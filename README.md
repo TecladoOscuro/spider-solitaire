@@ -38,3 +38,18 @@ python3 -m http.server 8000
 ```
 
 GitHub Pages sirve la rama `main`, raíz.
+
+## Tests (Playwright, navegador real)
+
+```sh
+python3 -m http.server 8899        # en la raíz del repo
+cd tests
+npm install
+npx playwright install chromium
+npm test                           # escritorio: 3 juegos
+node t_mobile.js                   # móvil 390x844 con touch
+```
+
+Contra el sitio en vivo: `node t_spider.js https://tecladooscuro.github.io/spider-solitaire/spider.html` (idem con `damas.html` / `ajedrez.html` / `t_mobile.js <base>`).
+
+Cubren: reparto, solape/alineación, arrastre sin residuos, click-click, deshacer, pista, nuevo juego, dificultades, respuesta de la IA, teclado y ausencia de errores JS.

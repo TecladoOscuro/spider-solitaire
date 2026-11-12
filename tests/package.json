@@ -1,0 +1,11 @@
+{
+  "name": "juegos-tests",
+  "private": true,
+  "description": "Tests de navegador (Playwright) para spider, damas y ajedrez",
+  "scripts": {
+    "test": "node t_spider.js && node t_damas.js && node t_ajedrez.js && node t_mobile.js"
+  },
+  "devDependencies": {
+    "playwright": "1.65.0"
+  }
+}
