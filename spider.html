@@ -241,7 +241,7 @@ function newGame(){
     S.cols[c2][n-1].up=true;
   }
   S.stock=deck;
-  undoStack=[]; sel=null; clearHint();
+  undoStack=[]; sel=null; clearHint(); cleanupDrag();
   render();
 }
 function snapshot(){ return JSON.stringify(S); }
@@ -385,18 +385,32 @@ function hintAction(){
 function render(){
   var board=$('#board');
   board.innerHTML='';
-  for(var ci=0;ci<COLS;ci++){
+  var els=[],ci,ki;
+  for(ci=0;ci<COLS;ci++){
+    var colA=S.cols[ci];
+    var elA=document.createElement('div');
+    elA.className='col'+(colA.length?'':' empty');
+    elA.dataset.col=ci;
+    board.appendChild(elA);
+    els.push(elA);
+  }
+  for(ci=0;ci<COLS;ci++){
     var col=S.cols[ci];
-    var el=document.createElement('div');
-    el.className='col'+(col.length?'':' empty');
-    el.dataset.col=ci;
+    var el=els[ci];
+    var cw=el.clientWidth||120;
+    var stl=getComputedStyle(el);
+    var cardW=cw-(parseFloat(stl.paddingLeft)||0)-(parseFloat(stl.paddingRight)||0);
+    if(cardW<40)cardW=cw;
+    var cardH=Math.round(cardW*1.4);
+    var overUp=cardH-Math.max(16,Math.round(cardW*0.26));
+    var overDown=cardH-Math.max(8,Math.round(cardW*0.09));
     var prevUp=false;
-    for(var ki=0;ki<col.length;ki++){
+    for(ki=0;ki<col.length;ki++){
       var card=col[ki];
       var c=document.createElement('div');
       c.className='card '+(card.up?'up':'back');
       c.dataset.col=ci; c.dataset.idx=ki;
-      c.style.marginTop=(ki===0?0:(prevUp?'var(--gap-up)':'var(--gap-down)'))+'px';
+      c.style.marginTop=(ki===0?'0px':((prevUp?-overUp:-overDown)+'px'));
       if(card.up) c.innerHTML=face(card);
       if(canDrag(ci,ki)) c.classList.add('can');
       if(sel&&sel.col===ci&&sel.idx===ki) c.classList.add('sel');
@@ -405,7 +419,6 @@ function render(){
       prevUp=card.up;
     }
     if(hint&&hint.type==='move'&&hint.to===ci) el.classList.add('hint-col');
-    board.appendChild(el);
   }
 
   $('#score').textContent=score();
@@ -442,11 +455,13 @@ function beginGhost(){
   g.className='ghost';
   g.style.width=r.width+'px';
   var col=S.cols[drag.col];
+  var cardH=Math.round(r.width*1.4);
+  var overUp=cardH-Math.max(16,Math.round(r.width*0.26));
   for(var i=drag.idx;i<col.length;i++){
     var c=document.createElement('div');
     c.className='card up';
     c.innerHTML=face(col[i]);
-    if(i>drag.idx) c.style.marginTop='var(--gap-up)';
+    if(i>drag.idx) c.style.marginTop=(-overUp)+'px';
     g.appendChild(c);
   }
   document.body.appendChild(g);
@@ -476,10 +491,10 @@ function updateHover(e){
 }
 function cleanupDrag(){
   document.body.classList.remove('dragging');
-  if(!drag) return;
-  if(drag.ghost && drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost);
+  var ghosts=document.querySelectorAll('body > .ghost');
+  for(var i=0;i<ghosts.length;i++) ghosts[i].parentNode.removeChild(ghosts[i]);
   var hidden=document.querySelectorAll('.card.dragging');
-  for(var i=0;i<hidden.length;i++) hidden[i].classList.remove('dragging');
+  for(var i2=0;i2<hidden.length;i2++) hidden[i2].classList.remove('dragging');
   clearDropMarks();
 }
 function finishClick(d){
@@ -502,7 +517,6 @@ function onDown(e){
   var cardEl=e.target.closest('.card');
   var ci=+colEl.dataset.col;
   var ki=cardEl?+cardEl.dataset.idx:-1;
-  if(ki>=0 && !S.cols[ci][ki].up) return;
   drag={
     col:ci, idx:ki, x:e.clientX, y:e.clientY, started:false,
     el:cardEl, rect:cardEl?cardEl.getBoundingClientRect():null, pid:e.pointerId
@@ -538,8 +552,7 @@ function onUp(e){
   render();
 }
 function onCancel(){
-  document.body.classList.remove('dragging');
-  if(!drag) return;
+  if(!drag){ cleanupDrag(); return; }
   drag=null;
   cleanupDrag();
   render();
@@ -578,6 +591,16 @@ document.addEventListener('keydown',function(e){
   }
 });
 setInterval(function(){ if(S&&!S.won) $('#time').textContent=fmtTime(elapsed()); },500);
+
+/* ---------- test hook ---------- */
+if(typeof window!=='undefined'){
+  window.__spider={
+    state:function(){return S;},
+    canDrag:canDrag, canDrop:canDrop,
+    newGame:newGame, deal:deal, undo:undo, hint:hintAction,
+    dragInfo:function(){ return drag?{col:drag.col,idx:drag.idx,started:!!drag.started,ghost:!!drag.ghost}:null; }
+  };
+}
 
 /* ---------- start ---------- */
 $('#diffSel').value=String(diff);

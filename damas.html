@@ -720,10 +720,7 @@ if (typeof document !== 'undefined') {
       if(Math.abs(e.clientX-drag.x)<5&&Math.abs(e.clientY-drag.y)<5) return;
       if(!drag.selectable){ drag=null; return; }
       drag.started=true;
-      if(!sel||sel.r!==drag.r||sel.c!==drag.c){
-        sel={r:drag.r,c:drag.c};
-        render();
-      }
+      if(!sel||sel.r!==drag.r||sel.c!==drag.c) sel={r:drag.r,c:drag.c};
       beginGhost();
       if(!drag) return;
     }
