@@ -1,27 +1,40 @@
-# Spider Solitaire
+# Juegos
 
-Spider solitaire clásico en un solo archivo HTML. Sin dependencias, sin build.
+Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin build.
 
-## Juego
+**Web:** https://tecladooscuro.github.io/spider-solitaire/
+
+| Juego | Archivo | Niveles |
+|---|---|---|
+| Spider Solitaire | `spider.html` | 1, 2 y 4 palos |
+| Damas | `damas.html` | Fácil, Medio, Difícil (IA alfa-beta) |
+| Ajedrez | `ajedrez.html` | 800 · 1200 · 1600 · 2000 (IA alfa-beta) |
+
+El índice `index.html` es el menú de entrada.
+
+## Spider Solitaire
 
 - 10 columnas, 104 cartas (2 mazos), 5 repartos de 10 cartas.
-- Dificultad: 1 palo (fácil), 2 palos, 4 palos (difícil).
-- Mueve una carta o una escalera descendente del mismo palo sobre la carta un valor mayor, o a una columna vacía.
-- Completa K→A del mismo palo para eliminar 13 cartas. Gana con las 8 escaleras.
+- Escalera K→A del mismo palo se elimina. Gana con las 8 escaleras.
 - Puntos: 500 base, +100 por escalera, -1 por movimiento.
-- Controles: arrastrar con ratón o tocar carta y luego destino.
-- Teclas: `U` deshacer · `H` pista · `D` repartir · `N` nuevo juego.
+- Arrastrar o tocar carta y luego destino. Teclas: `U` deshacer · `H` pista · `D` repartir · `N` nuevo.
 
-## Ejecutar
+## Damas
 
-Abrir `index.html` en el navegador, o servirlo:
+- 8×8, reglas clásicas: captura obligatoria, saltos múltiples encadenados, coronación.
+- La IA juega con negras: minimax alfa-beta con iterative deepening y time-box por nivel.
+- Teclas: `U` deshacer · `H` pista · `N` nuevo.
+
+## Ajedrez
+
+- Reglas completas: enroque, al paso, promoción, jaque mate, ahogado, regla de 50, material insuficiente.
+- La IA juega con negras: negamax alfa-beta + piece-square tables, profundidad según nivel.
+- Teclas: `U` deshacer · `N` nuevo.
+
+## Desarrollo
 
 ```sh
 python3 -m http.server 8000
 ```
 
-## Despliegue
-
-GitHub Pages sirve `index.html` desde la rama `main`, raíz.
-
-https://tecladooscuro.github.io/spider-solitaire/
+GitHub Pages sirve la rama `main`, raíz.
