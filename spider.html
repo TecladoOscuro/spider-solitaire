@@ -26,7 +26,8 @@ body{
   padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
   border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
 }
-.brand{display:flex;align-items:center;gap:9px}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
 .brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
 .brand .spade{font-size:22px}
 .stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
@@ -147,13 +148,14 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 <body>
 
 <header class="top">
-  <div class="brand"><span class="spade">♠</span><h1>Spider Solitaire</h1></div>
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="spade">♠</span><h1>Spider Solitaire</h1></a>
   <div class="stats">
     <div class="stat"><span>Puntos</span><b id="score">500</b></div>
     <div class="stat"><span>Tiempo</span><b id="time">0:00</b></div>
     <div class="stat"><span>Movs</span><b id="moves">0</b></div>
   </div>
   <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
     <select class="btn" id="diffSel" title="Dificultad">
       <option value="1">1 palo</option>
       <option value="2">2 palos</option>

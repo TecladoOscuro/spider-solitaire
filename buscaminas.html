@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Buscaminas</title>
+<style>
+:root{--cs:32px;--cols:9}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%);
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+.btn.on{background:#455a64;box-shadow:inset 0 0 0 1.5px #ffca28}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- tablero clásico ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px 12px;min-height:0}
+.frame{
+  background:#c0c0c0;padding:8px;width:max-content;max-width:100%;
+  border-top:3px solid #fff;border-left:3px solid #fff;
+  border-right:3px solid #7b7b7b;border-bottom:3px solid #7b7b7b;
+  box-shadow:0 18px 50px rgba(0,0,0,.5);
+}
+.leds{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.led{
+  background:#000;color:#ff3b30;font-family:"Courier New",Courier,monospace;font-weight:700;
+  font-size:clamp(17px,4.2vw,25px);letter-spacing:2px;padding:1px 6px;min-width:66px;text-align:center;
+  border-top:2px solid #7b7b7b;border-left:2px solid #7b7b7b;
+  border-right:2px solid #fff;border-bottom:2px solid #fff;
+  text-shadow:0 0 7px rgba(255,59,48,.5);font-variant-numeric:tabular-nums;
+}
+.face{
+  width:36px;height:36px;font-size:19px;line-height:1;padding:0;cursor:pointer;
+  display:grid;place-items:center;background:#c0c0c0;color:inherit;
+  border-top:2px solid #fff;border-left:2px solid #fff;
+  border-right:2px solid #7b7b7b;border-bottom:2px solid #7b7b7b;
+}
+.face:active{border-top-color:#7b7b7b;border-left-color:#7b7b7b;border-right-color:#fff;border-bottom-color:#fff}
+.gridwrap{
+  overflow:auto;max-width:100%;
+  border-top:2px solid #7b7b7b;border-left:2px solid #7b7b7b;
+  border-right:2px solid #fff;border-bottom:2px solid #fff;
+}
+.grid{
+  display:grid;grid-template-columns:repeat(var(--cols),var(--cs));
+  width:max-content;background:#c0c0c0;
+}
+.cell{
+  width:var(--cs);height:var(--cs);
+  background:linear-gradient(145deg,#dcdcdc,#bcbcbc);
+  border-top:2px solid #fff;border-left:2px solid #fff;
+  border-right:2px solid #7b7b7b;border-bottom:2px solid #7b7b7b;
+  display:grid;place-items:center;position:relative;overflow:hidden;
+  font-weight:700;font-size:calc(var(--cs)*.58);line-height:1;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  touch-action:manipulation;cursor:default;
+}
+.cell.open{background:#c0c0c0;border:1px solid #8a8a8a}
+.cell.hold{background:#c0c0c0;border:1px solid #8a8a8a}
+.cell.boom{background:#ff0000}
+.n1{color:#0000ff}
+.n2{color:#008000}
+.n3{color:#ff0000}
+.n4{color:#000080}
+.n5{color:#800000}
+.n6{color:#008080}
+.n7{color:#000000}
+.n8{color:#808080}
+.cell svg{width:74%;height:74%;display:block}
+.flag{position:relative;font-size:calc(var(--cs)*.58);width:1em;height:1em}
+.flag::before{content:"";position:absolute;left:.07em;top:.05em;width:.14em;height:.9em;background:#141414}
+.flag::after{
+  content:"";position:absolute;left:.21em;top:.05em;width:0;height:0;border-style:solid;
+  border-width:.27em 0 .27em .5em;border-color:transparent transparent transparent #e53930;
+}
+.xmark{position:absolute;inset:0;pointer-events:none}
+.xmark::before,.xmark::after{content:"";position:absolute;left:12%;top:45%;width:76%;height:14%;background:#d40000}
+.xmark::before{transform:rotate(45deg)}
+.xmark::after{transform:rotate(-45deg)}
+
+/* ---------- derrota / ayuda / overlays ---------- */
+.losebar{
+  display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;
+  margin:10px auto 0;width:max-content;max-width:92vw;padding:8px 16px;border-radius:10px;
+  background:rgba(122,0,0,.55);border:1px solid rgba(255,130,130,.42);
+  font-size:14px;font-weight:650;box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.losebar[hidden]{display:none}
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:28px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:6px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:10px 8px}
+  .hint-bar{padding:0 10px 7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .led{min-width:56px;letter-spacing:1px}
+  .face{width:32px;height:32px;font-size:17px}
+  .frame{padding:6px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">💣</span><h1>Buscaminas</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Minas</span><b id="stMines">10</b></div>
+    <div class="stat"><span>Tiempo</span><b id="stTime">0:00</b></div>
+    <div class="stat"><span>Récord</span><b id="stRec">—</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad">
+      <option value="0">9×9 · 10 minas (Principiante)</option>
+      <option value="1">16×16 · 40 minas (Intermedio)</option>
+      <option value="2">30×16 · 99 minas (Experto)</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego con la dificultad actual">⟳</button>
+    <button class="btn" id="btnMode" title="Modo de toque">⛏</button>
+  </div>
+</header>
+
+<main class="board-wrap">
+  <div class="frame">
+    <div class="leds">
+      <div class="led" id="ledMines">010</div>
+      <button class="face" id="face" title="Nuevo juego">🙂</button>
+      <div class="led" id="ledTime">000</div>
+    </div>
+    <div class="gridwrap" id="gridWrap"><div class="grid" id="grid"></div></div>
+  </div>
+</main>
+
+<div class="losebar" id="loseBar" hidden>
+  <span>💥 ¡Boom! Has pisado una mina.</span>
+  <button class="btn" id="btnRestart">Reiniciar</button>
+</div>
+
+<div class="hint-bar">Clic izq. o toque: revelar · Clic der. o mantén 500 ms: bandera · Toca un número revelado: acorde · Botón 🚩/⛏: modo de toque · Tecla N: nuevo</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2>¡Has ganado!</h2>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* ================= MOTOR DE BUSCAMINAS — funciones puras ================= */
+/* Diseño documentado:
+   - newGame(level) coloca las minas al azar YA (como el clásico), pero la
+     PRIMERA llamada a reveal() garantiza la jugada segura: makeFirstClickSafe()
+     reubica fuera de la zona {casilla clicada + sus vecinas} todas las minas que
+     haya ahí. Así la primera casilla nunca es mina y, siempre que queden huecos
+     libres fuera de esa zona (siempre en los tableros reales), la primera jugada
+     abre una región de ceros (bomba reubicada lejos → inundación).
+   - El motor MUTA el estado recibido (mutación coherente: flags/started/over/
+     result siempre cuadran con cells). No hay apply() ni copias: cada función
+     devuelve el mismo st para poder encadenar.
+   - status() recalcula los contadores desde cells: nunca se desincronizan.
+     revealed cuenta casillas con revealed=true (tras perder incluye las minas).
+   - Regla de victoria: todas las casillas SIN mina reveladas; las banderas
+     sobrantes (sobre minas) no importan.
+   - Tras perder todas las minas quedan revealed=true; las banderas correctas
+     siguen mostrando bandera y las erróneas se pintan con X roja en la interfaz. */
+
+var LEVELS=[{w:9,h:9,mines:10},{w:16,h:16,mines:40},{w:30,h:16,mines:99}];
+var LEVEL_NAMES=['Principiante','Intermedio','Experto'];
+
+function neighbors(w,h,i){
+  var out=[];
+  if(i<0||i>=w*h) return out;
+  var r=Math.floor(i/w),c=i%w;
+  for(var dr=-1;dr<=1;dr++){
+    for(var dc=-1;dc<=1;dc++){
+      if(!dr&&!dc) continue;
+      var nr=r+dr,nc=c+dc;
+      if(nr<0||nc<0||nr>=h||nc>=w) continue;
+      out.push(nr*w+nc);
+    }
+  }
+  return out;
+}
+
+function placeMines(st,count,avoid){
+  var idx=[],i;
+  for(i=0;i<st.cells.length;i++) if(i!==avoid) idx.push(i);
+  for(i=idx.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var t=idx[i];idx[i]=idx[j];idx[j]=t;
+  }
+  for(i=0;i<count&&i<idx.length;i++) st.cells[idx[i]].mine=true;
+}
+
+function resolveAdj(st){
+  for(var i=0;i<st.cells.length;i++){
+    var c=st.cells[i];
+    if(c.mine){ c.adj=0; continue; }
+    var nb=neighbors(st.w,st.h,i),n=0;
+    for(var k=0;k<nb.length;k++) if(st.cells[nb[k]].mine) n++;
+    c.adj=n;
+  }
+}
+
+/* Primera jugada segura:
+   1) la casilla clicada NUNCA es mina: si lo es, se reubica (prefiere hueco
+      lejano; si no lo hay, cualquier otra casilla libre);
+   2) si quedan huecos libres FUERA de la zona {clicada+vecinas}, se reubica
+      allí también el resto de minas de la zona → la primera jugada abre una
+      región de ceros (bomba reubicada lejos). Si no hay huecos lejanos
+      (tableros diminutos), las minas del entorno se quedan: la casilla sigue
+      siendo segura pero la región puede no ser de ceros ("si puede"). */
+function makeFirstClickSafe(st,i){
+  var n=st.cells.length,j,k;
+  var forbidden=new Array(n);
+  forbidden[i]=true;
+  var nb=neighbors(st.w,st.h,i);
+  for(k=0;k<nb.length;k++) forbidden[nb[k]]=true;
+  var far=[],near=[],zoneMines=[];
+  for(j=0;j<n;j++){
+    if(st.cells[j].mine){ if(forbidden[j]) zoneMines.push(j); continue; }
+    if(forbidden[j]){ if(j!==i) near.push(j); }
+    else far.push(j);
+  }
+  if(st.cells[i].mine){
+    var p=far.length?far:near;
+    if(p.length){
+      var pick=p.splice(Math.floor(Math.random()*p.length),1)[0];
+      st.cells[i].mine=false;
+      st.cells[pick].mine=true;
+    }else{
+      st.cells[i].mine=false;
+      st.mines--; /* tablero degenerado: todas las demás casillas son mina */
+    }
+  }
+  for(k=0;k<zoneMines.length&&far.length;k++){
+    var m=zoneMines[k];
+    if(!st.cells[m].mine) continue;
+    var q=far.splice(Math.floor(Math.random()*far.length),1)[0];
+    st.cells[m].mine=false;
+    st.cells[q].mine=true;
+  }
+  resolveAdj(st);
+}
+
+function newGame(level){
+  var L=LEVELS[(level>=0&&level<LEVELS.length)?level:0];
+  var cells=new Array(L.w*L.h);
+  for(var i=0;i<cells.length;i++) cells[i]={mine:false,adj:0,revealed:false,flagged:false};
+  var st={w:L.w,h:L.h,mines:L.mines,cells:cells,flags:0,started:false,over:false,result:null};
+  placeMines(st,L.mines,-1);
+  resolveAdj(st);
+  return st;
+}
+
+function flood(st,start){
+  var stack=[start];
+  while(stack.length){
+    var i=stack.pop();
+    if(i<0||i>=st.cells.length) continue;
+    var c=st.cells[i];
+    if(c.revealed||c.flagged||c.mine) continue;
+    c.revealed=true;
+    if(c.adj===0){
+      var nb=neighbors(st.w,st.h,i);
+      for(var k=0;k<nb.length;k++) stack.push(nb[k]);
+    }
+  }
+}
+
+function lose(st){
+  st.over=true;
+  st.result='lose';
+  for(var i=0;i<st.cells.length;i++) if(st.cells[i].mine) st.cells[i].revealed=true;
+}
+
+function checkWin(st){
+  if(st.over) return;
+  for(var i=0;i<st.cells.length;i++){
+    var c=st.cells[i];
+    if(!c.mine&&!c.revealed) return;
+  }
+  st.over=true;
+  st.result='win';
+}
+
+/* Revela casilla con inundación. Primera llamada: marca started=true y
+   garantiza que la casilla no es mina (makeFirstClickSafe). */
+function reveal(st,i){
+  if(!st||st.over) return st;
+  if(i<0||i>=st.cells.length) return st;
+  var c=st.cells[i];
+  if(c.revealed||c.flagged) return st;
+  if(!st.started){ makeFirstClickSafe(st,i); st.started=true; }
+  if(c.mine){ lose(st); return st; }
+  flood(st,i);
+  checkWin(st);
+  return st;
+}
+
+function toggleFlag(st,i){
+  if(!st||st.over) return st;
+  if(i<0||i>=st.cells.length) return st;
+  var c=st.cells[i];
+  if(c.revealed) return st;
+  c.flagged=!c.flagged;
+  st.flags+=c.flagged?1:-1;
+  if(st.flags<0) st.flags=0;
+  return st;
+}
+
+/* Acorde (chording): casilla revelada con número cuyas banderas vecinas
+   coinciden con adj → revela las vecinas sin bandera. Si entre ellas hay una
+   mina sin bandera, pierde. */
+function chord(st,i){
+  if(!st||st.over) return st;
+  if(i<0||i>=st.cells.length) return st;
+  var c=st.cells[i];
+  if(!c.revealed||c.adj===0) return st;
+  var nb=neighbors(st.w,st.h,i),flags=0,k;
+  for(k=0;k<nb.length;k++) if(st.cells[nb[k]].flagged) flags++;
+  if(flags!==c.adj) return st;
+  for(k=0;k<nb.length;k++){
+    var j=nb[k],n=st.cells[j];
+    if(n.flagged||n.revealed) continue;
+    if(n.mine){ lose(st); return st; }
+    flood(st,j);
+  }
+  checkWin(st);
+  return st;
+}
+
+function status(st){
+  var flags=0,revealed=0,safeLeft=0;
+  for(var i=0;i<st.cells.length;i++){
+    var c=st.cells[i];
+    if(c.flagged) flags++;
+    if(c.revealed) revealed++;
+    if(!c.mine&&!c.revealed) safeLeft++;
+  }
+  st.flags=flags;
+  return {over:!!st.over,result:st.over?st.result:null,flags:flags,revealed:revealed,safeLeft:safeLeft};
+}
+
+/* ================= INTERFAZ ================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=0;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('mines.diff')||'0',10);
+      if(stored===0||stored===1||stored===2) diff=stored;
+    }
+  }catch(e){}
+
+  var S=null;
+  var mode='reveal';       /* 'reveal' | 'flag': modo del toque en táctil */
+  var t0=0, endAt=0;       /* el cronómetro arranca en el primer reveal */
+  var cellEls=[];
+  var boomIdx=-1;
+  var bestTime=null;
+  var toastTimer=null;
+  var press=null;
+
+  /* ---------- util UI ---------- */
+  function fmtTime(s){
+    var m=Math.floor(s/60);
+    return m+':'+String(s%60).padStart(2,'0');
+  }
+  function elapsed(){
+    if(!S||t0===0) return 0;
+    var end=(S.over&&endAt)?endAt:Date.now();
+    return Math.max(0,Math.floor((end-t0)/1000));
+  }
+  function led3(n){
+    n=Math.max(-99,Math.min(999,n));
+    if(n<0) return '-'+String(Math.min(99,-n)).padStart(2,'0');
+    return String(n).padStart(3,'0');
+  }
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
+  }
+  function getBest(){
+    try{
+      if(typeof localStorage==='undefined') return null;
+      var v=localStorage.getItem('mines.best.'+diff);
+      if(v==null) return null;
+      v=parseInt(v,10);
+      return (isNaN(v)||v<0)?null:v;
+    }catch(e){ return null; }
+  }
+  function setBest(s){
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('mines.best.'+diff,String(s)); }
+    catch(e){}
+  }
+  function faceNow(){
+    if(!S) return '🙂';
+    if(S.over) return S.result==='win'?'😎':'😵';
+    return '🙂';
+  }
+  function setFace(f){ $('#face').textContent=f; }
+
+  /* ---------- render ---------- */
+  var MINE_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#000">'+
+    '<rect x="11" y="2" width="2" height="20" rx="1"/>'+
+    '<rect x="2" y="11" width="20" height="2" rx="1"/>'+
+    '<rect x="11" y="2" width="2" height="20" rx="1" transform="rotate(45 12 12)"/>'+
+    '<rect x="2" y="11" width="20" height="2" rx="1" transform="rotate(45 12 12)"/>'+
+    '<circle cx="12" cy="12" r="5.4"/></g>'+
+    '<circle cx="9.9" cy="9.9" r="1.5" fill="#fff"/></svg>';
+  var FLAG_HTML='<span class="flag"></span>';
+  var X_HTML='<span class="xmark"></span>';
+
+  function fit(){
+    if(!S) return;
+    var availW=Math.max(160,(window.innerWidth||1024)-70);
+    var availH=Math.max(160,(window.innerHeight||768)-240);
+    var cs=Math.min(Math.floor(availW/S.w),Math.floor(availH/S.h));
+    cs=Math.max(16,Math.min(40,cs));
+    document.documentElement.style.setProperty('--cs',cs+'px');
+  }
+
+  function buildGrid(){
+    var g=$('#grid');
+    g.style.setProperty('--cols',String(S.w));
+    g.innerHTML='';
+    cellEls=[];
+    var frag=document.createDocumentFragment();
+    for(var i=0;i<S.cells.length;i++){
+      var d=document.createElement('div');
+      d.className='cell';
+      d.dataset.i=String(i);
+      frag.appendChild(d);
+      cellEls.push(d);
+    }
+    g.appendChild(frag);
+    fit();
+  }
+
+  function renderCells(){
+    var loseNow=S.over&&S.result==='lose';
+    for(var i=0;i<S.cells.length;i++){
+      var c=S.cells[i],el=cellEls[i],cls='cell',html='';
+      if(c.flagged){
+        html=FLAG_HTML;
+        if(loseNow&&!c.mine) html+=X_HTML;
+      }else if(c.revealed){
+        cls+=' open';
+        if(c.mine){
+          cls+=' mine-cell';
+          if(i===boomIdx) cls+=' boom';
+          html=MINE_SVG;
+        }else if(c.adj>0){
+          cls+=' n'+c.adj;
+          html=String(c.adj);
+        }
+      }
+      if(el.className!==cls) el.className=cls;
+      if(el.innerHTML!==html) el.innerHTML=html;
+    }
+  }
+
+  function render(){
+    renderCells();
+    var s=status(S);
+    var left=S.mines-s.flags;
+    $('#ledMines').textContent=led3(left);
+    $('#ledTime').textContent=led3(elapsed());
+    $('#stMines').textContent=String(left);
+    $('#stTime').textContent=fmtTime(elapsed());
+    $('#stRec').textContent=bestTime===null?'—':fmtTime(bestTime);
+    setFace(faceNow());
+
+    var won=S.over&&S.result==='win';
+    var lost=S.over&&S.result==='lose';
+    $('#win').classList.toggle('show',won);
+    if(won){
+      $('#winStats').textContent='Tiempo: '+fmtTime(elapsed())+' · Minas: '+S.mines+
+        ' · '+LEVEL_NAMES[diff]+(bestTime===null?'':' · Récord: '+fmtTime(bestTime));
+    }
+    $('#loseBar').hidden=!lost;
+  }
+
+  function newGameUI(){
+    S=newGame(diff);
+    t0=0; endAt=0; boomIdx=-1;
+    bestTime=getBest();
+    buildGrid();
+    render();
+  }
+
+  /* ---------- acciones ---------- */
+  function markStart(){
+    if(S.started&&t0===0) t0=Date.now();
+  }
+  function finishAction(wasChord,i){
+    markStart();
+    if(S.over){
+      endAt=Date.now();
+      if(S.result==='lose'){
+        if(wasChord){
+          boomIdx=-1;
+          var nb=neighbors(S.w,S.h,i);
+          for(var k=0;k<nb.length;k++){
+            var c=S.cells[nb[k]];
+            if(c.mine&&!c.flagged){ boomIdx=nb[k]; break; }
+          }
+          if(boomIdx<0) boomIdx=i;
+        }else{
+          boomIdx=i;
+        }
+      }else if(S.result==='win'){
+        var secs=elapsed();
+        if(bestTime===null||secs<bestTime){
+          bestTime=secs;
+          setBest(secs);
+          toast('🏆 ¡Nuevo récord: '+fmtTime(secs)+'!');
+        }
+      }
+    }
+    render();
+  }
+  function doReveal(i){
+    reveal(S,i);
+    finishAction(false,i);
+  }
+  function doChord(i){
+    chord(S,i);
+    finishAction(true,i);
+  }
+  function doFlag(i){
+    toggleFlag(S,i);
+    render();
+  }
+  function tap(i){
+    if(!S||S.over) return;
+    var c=S.cells[i];
+    if(mode==='flag'){ doFlag(i); return; }
+    if(c.revealed){
+      if(c.adj>0) doChord(i);
+      return;
+    }
+    doReveal(i);
+  }
+
+  /* ---------- entrada: puntero, long-press 500 ms, clic derecho ---------- */
+  function cellIndex(t){
+    var el=t&&t.closest?t.closest('.cell'):null;
+    return el?parseInt(el.dataset.i,10):-1;
+  }
+  function releasePress(p){
+    clearTimeout(p.timer);
+    p.el.classList.remove('hold');
+    setFace(faceNow());
+  }
+  function onDown(e){
+    if(!S||S.over||!e.isPrimary) return;
+    if(e.button===2) return; /* clic derecho → contextmenu */
+    var i=cellIndex(e.target);
+    if(i<0) return;
+    if(press) releasePress(press);
+    var el=cellEls[i];
+    press={i:i,x:e.clientX,y:e.clientY,moved:false,long:false,ctx:false,timer:null,el:el};
+    el.classList.add('hold');
+    setFace('😮');
+    press.timer=setTimeout(function(){
+      if(!press||press.moved||press.ctx) return;
+      press.long=true;
+      try{ if(typeof navigator!=='undefined'&&navigator.vibrate) navigator.vibrate(15); }catch(_){}
+      var c=S.cells[press.i];
+      if(!c.flagged&&!c.revealed){
+        doFlag(press.i);
+        toast('🚩 Bandera');
+      }
+      releasePress(press);
+    },500);
+  }
+  function onMove(e){
+    if(!press) return;
+    if(Math.abs(e.clientX-press.x)>10||Math.abs(e.clientY-press.y)>10){
+      press.moved=true;
+      releasePress(press);
+    }
+  }
+  function onUp(e){
+    if(!press) return;
+    var p=press;
+    press=null;
+    releasePress(p);
+    if(p.moved||p.long||p.ctx) return;
+    var i=cellIndex(e.target);
+    if(i!==p.i) return;
+    tap(i);
+  }
+  function onCancel(){
+    if(!press) return;
+    var p=press;
+    press=null;
+    releasePress(p);
+  }
+  function onContext(e){
+    e.preventDefault();
+    var i=cellIndex(e.target);
+    if(i<0) return;
+    if(press){
+      if(press.long) return;      /* el long-press ya puso la bandera */
+      press.ctx=true;
+      releasePress(press);
+      press=null;
+    }
+    if(!S||S.over) return;
+    doFlag(i);                    /* clic derecho clásico: alterna bandera */
+  }
+
+  /* ---------- cableado ---------- */
+  $('#grid').addEventListener('pointerdown',onDown);
+  window.addEventListener('pointermove',onMove);
+  window.addEventListener('pointerup',onUp);
+  window.addEventListener('pointercancel',onCancel);
+  window.addEventListener('blur',onCancel);
+  $('#grid').addEventListener('contextmenu',onContext);
+
+  $('#face').addEventListener('click',function(){ newGameUI(); });
+  $('#btnNew').addEventListener('click',function(){ newGameUI(); });
+  $('#btnRestart').addEventListener('click',function(){ newGameUI(); });
+  $('#btnAgain').addEventListener('click',function(){ newGameUI(); });
+  $('#btnMode').addEventListener('click',function(){
+    mode=mode==='reveal'?'flag':'reveal';
+    updateMode();
+    toast(mode==='flag'?'Modo bandera: toca para marcar':'Modo revelar: toca para abrir');
+  });
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===0||v===1||v===2)?v:0;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('mines.diff',String(diff)); }
+    catch(err){}
+    newGameUI();
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    if((e.key||'').toLowerCase()==='n') newGameUI();
+  });
+  window.addEventListener('resize',fit);
+  setInterval(function(){
+    if(!S||!S.started||S.over) return;
+    $('#ledTime').textContent=led3(elapsed());
+    $('#stTime').textContent=fmtTime(elapsed());
+  },250);
+
+  function updateMode(){
+    var b=$('#btnMode');
+    b.textContent=mode==='flag'?'🚩':'⛏';
+    b.classList.toggle('on',mode==='flag');
+    b.title=mode==='flag'
+      ? 'Modo bandera: toca para marcar o desmarcar (toca para cambiar a revelar)'
+      : 'Modo revelar: toca para abrir y mantén 500 ms para bandera (toca para cambiar a bandera)';
+  }
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  updateMode();
+  newGameUI();
+}
+</script>
+</body>
+</html>

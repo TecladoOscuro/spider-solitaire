@@ -8,7 +8,7 @@ const VPS=[
   ['small',360,640],
   ['laptop',1440,900],
 ];
-const PAGES=[['index','/index.html'],['spider','/spider.html'],['damas','/damas.html'],['ajedrez','/ajedrez.html']];
+const PAGES=[['index','/index.html'],['spider','/spider.html'],['damas','/damas.html'],['ajedrez','/ajedrez.html'],['klondike','/klondike.html'],['sudoku','/sudoku.html'],['buscaminas','/buscaminas.html']];
 let fails=0;
 const ok=(n,c,x)=>{console.log((c?'PASS ':'FAIL ')+n+(c?'':' -> '+JSON.stringify(x)));if(!c)fails++;};
 (async()=>{
@@ -27,7 +27,7 @@ for(const [game,path] of PAGES){
       const btnOff=btns.filter(el=>{const r=el.getBoundingClientRect();return r.right>innerWidth+1||r.left<-1;}).length;
       const pageX=de.scrollWidth-de.clientWidth;
       // tableros dentro del viewport
-      const boards=[...document.querySelectorAll('#board,.board')].filter(el=>el.getBoundingClientRect().height>50);
+      const boards=[...document.querySelectorAll('#board,.board,.board-wrap,.gridwrap')].filter(el=>el.getBoundingClientRect().height>50);
       const bBad=boards.filter(el=>{const r=el.getBoundingClientRect();return r.left<-1||r.right>innerWidth+1;}).map(el=>el.className);
       // panel lateral ajedrez dentro del viewport
       const panel=document.querySelector('.panel');
@@ -36,10 +36,12 @@ for(const [game,path] of PAGES){
       // spider: sin scroll horizontal interno
       let hscroll=null;
       if(g==='spider'){const bd=document.querySelector('#board');hscroll=bd.scrollWidth-bd.clientWidth;}
+      // botones home presentes en los juegos
+      const homeOk=g==='index'?true:!!(document.querySelector('.top a.brand[href="index.html"]')&&document.querySelector('.top a.btn[href="index.html"]'));
       // tablero con altura razonable
       const mainBoard=boards[0];
       const br=mainBoard?mainBoard.getBoundingClientRect():null;
-      return {pageX,btnOff,bBad,pBad,hscroll,hdrH:hr?Math.round(hr.height):0,
+      return {pageX,btnOff,bBad,pBad,hscroll,homeOk,hdrH:hr?Math.round(hr.height):0,
         board:br?{w:Math.round(br.width),h:Math.round(br.height),l:Math.round(br.left),r:Math.round(br.right)}:null};
     },game);
     const tag=`${game} ${vp}`;
@@ -49,6 +51,7 @@ for(const [game,path] of PAGES){
     ok(`${tag}: tablero dentro del viewport`,m.bBad.length===0,m.bBad);
     if(game==='ajedrez') ok(`${tag}: panel dentro del viewport`,!m.pBad,{pBad:m.pBad});
     if(game==='spider') ok(`${tag}: sin scroll horizontal (10 columnas caben)`,m.hscroll!==null&&m.hscroll<=1,{hscroll:m.hscroll});
+    ok(`${tag}: botones home (marca + ⌂ Juegos)`,m.homeOk,{homeOk:m.homeOk});
     ok(`${tag}: sin errores JS`,errs.length===0,errs);
     await p.screenshot({path:`/tmp/resp2_${game}_${vp}.png`,fullPage:false});
     await p.close();

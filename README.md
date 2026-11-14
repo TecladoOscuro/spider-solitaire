@@ -9,6 +9,9 @@ Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin
 | Spider Solitaire | `spider.html` | 1, 2 y 4 palos |
 | Damas | `damas.html` | Fácil, Medio, Difícil (IA alfa-beta) |
 | Ajedrez | `ajedrez.html` | 800 · 1200 · 1600 · 2000 (IA alfa-beta) |
+| Solitario (Klondike) | `klondike.html` | 1 carta, 3 cartas |
+| Sudoku | `sudoku.html` | Fácil, Medio, Difícil, Experto |
+| Buscaminas | `buscaminas.html` | 9×9/10 · 16×16/40 · 30×16/99 |
 
 El índice `index.html` es el menú de entrada.
 
@@ -31,6 +34,24 @@ El índice `index.html` es el menú de entrada.
 - La IA juega con negras: negamax alfa-beta + piece-square tables, profundidad según nivel.
 - Teclas: `U` deshacer · `N` nuevo.
 
+## Solitario (Klondike)
+
+- Reparto clásico 1..7 + stock de 24, robo de 1 o 3 cartas (dificultad).
+- Puntos: +5 estante→columna, +10 a fundación, −1 por movimiento.
+- Doble toque envía a fundación. Teclas: `U` deshacer · `H` pista · `N` nuevo.
+
+## Sudoku
+
+- Generador con solución única, simetría rotacional y pistas por nivel (40/34/30/26).
+- Notas, errores en rojo, pista, deshacer. Teclas: flechas · 1-9 · `U` · `H` · `N`.
+
+## Buscaminas
+
+- Primera jugada siempre segura (y abre región), bandera con clic derecho o pulsación larga, acorde al tocar un número.
+- Niveles 9×9/10, 16×16/40, 30×16/99 con récord por nivel. Tecla `N`.
+
+Todos los juegos tienen botón `⌂ Juegos` (y logo clicable) para volver al menú.
+
 ## Desarrollo
 
 ```sh
@@ -46,8 +67,8 @@ python3 -m http.server 8899        # en la raíz del repo
 cd tests
 npm install
 npx playwright install chromium
-npm test                           # escritorio: 3 juegos
-node t_mobile.js                   # móvil 390x844 con touch
+npm test                           # escritorio: los 7 (6 juegos + móvil)
+node t_resp.js                     # responsive: 7 páginas × 6 viewports
 ```
 
 Contra el sitio en vivo: `node t_spider.js https://tecladooscuro.github.io/spider-solitaire/spider.html` (idem con `damas.html` / `ajedrez.html` / `t_mobile.js <base>` / `t_resp.js <base>`).
