@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#faf8ef">
+<title>2048</title>
+<style>
+:root{--gap:12px}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#faf8ef;
+  color:#776e65;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+
+/* ---------- cabecera (skin del repo) ---------- */
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(60,58,50,.94);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+  color:#f9f6f2;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:20px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.28);padding:4px 11px;border-radius:8px;min-width:76px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.75;text-transform:uppercase;letter-spacing:.7px;color:#eee4da}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#8f7a66;color:#f9f6f2;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#9f8b77}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#7d6a58;padding:7px 8px}
+
+/* ---------- tablero (diseño original 2048) ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;min-height:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+.board{
+  position:relative;width:min(92vw,460px);max-width:min(92vw,460px);padding:var(--gap);border-radius:6px;
+  background-color:#bbada0;
+  background-image:
+    radial-gradient(circle at 25% 25%,rgba(255,255,255,.05) 0 1.5px,transparent 1.6px),
+    radial-gradient(circle at 75% 65%,rgba(0,0,0,.05) 0 1.5px,transparent 1.6px);
+  background-size:9px 9px,13px 13px;
+  box-shadow:0 14px 34px rgba(60,58,50,.32),inset 0 1px 0 rgba(255,255,255,.14);
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.cells{display:grid;gap:var(--gap);grid-template-columns:repeat(var(--n,4),1fr)}
+.cell{aspect-ratio:1;background:rgba(238,228,218,.35);border-radius:6px}
+.tiles{position:absolute;inset:var(--gap);pointer-events:none}
+.tile{
+  position:absolute;left:0;top:0;width:var(--tw,100px);height:var(--tw,100px);
+  transform:translate(calc(var(--c,0)*(var(--tw,100px) + var(--gap))),calc(var(--r,0)*(var(--tw,100px) + var(--gap))));
+  transition:transform .11s ease-in-out;
+}
+.face{
+  position:absolute;inset:0;border-radius:6px;display:grid;place-items:center;
+  font-weight:800;line-height:1;background:#eee4da;color:#776e65;
+  -webkit-tap-highlight-color:transparent;
+}
+.t2{background:#eee4da;color:#776e65}
+.t4{background:#ede0c8;color:#776e65}
+.t8{background:#f2b179;color:#f9f6f2}
+.t16{background:#f59563;color:#f9f6f2}
+.t32{background:#f67c5f;color:#f9f6f2}
+.t64{background:#f65e3b;color:#f9f6f2}
+.t128{background:#edcf72;color:#f9f6f2;box-shadow:0 0 30px 10px rgba(243,215,116,.24),inset 0 0 0 1px rgba(255,255,255,.14)}
+.t256{background:#edcc61;color:#f9f6f2;box-shadow:0 0 30px 10px rgba(243,215,116,.32),inset 0 0 0 1px rgba(255,255,255,.14)}
+.t512{background:#edc850;color:#f9f6f2;box-shadow:0 0 30px 12px rgba(243,215,116,.36),inset 0 0 0 1px rgba(255,255,255,.14)}
+.t1024{background:#edc53f;color:#f9f6f2;box-shadow:0 0 34px 14px rgba(243,215,116,.4),inset 0 0 0 1px rgba(255,255,255,.14)}
+.t2048{background:#edc22e;color:#f9f6f2;box-shadow:0 0 36px 16px rgba(243,215,116,.44),inset 0 0 0 1px rgba(255,255,255,.16)}
+.tsuper{background:#3c3a32;color:#f9f6f2;box-shadow:0 0 34px 14px rgba(60,58,50,.4),inset 0 0 0 1px rgba(255,255,255,.12)}
+
+/* ---------- animaciones ---------- */
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.17)}100%{transform:scale(1)}}
+@keyframes appear{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+.face.pop{animation:pop .17s ease-in-out both}
+.face.appear{animation:appear .15s ease-out both}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 10px;font-size:12.5px;opacity:.75;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;color:#f9f6f2;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#eee4da;color:#776e65;border:1px solid rgba(0,0,0,.12);border-radius:10px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.4);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:30px;font-weight:800;letter-spacing:.5px}
+.winbox p{margin:12px 0 18px;font-variant-numeric:tabular-nums;font-weight:650}
+.winbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.winbtns .btn[hidden]{display:none}
+
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:62px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 8px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:56px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🧩</span><h1>2048</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Puntos</span><b id="statScore">0</b></div>
+    <div class="stat"><span>Récord</span><b id="statBest">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="sizeSel" title="Tamaño del tablero">
+      <option value="4">4×4 · Clásico</option>
+      <option value="5">5×5 · Amplio</option>
+      <option value="6">6×6 · Épico</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo juego</button>
+    <button class="btn" id="btnUndo" title="Deshacer un paso (tecla U)">Deshacer</button>
+  </div>
+</header>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="board" id="board">
+      <div class="cells" id="cells"></div>
+      <div class="tiles" id="tiles"></div>
+    </div>
+  </div>
+</main>
+
+<div class="hint-bar">Une las casillas y llega a 2048! · Flechas o WASD para mover · N nuevo · U deshacer</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <p id="winStats"></p>
+    <div class="winbtns">
+      <button class="btn" id="btnContinue">Continuar</button>
+      <button class="btn" id="btnAgain">Nuevo juego</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE 2048 PURO — sin IIFE, sin 'use strict'.
+   Sin referencias a document / window / setTimeout / localStorage en el
+   motor: todo es JavaScript plano evaluable en Node.
+
+   DISEÑO DEL ESTADO (documentado):
+     - grid: matriz size×size de números. 0 = casilla vacía.
+     - state = {grid, size, score, won, over}
+         score: suma de todas las fusiones de la partida
+         won  : true desde que aparece una casilla >= 2048 (persiste)
+         over : true cuando el tablero está lleno y no hay pareja adyacente
+     - slideLine(arr) desliza UNA línea hacia el índice 0 (sentido de
+       avance) y fusiona iguales UNA sola vez por línea/movimiento:
+         [2,2,2,2] -> [4,4,0,0]   (dos fusiones, sin encadenar)
+         [4,4,8]   -> [8,8,0,0]   (el 8 nuevo NO absorbe al 8 viejo)
+         [2,2,4]   -> [4,4,0,0]   (la fusión no se encadena con el 4)
+     - move(st,dir) NUNCA muta: devuelve estado NUEVO {state,moved,gained}
+       (gained = suma de las fusiones del movimiento). Además expone
+       `moves`: trazas {fr,fc,tr,tc,merged} de cada casilla de origen para
+       animar el desplazamiento en la interfaz.
+     - spawn(st) añade EXACTAMENTE una casilla (2:90%, 4:10%) en una celda
+       libre; la interfaz solo lo invoca cuando moved===true.
+     - canMove(st) = queda hueco o existe pareja adyacente.
+       isOver(st)  = !canMove(st).
+   ========================================================================= */
+
+function cloneGrid(g){
+  var out=new Array(g.length);
+  for(var i=0;i<g.length;i++) out[i]=g[i].slice();
+  return out;
+}
+
+function emptyGrid(size){
+  var g=new Array(size);
+  for(var r=0;r<size;r++){
+    g[r]=new Array(size);
+    for(var c=0;c<size;c++) g[r][c]=0;
+  }
+  return g;
+}
+
+function eqArr(a,b){
+  if(a.length!==b.length) return false;
+  for(var i=0;i<a.length;i++) if(a[i]!==b[i]) return false;
+  return true;
+}
+
+function hasBig(g){
+  for(var r=0;r<g.length;r++){
+    for(var c=0;c<g[r].length;c++) if(g[r][c]>=2048) return true;
+  }
+  return false;
+}
+
+/* Desliza UNA línea hacia el índice 0 (sentido de avance) y fusiona iguales
+   una sola vez. Devuelve {arr, gained, moves} donde moves describe el
+   destino de cada casilla de origen: {from, to, merged}. */
+function slideLineInfo(a){
+  var n=a.length, items=[], i;
+  for(i=0;i<n;i++) if(a[i]) items.push({v:a[i], i:i});
+  var out=[], moves=[], gained=0, k=0;
+  while(k<items.length){
+    if(k+1<items.length && items[k].v===items[k+1].v){
+      var nv=items[k].v*2;
+      out.push(nv);
+      gained+=nv;
+      moves.push({from:items[k].i,   to:out.length-1, merged:true});
+      moves.push({from:items[k+1].i, to:out.length-1, merged:true});
+      k+=2;
+    }else{
+      out.push(items[k].v);
+      moves.push({from:items[k].i, to:out.length-1, merged:false});
+      k+=1;
+    }
+  }
+  while(out.length<n) out.push(0);
+  return {arr:out, gained:gained, moves:moves};
+}
+
+/* API pública: una línea en sentido de avance -> {arr, gained}. */
+function slideLine(arr){
+  var r=slideLineInfo(arr);
+  return {arr:r.arr, gained:r.gained};
+}
+
+function canMove(st){
+  var g=st.grid, n=st.size, r, c, v;
+  for(r=0;r<n;r++){
+    for(c=0;c<n;c++){
+      v=g[r][c];
+      if(!v) return true;
+      if(c+1<n && g[r][c+1]===v) return true;
+      if(r+1<n && g[r+1][c]===v) return true;
+    }
+  }
+  return false;
+}
+
+function isOver(st){
+  return !canMove(st);
+}
+
+/* Estado con banderas recalculadas (won/over). */
+function withFlags(g, size, score, prevWon){
+  return {
+    grid:g,
+    size:size,
+    score:score,
+    won:!!prevWon || hasBig(g),
+    over:!canMove({grid:g, size:size})
+  };
+}
+
+/* Nueva casilla: exactamente una (2 con 90%, 4 con 10%) en hueco libre.
+   Si el tablero está lleno, el estado no cambia (solo se recalculan
+   banderas). No muta la entrada. */
+function spawn(st){
+  var g=cloneGrid(st.grid), n=st.size, empties=[], r, c;
+  for(r=0;r<n;r++) for(c=0;c<n;c++) if(!g[r][c]) empties.push([r,c]);
+  if(empties.length){
+    var p=empties[Math.floor(Math.random()*empties.length)];
+    g[p[0]][p[1]] = (Math.random()<0.9) ? 2 : 4;
+  }
+  return withFlags(g, n, st.score, st.won);
+}
+
+/* Partida nueva: tablero vacío + 2 casillas (2 con 90%, 4 con 10%). */
+function newGame(size){
+  size=Math.floor(size);
+  if(!(size>=2)) size=4;
+  var st={grid:emptyGrid(size), size:size, score:0, won:false, over:false};
+  st=spawn(st);
+  st=spawn(st);
+  return st;
+}
+
+/* Desliza y fusiona TODAS las casillas en la dirección dir
+   ('l','r','u','d'). Nunca muta: devuelve {state, moved, gained, moves}. */
+function move(st, dir){
+  var n=st.size, g=st.grid, ng=cloneGrid(g);
+  var gained=0, moved=false, moves=[], r, i, line, res, m;
+
+  if(dir==='l' || dir==='r'){
+    for(r=0;r<n;r++){
+      line=new Array(n);
+      for(i=0;i<n;i++) line[i] = (dir==='l') ? g[r][i] : g[r][n-1-i];
+      res=sline(line);
+      if(!eqArr(line,res.arr)) moved=true;
+      gained+=res.gained;
+      for(i=0;i<n;i++) ng[r][ (dir==='l') ? i : n-1-i ] = res.arr[i];
+      for(i=0;i<res.moves.length;i++){
+        m=res.moves[i];
+        moves.push({
+          fr:r, fc:(dir==='l') ? m.from : n-1-m.from,
+          tr:r, tc:(dir==='l') ? m.to   : n-1-m.to,
+          merged:m.merged
+        });
+      }
+    }
+  }else if(dir==='u' || dir==='d'){
+    for(var col=0;col<n;col++){
+      line=new Array(n);
+      for(i=0;i<n;i++) line[i] = (dir==='u') ? g[i][col] : g[n-1-i][col];
+      res=sline(line);
+      if(!eqArr(line,res.arr)) moved=true;
+      gained+=res.gained;
+      for(i=0;i<n;i++) ng[ (dir==='u') ? i : n-1-i ][col] = res.arr[i];
+      for(i=0;i<res.moves.length;i++){
+        m=res.moves[i];
+        moves.push({
+          fr:(dir==='u') ? m.from : n-1-m.from, fc:col,
+          tr:(dir==='u') ? m.to   : n-1-m.to,   tc:col,
+          merged:m.merged
+        });
+      }
+    }
+  }else{
+    /* dirección inválida: estado nuevo sin cambios */
+    return {state:withFlags(cloneGrid(g), n, st.score, st.won),
+            moved:false, gained:0, moves:[]};
+  }
+
+  return {
+    state:withFlags(ng, n, st.score+gained, st.won),
+    moved:moved,
+    gained:gained,
+    moves:moves
+  };
+}
+
+/* alias interno: el deslizador de una línea */
+function sline(a){ return slideLineInfo(a); }
+
+/* Estado global (lo usa la interfaz). */
+var state=newGame(4);
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage guardado dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var size=4, best=0, hist=null, wonShown=false, busy=false, animToken=0;
+  var curTw=100;
+  var tileEls=[];                 /* tileEls[r][c] del último render */
+  var sizeSel=$('#sizeSel');
+
+  try{
+    if(typeof localStorage!=='undefined'){
+      var storedSize=parseInt(localStorage.getItem('2048.size')||'4',10);
+      if(storedSize===4||storedSize===5||storedSize===6) size=storedSize;
+    }
+  }catch(e){}
+
+  function bestKey(){ return '2048.best.'+size; }
+  function loadBest(){
+    best=0;
+    try{
+      if(typeof localStorage!=='undefined'){
+        var v=parseInt(localStorage.getItem(bestKey())||'0',10);
+        if(!isNaN(v)&&v>0) best=v;
+      }
+    }catch(e){}
+  }
+  function saveBest(){
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem(bestKey(),String(best)); }
+    catch(e){}
+  }
+
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toast._timer) clearTimeout(toast._timer);
+    toast._timer=setTimeout(function(){t.classList.remove('show');},2400);
+  }
+
+  function updateStats(){
+    if(state.score>best){
+      var beat=best>0;
+      best=state.score;
+      saveBest();
+      if(beat) toast('¡Récord nuevo!');
+    }
+    $('#statScore').textContent=String(state.score);
+    $('#statBest').textContent=String(best);
+  }
+
+  /* ---------- tablero ---------- */
+  function buildCells(){
+    var el=$('#cells');
+    el.innerHTML='';
+    el.style.setProperty('--n',String(size));
+    var frag=document.createDocumentFragment();
+    for(var i=0;i<size*size;i++){
+      var d=document.createElement('div');
+      d.className='cell';
+      frag.appendChild(d);
+    }
+    el.appendChild(frag);
+  }
+
+  function measure(){
+    var c=document.querySelector('#cells .cell');
+    if(c&&c.offsetWidth>0){
+      curTw=c.offsetWidth;
+      $('#tiles').style.setProperty('--tw',curTw+'px');
+    }
+  }
+
+  function faceClass(v){ return (v<=2048) ? ('t'+v) : 'tsuper'; }
+  function faceFont(v){
+    var len=String(v).length;
+    var f = len<=2 ? 0.5 : (len===3 ? 0.42 : (len===4 ? 0.33 : 0.28));
+    return (curTw*f)+'px';
+  }
+
+  function inList(list,r,c){
+    for(var i=0;i<list.length;i++) if(list[i][0]===r&&list[i][1]===c) return true;
+    return false;
+  }
+
+  function render(pops, spawnPos){
+    var tiles=$('#tiles');
+    tiles.innerHTML='';
+    tileEls=[];
+    for(var r=0;r<size;r++){
+      tileEls[r]=[];
+      for(var c=0;c<size;c++){
+        var v=state.grid[r][c];
+        tileEls[r][c]=null;
+        if(!v) continue;
+        var t=document.createElement('div');
+        t.className='tile';
+        t.style.setProperty('--c',String(c));
+        t.style.setProperty('--r',String(r));
+        var f=document.createElement('div');
+        f.className='face '+faceClass(v);
+        f.style.fontSize=faceFont(v);
+        f.textContent=String(v);
+        if(pops&&inList(pops,r,c)) f.classList.add('pop');
+        if(spawnPos&&spawnPos[0]===r&&spawnPos[1]===c) f.classList.add('appear');
+        t.appendChild(f);
+        tiles.appendChild(t);
+        tileEls[r][c]=t;
+      }
+    }
+  }
+
+  /* ---------- overlays ---------- */
+  function hideOverlay(){ $('#win').classList.remove('show'); }
+  function showWin(){
+    $('#winTitle').textContent='¡2048!';
+    $('#winStats').textContent='Puntos '+state.score+' · Récord '+best;
+    $('#btnContinue').hidden=false;
+    $('#btnAgain').hidden=true;
+    $('#win').classList.add('show');
+  }
+  function showOver(){
+    $('#winTitle').textContent='Sin movimientos';
+    $('#winStats').textContent='Puntos '+state.score+' · Récord '+best;
+    $('#btnContinue').hidden=true;
+    $('#btnAgain').hidden=false;
+    $('#win').classList.add('show');
+  }
+
+  /* ---------- partida ---------- */
+  function startGame(){
+    animToken++;
+    busy=false;
+    hist=null;
+    wonShown=false;
+    hideOverlay();
+    loadBest();
+    buildCells();
+    measure();
+    state=newGame(size);
+    render();
+    updateStats();
+  }
+
+  function doMove(dir){
+    if(busy) return;
+    if($('#win').classList.contains('show')) return;
+    var res=move(state,dir);
+    if(!res.moved){
+      /* sin movimiento: NO se genera casilla nueva */
+      if(res.state.over) showOver();
+      return;
+    }
+    hist=state;                 /* historial de 1 paso */
+    state=res.state;
+
+    /* desplazamiento: los elementos existentes viajan a su destino */
+    var pops=[], i, m, el;
+    for(i=0;i<res.moves.length;i++){
+      m=res.moves[i];
+      el=tileEls[m.fr]&&tileEls[m.fr][m.fc];
+      if(el){
+        el.style.setProperty('--c',String(m.tc));
+        el.style.setProperty('--r',String(m.tr));
+      }
+      if(m.merged&&!inList(pops,m.tr,m.tc)) pops.push([m.tr,m.tc]);
+    }
+
+    busy=true;
+    var token=animToken;
+    setTimeout(function(){
+      if(token!==animToken) return;    /* la partida cambió durante la animación */
+      var before=cloneGrid(state.grid);
+      state=spawn(state);              /* solo tras moved===true */
+      var sp=null, r, c;
+      for(r=0;r<size;r++){
+        for(c=0;c<size;c++){
+          if(!before[r][c]&&state.grid[r][c]) sp=[r,c];
+        }
+      }
+      busy=false;
+      render(pops,sp);
+      updateStats();
+      if(state.won&&!wonShown){
+        wonShown=true;                 /* una sola vez: después se puede continuar */
+        showWin();
+      }else if(state.over){
+        showOver();
+      }
+    },120);
+  }
+
+  function undo(){
+    if(busy) return;
+    if(!hist){ toast('Nada que deshacer'); return; }
+    state=hist;
+    hist=null;
+    wonShown=!!state.won;
+    hideOverlay();
+    render();
+    updateStats();
+    toast('Jugada deshecha');
+  }
+
+  /* ---------- cableado ---------- */
+  $('#btnNew').addEventListener('click',startGame);
+  $('#btnAgain').addEventListener('click',startGame);
+  $('#btnContinue').addEventListener('click',hideOverlay);
+  $('#btnUndo').addEventListener('click',undo);
+
+  sizeSel.addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    if(v!==4&&v!==5&&v!==6) v=4;
+    size=v;
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('2048.size',String(size));
+    }catch(err){}
+    startGame();
+    toast('Tablero: '+e.target.options[e.target.selectedIndex].text);
+  });
+
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||''), kl=k.toLowerCase(), dir=null;
+    if(k==='ArrowLeft'||kl==='a') dir='l';
+    else if(k==='ArrowRight'||kl==='d') dir='r';
+    else if(k==='ArrowUp'||kl==='w') dir='u';
+    else if(k==='ArrowDown'||kl==='s') dir='d';
+    if(dir){ e.preventDefault(); doMove(dir); return; }
+    if(kl==='n') startGame();
+    else if(kl==='u') undo();
+  });
+
+  /* swipe táctil sobre el tablero */
+  var boardEl=$('#board'), touchX=0, touchY=0, touchOn=false;
+  boardEl.addEventListener('touchstart',function(e){
+    if(e.touches.length!==1){ touchOn=false; return; }
+    touchOn=true;
+    touchX=e.touches[0].clientX;
+    touchY=e.touches[0].clientY;
+  },{passive:true});
+  boardEl.addEventListener('touchend',function(e){
+    if(!touchOn) return;
+    touchOn=false;
+    var t=e.changedTouches[0];
+    var dx=t.clientX-touchX, dy=t.clientY-touchY;
+    if(Math.abs(dx)<24&&Math.abs(dy)<24) return;
+    var dir=Math.abs(dx)>Math.abs(dy) ? (dx>0?'r':'l') : (dy>0?'d':'u');
+    e.preventDefault();
+    doMove(dir);
+  },{passive:false});
+  boardEl.addEventListener('touchcancel',function(){ touchOn=false; },{passive:true});
+
+  window.addEventListener('resize',function(){
+    if(busy) return;
+    measure();
+    render();
+  });
+
+  /* ---------- arranque ---------- */
+  sizeSel.value=String(size);
+  startGame();
+}
+</script>
+</body>
+</html>
