@@ -46,7 +46,8 @@ select.btn{background:#263238;padding:7px 8px}
 .board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:14px;min-height:0}
 .board{
   display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
-  width:min(94vw,540px,calc(100dvh - 230px));aspect-ratio:1;
+  width:min(94vw,540px,calc(100vh - 230px));
+  width:min(94vw,540px,max(240px,calc(100dvh - 230px)));aspect-ratio:1;
   border:10px solid #0a3a20;border-radius:8px;overflow:hidden;
   box-shadow:0 20px 50px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.06);
 }
@@ -111,7 +112,7 @@ select.btn{background:#263238;padding:7px 8px}
   .stat{min-width:56px;padding:3px 8px}
   .status{margin-top:8px;font-size:13px;padding:5px 14px}
   .board-wrap{padding:10px 8px 6px}
-  .board{border-width:6px;width:min(96vw,540px,calc(100dvh - 215px))}
+  .board{border-width:6px;width:min(96vw,540px,max(200px,calc(100dvh - 215px)))}
   .hint-bar{padding:4px 10px 12px}
 }
 @media (max-width:600px){
@@ -610,6 +611,20 @@ if (typeof document !== 'undefined') {
     render();
     scheduleAI();
   }
+  /* Voltea el disco de la casilla fi hacia `mover` tras `delay` ms:
+     gira con scaleX y cambia de color en el canto exacto. */
+  function queueFlip(fi, mover, delay){
+    var fd=cellEls[fi].firstChild;
+    if(!fd) return;
+    busyTimers.push(setTimeout(function(){
+      fd.classList.remove('placing');
+      fd.classList.add('flip');
+      busyTimers.push(setTimeout(function(){
+        fd.classList.remove('b','w');
+        fd.classList.add(mover);
+      },FLIP_SWAP));
+    },delay));
+  }
   /* Juega i (negro o blanco): aplica el estado, coloca el disco y anima
      TODOS los volteos en secuencia (rotación CSS scaleX + cambio de color
      en el punto exacto del canto). */
@@ -634,20 +649,7 @@ if (typeof document !== 'undefined') {
     $('#stW').textContent=String(countDiscs(state).w);
     $('#status').textContent=statusText();
     var stag=flips.length>8?45:70;
-    for(var f=0;f<flips.length;f++){
-      (function(fi, delay){
-        var fd=cellEls[fi].firstChild;
-        if(!fd) return;
-        busyTimers.push(setTimeout(function(){
-          fd.classList.remove('placing');
-          fd.classList.add('flip');
-          busyTimers.push(setTimeout(function(){
-            fd.classList.remove('b','w');
-            fd.classList.add(mover);
-          },FLIP_SWAP));
-        },delay));
-      })(flips[f], FLIP_START+f*stag);
-    }
+    for(var f=0;f<flips.length;f++) queueFlip(flips[f], mover, FLIP_START+f*stag);
     var total=FLIP_START+Math.max(0,flips.length-1)*stag+300;
     busyTimers.push(setTimeout(function(){
       busyTimers=[];
