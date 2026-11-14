@@ -32,19 +32,37 @@ main{
   max-width:960px;margin:0 auto;width:100%;align-content:start;
 }
 a.game{
-  display:block;text-decoration:none;color:inherit;
+  position:relative;display:block;text-decoration:none;color:inherit;
   background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.14);
   border-radius:14px;padding:22px 20px;transition:.15s;
 }
 a.game:hover{transform:translateY(-3px);background:rgba(0,0,0,.4);border-color:rgba(255,255,255,.3)}
 a.game .icon{font-size:40px;line-height:1;display:block;margin-bottom:12px}
-a.game h2{margin:0 0 7px;font-size:19px}
+a.game h2{margin:0 0 7px;font-size:19px;padding-right:34px}
 a.game p{margin:0;font-size:13.5px;opacity:.78;line-height:1.5}
 a.game .lv{
   display:inline-block;margin-top:12px;font-size:11.5px;letter-spacing:.5px;
   background:rgba(255,255,255,.12);border-radius:999px;padding:3px 10px;
 }
+.info{
+  position:absolute;top:10px;right:10px;width:30px;height:30px;padding:0;
+  border-radius:50%;border:1px solid rgba(255,255,255,.3);
+  background:rgba(0,0,0,.35);color:#ffe082;font-size:16px;line-height:1;
+  cursor:pointer;font-weight:700;
+}
+.info:hover{background:#ffe082;color:#17351b}
 footer{padding:16px;text-align:center;font-size:12px;opacity:.55}
+#infoOv{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;place-items:center;z-index:80;padding:16px}
+#infoOv.show{display:grid}
+.infobox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:22px 26px;max-width:520px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.6);
+}
+.infobox h3{margin:0 0 4px;font-size:20px}
+.infobox .lv2{font-size:11.5px;letter-spacing:.5px;background:rgba(255,255,255,.12);border-radius:999px;padding:3px 10px;display:inline-block;margin-bottom:10px}
+.infobox p{margin:0 0 14px;font-size:14px;line-height:1.65;opacity:.9;white-space:pre-line}
+.infobox .btn{font:inherit;font-size:14px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);padding:8px 16px;border-radius:8px;cursor:pointer}
+.infobox .btn:hover{background:#455a64}
 </style>
 </head>
 <body>
@@ -54,64 +72,120 @@ footer{padding:16px;text-align:center;font-size:12px;opacity:.55}
   <a class="gh" href="https://github.com/TecladoOscuro/spider-solitaire">GitHub</a>
 </header>
 
-<main>
+<main id="grid">
   <a class="game" href="spider.html">
     <span class="icon">♠</span>
     <h2>Spider Solitaire</h2>
     <p>El clásico de 10 columnas y 104 cartas. Completa las 8 escaleras K→A.</p>
     <span class="lv">1 · 2 · 4 PALOS</span>
+    <button class="info" data-g="spider" aria-label="Cómo jugar: Spider Solitaire">ⓘ</button>
   </a>
   <a class="game" href="damas.html">
-    <span class="icon">Red Circle</span>
+    <span class="icon">◉</span>
     <h2>Damas</h2>
     <p>8×8 contra la IA. Capturas obligatorias, saltos múltiples y coronación.</p>
     <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="damas" aria-label="Cómo jugar: Damas">ⓘ</button>
   </a>
   <a class="game" href="ajedrez.html">
     <span class="icon">♞</span>
     <h2>Ajedrez</h2>
     <p>Partida completa: enroque, al paso, promoción, jaque mate y tablas.</p>
     <span class="lv">800 · 1200 · 1600 · 2000</span>
+    <button class="info" data-g="ajedrez" aria-label="Cómo jugar: Ajedrez">ⓘ</button>
   </a>
   <a class="game" href="klondike.html">
     <span class="icon">♦</span>
     <h2>Solitario</h2>
-    <p>El clásico Klondike. Roba1 o3 cartas y coloca las4 montañas.</p>
+    <p>El clásico Klondike. Roba 1 o 3 cartas y coloca las 4 montañas.</p>
     <span class="lv">1 CARTA · 3 CARTAS</span>
-  </a>
-  <a class="game" href="sudoku.html">
-    <span class="icon">▦</span>
-    <h2>Sudoku</h2>
-    <p>9×9 con solución única, notas, pistas y comprobación de errores.</p>
-    <span class="lv">FÁCIL · MEDIO · DIFÍCIL · EXPERTO</span>
+    <button class="info" data-g="klondike" aria-label="Cómo jugar: Solitario">ⓘ</button>
   </a>
   <a class="game" href="buscaminas.html">
     <span class="icon">⚑</span>
     <h2>Buscaminas</h2>
     <p>Bandera, chord y primera jugada siempre segura.</p>
     <span class="lv">9×9 · 16×16 · 30×16</span>
-  </a>
-  <a class="game" href="conecta4.html">
-    <span class="icon">◉</span>
-    <h2>Cuatro en Línea</h2>
-    <p>Contra la IA: alinea4 discos antes que ella.</p>
-    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
-  </a>
-  <a class="game" href="reversi.html">
-    <span class="icon">◐</span>
-    <h2>Reversi</h2>
-    <p>Flanquea y voltea las fichas del rival. El negro empieza.</p>
-    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="buscaminas" aria-label="Cómo jugar: Buscaminas">ⓘ</button>
   </a>
   <a class="game" href="memoria.html">
     <span class="icon">◈</span>
     <h2>Memoria</h2>
     <p>Encuentra todas las parejas escondidas.</p>
     <span class="lv">4×4 · 6×6 · 8×8</span>
+    <button class="info" data-g="memoria" aria-label="Cómo jugar: Memoria">ⓘ</button>
+  </a>
+  <a class="game" href="reversi.html">
+    <span class="icon">◐</span>
+    <h2>Reversi</h2>
+    <p>Flanquea y voltea las fichas del rival. El negro empieza.</p>
+    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="reversi" aria-label="Cómo jugar: Reversi">ⓘ</button>
+  </a>
+  <a class="game" href="conecta4.html">
+    <span class="icon">◉</span>
+    <h2>Cuatro en Línea</h2>
+    <p>Contra la IA: alinea 4 discos antes que ella.</p>
+    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="conecta4" aria-label="Cómo jugar: Cuatro en Línea">ⓘ</button>
+  </a>
+  <a class="game" href="damas-chinas.html">
+    <span class="icon">✦</span>
+    <h2>Damas Chinas</h2>
+    <p>Estrella de 121 casillas: salta y ocupa la punta contraria.</p>
+    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="damas-chinas" aria-label="Cómo jugar: Damas Chinas">ⓘ</button>
+  </a>
+  <a class="game" href="2048.html">
+    <span class="icon">⧉</span>
+    <h2>2048</h2>
+    <p>Desliza, fusiona y llega a la casilla 2048.</p>
+    <span class="lv">4×4 · 5×5 · 6×6</span>
+    <button class="info" data-g="2048" aria-label="Cómo jugar: 2048">ⓘ</button>
   </a>
 </main>
 
 <footer>Un archivo HTML por juego, sin dependencias.</footer>
 
+<div id="infoOv" role="dialog" aria-modal="true">
+  <div class="infobox">
+    <h3 id="infTitle"></h3>
+    <span class="lv2" id="infLv"></span>
+    <p id="infText"></p>
+    <button class="btn" id="infClose">Entendido</button>
+  </div>
+</div>
+
+<script>
+var RULES={
+  'spider':{t:'Spider Solitaire',lv:'1 · 2 · 4 PALOS',r:'Objetivo: formar 8 escaleras completas del K a la A del mismo palo (se retiran solas).\n\n• Entre columnas: cartas en orden descendente y del mismo palo.\n• A columna vacía puede ir cualquier carta o escalera.\n• Al destapar una boca abajo, se da la vuelta sola.\n• Toca el mazo para repartir fila nueva (si no hay columnas vacías).\n• Doble toque: manda la carta a su fundación si es legal.\nTeclas: U deshacer · H pista · D repartir · N nuevo.'},
+  'damas':{t:'Damas',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas con rojas (abajo), la IA con negras.\n\n• El hombre avanza 1 en diagonal y captura saltando.\n• La captura es OBLIGATORIA: si puedes saltar, debes hacerlo (saltos múltiples encadenados).\n• Al llegar a la fila final te coronas en dama (se mueve en las 4 diagonales).\nGana quien deje al rival sin piezas o sin jugadas.\nTeclas: U deshacer · H pista · N nuevo.'},
+  'ajedrez':{t:'Ajedrez',lv:'800 · 1200 · 1600 · 2000',r:'Tú juegas con blancas.\n\n• Toca una pieza: se marcan sus jugadas legales con punto; toca el destino.\n• Enroque, al paso y promoción (elige pieza) incluidos.\n• El nivel corresponde a la fuerza de la IA (tipo rating).\nGana por jaque mate. Teclas: U deshacer · N nuevo.'},
+  'klondike':{t:'Solitario (Klondike)',lv:'1 CARTA · 3 CARTAS',r:'Objetivo: llevar las 4 montañas (por palo) de la A al Rey.\n\n• Entre columnas: rojo sobre negro, descendente. A columna vacía: Rey.\n• Al mazo para robar (1 o 3 cartas según dificultad); si se vacía, recicla.\n• Doble toque sobre una carta la manda a su montaña si es legal.\nPuntos: +5 a columna, +10 a montaña.\nTeclas: U deshacer · H pista · N nuevo.'},
+  'buscaminas':{t:'Buscaminas',lv:'9×9 · 16×16 · 30×16',r:'Descubre todas las casillas sin mina.\n\n• Número = minas a su alrededor. Primera jugada siempre segura.\n• Marca minas: clic derecho, mantén pulsado, o el botón 🚩 (modo táctil).\n• Toca un número ya revelado con sus banderas puestas = acorde (abre alrededor).\n• Píxel clásico: los colores de los números son los de siempre.\nTecla N: nuevo.'},
+  'memoria':{t:'Memoria',lv:'4×4 · 6×6 · 8×8',r:'Encuentra todas las parejas de símbolos idénticos.\n\n• Toca una carta para girarla; toca la segunda.\n• Si coinciden se quedan destapadas; si no, se cierran tras un instante.\n• Récord de tiempo por nivel.\nTeclas: H pista · N nuevo.'},
+  'reversi':{t:'Reversi',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas negras (empiezas).\n\n• Toca una casilla con punto: coloca tu disco y voltea todos los discos enemigos flanqueados.\n• Si no tienes jugada, pasas automáticamente. Gana quien tenga más discos al final.\nTeclas: U deshacer · H pista · N nuevo.'},
+  'conecta4':{t:'Cuatro en Línea',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas rojas (abajo).\n\n• Toca una columna (o su flecha) y tu disco cae a la casilla libre más baja.\n• Gana quien alinee 4 en horizontal, vertical o diagonal antes que la rival.\nTeclas: U deshacer · H pista · N nuevo.'},
+  'damas-chinas':{t:'Damas Chinas',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas rojas (punta inferior) contra las negras.\n\n• Mueve 1 casilla a una casilla vacía adyacente, o SALTA sobre una ficha enemiga.\n• Los saltos se pueden encadenar: la ficha sigue seleccionada si puede seguir.\n• Termina tu turno tocando otra ficha.\nGana el primero en ocupar por completo la punta contraria.\nTeclas: U deshacer · H pista · N nuevo.'},
+  '2048':{t:'2048',lv:'4×4 · 5×5 · 6×6',r:'Desliza todas las casillas con las flechas (o deslizando el dedo / WASD).\n\n• Dos casillas iguales que colisionan se fusionan en su doble y suman puntos.\n• Cada jugada crea una casilla nueva (2 o 4).\n• Objetivo: llegar a 2048 (y seguir si quieres).\nTeclas: U deshacer (1 paso) · N nuevo.'}
+};
+var ov=document.getElementById('infoOv');
+function openInfo(g){
+  var d=RULES[g];
+  if(!d) return;
+  document.getElementById('infTitle').textContent=d.t;
+  document.getElementById('infLv').textContent=d.lv;
+  document.getElementById('infText').textContent=d.r;
+  ov.classList.add('show');
+}
+function closeInfo(){ ov.classList.remove('show'); }
+document.getElementById('grid').addEventListener('click',function(e){
+  var b=e.target.closest('.info');
+  if(b){ e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.g); }
+});
+document.getElementById('infClose').addEventListener('click',closeInfo);
+ov.addEventListener('click',function(e){ if(e.target===ov) closeInfo(); });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeInfo(); });
+</script>
 </body>
 </html>
