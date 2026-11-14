@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Damas Chinas</title>
+<style>
+html{background-color:#14471c}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- turno ---------- */
+.statusbar{display:flex;justify-content:center;padding:10px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.r{background:#e53935;color:#e53935}
+.dot.b{background:#2f3437;color:transparent;box-shadow:0 0 7px rgba(255,255,255,.45),inset 0 0 0 1.5px rgba(255,255,255,.7)}
+
+/* ---------- tablero (fieltro) ---------- */
+.board-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:8px;min-height:0;overflow:hidden;
+}
+.stage{display:flex;flex-direction:column;align-items:center;gap:6px}
+.board{
+  position:relative;
+  background:radial-gradient(ellipse at 50% 30%,#23773d 0%,#14512a 52%,#0c3a1c 100%);
+  border:1px solid rgba(255,255,255,.15);border-radius:22px;
+  box-shadow:0 22px 60px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.25),inset 0 -4px 0 rgba(0,0,0,.35);
+  touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.links{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.links line{stroke:rgba(255,255,255,.17);stroke-width:1.5;stroke-linecap:round}
+.cell{
+  position:absolute;transform:translate(-50%,-50%);border-radius:50%;
+  background:rgba(0,0,0,.26);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.08);
+  cursor:pointer;display:grid;place-items:center;
+}
+.cell.g-r{background:rgba(229,57,53,.24);box-shadow:inset 0 0 0 1px rgba(255,150,140,.4),inset 0 2px 5px rgba(0,0,0,.45)}
+.cell.g-b{background:rgba(255,255,255,.15);box-shadow:inset 0 0 0 1px rgba(255,255,255,.32),inset 0 2px 5px rgba(0,0,0,.5)}
+.cell.dest::after{
+  content:"";position:absolute;width:36%;height:36%;border-radius:50%;
+  background:#ffee58;box-shadow:0 0 9px 2px rgba(255,238,88,.85);
+  animation:dpulse .7s ease-in-out infinite alternate;
+}
+@keyframes dpulse{from{transform:scale(.78);opacity:.6}to{transform:scale(1.12);opacity:1}}
+.cell.sel .piece{
+  box-shadow:0 0 0 2px rgba(255,255,255,.92),0 0 15px 3px rgba(255,255,255,.55),
+    inset 0 -4px 8px rgba(0,0,0,.4),inset 0 4px 7px rgba(255,255,255,.4);
+}
+.cell.hint{animation:hcell .55s ease-in-out infinite alternate}
+@keyframes hcell{
+  from{box-shadow:inset 0 0 0 2px rgba(255,238,88,.55)}
+  to{box-shadow:inset 0 0 0 4px rgba(255,238,88,1)}
+}
+.cell.won{animation:wpulse .65s ease-in-out infinite alternate}
+@keyframes wpulse{
+  from{box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+  to{box-shadow:0 0 0 6px rgba(255,255,255,.95)}
+}
+.piece{
+  position:absolute;inset:7%;border-radius:50%;
+  box-shadow:inset 0 -4px 8px rgba(0,0,0,.4),inset 0 4px 7px rgba(255,255,255,.4),0 2px 5px rgba(0,0,0,.45);
+}
+.piece.r{background:radial-gradient(circle at 34% 28%,#ff9a90,#e53935 52%,#a91f1a)}
+.piece.b{background:radial-gradient(circle at 34% 28%,#96a0a6,#2b3134 52%,#0f1213)}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+.winline{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:4px 0 2px}
+.winline[hidden]{display:none}
+.mini{
+  width:24px;height:24px;border-radius:50%;display:block;
+  animation:minipulse .65s ease-in-out infinite alternate;
+}
+.mini.r{background:radial-gradient(circle at 34% 28%,#ff9a90,#e53935 52%,#a91f1a)}
+.mini.b{background:radial-gradient(circle at 34% 28%,#96a0a6,#2b3134 52%,#0f1213)}
+@keyframes minipulse{
+  from{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.75)}
+  to{transform:scale(1.14);box-shadow:0 0 0 6px rgba(255,255,255,.22)}
+}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:6px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+  .mini{width:18px;height:18px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">⭐</span><h1>Damas Chinas</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Victorias</span><b id="statW">0</b></div>
+    <div class="stat"><span>Derrotas</span><b id="statL">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad de la IA">
+      <option value="1">Fácil</option>
+      <option value="2">Medio</option>
+      <option value="3">Difícil</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer tu jugada y la de la IA (tecla U)">Deshacer</button>
+    <button class="btn" id="btnHint" title="Pista: jugada recomendada (tecla H)">Pista</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot r" id="turnDot"></i><span id="status">Tu turno</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="board" id="board"><svg class="links" id="links"></svg></div>
+  </div>
+</main>
+
+<div class="hint-bar">Toca una ficha roja para ver sus destinos con punto · Toca un punto para deslizar o saltar sobre una negra (puedes encadenar saltos) · Gana quien llene la punta opuesta · Teclas: N nuevo · U deshacer · H pista · Esc anula la selección</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <div class="winline" id="winLine" hidden></div>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE DAMAS CHINAS (Sternhalma, estrella de 6 puntas) — PURO.
+   Sin IIFE, sin 'use strict'. Sin document / window / localStorage /
+   setTimeout dentro del motor: JavaScript plano evaluable en Node.
+
+   TABLERO — construcción exacta (121 casillas):
+     · Hexágono central axial de radio 4: max(|q|,|r|,|s|) ≤ 4 con s=-q-r
+       → H(4) = 3·4·5+1 = 61 casillas. Borde = 6 lados × 5 casillas (esquinas
+       contadas dos veces) = 24 distintas + 37 interiores = 61.
+     · 6 triángulos de profundidad 4 pegados a cada lado: filas 1,2,3,4 con
+       4+3+2+1 = 10 casillas por punta → 6 × 10 = 60.
+     · 61 + 60 = 121 casillas. Vecindad = 6 direcciones hex.
+     · La fila 1 de cada punta (4 casillas) es adyacente a las 5 casillas del
+       lado al que se pega: cada casilla de la fila 1 salta a 2 del lado.
+
+   PUNTAS (TIPS): 0 = +q (arriba-dcha) · 1 = +r (ABAJO) · 2 = +s (arriba-izda)
+     · 3 = -q (abajo-izda) · 4 = -r (ARRIBA) · 5 = -s (abajo-dcha).
+   Proyección a pantalla: x = q + r/2 , y = r·√3/2 (y hacia abajo).
+   Por eso la punta +r cae abajo (las rojas) y la -r arriba (las negras).
+
+   COORDENADAS DOCUMENTADAS (las verifican los tests):
+     · Rojas empiezan en la punta +r (inferior), 10 casillas:
+       (-4,5)(-3,5)(-2,5)(-1,5) (-4,6)(-3,6)(-2,6) (-4,7)(-3,7) (-4,8)
+     · Negras empiezan en la punta -r (superior), 10 casillas:
+       (1,-5)(2,-5)(3,-5)(4,-5) (2,-6)(3,-6)(4,-6) (3,-7)(4,-7) (4,-8)
+     · GOAL_R = punta -r (casa de las negras) → la deben llenar las rojas.
+     · GOAL_B = punta +r (casa de las rojas) → la deben llenar las negras.
+
+   ÍNDICE: CELLS[i] = casilla i-ésima de la lista ordenada por q ascendente y,
+   dentro de cada q, por r ascendente (bucle q=-8..8, r=-8..8).
+
+   ESTADO: {cells:[121] null|'r'|'b', turn:'r'|'b', over:bool, result:null|'r'|'b'}
+     result 'r' → gana el humano (rojas) · result 'b' → gana la IA (negras).
+     applyMove() NUNCA muta: copia cells y devuelve un estado nuevo.
+
+   JUGADA: {from, to, path:[origen, aterrizaje1, …, destino], jumps}
+     · deslizamiento: path=[from,to] y jumps=0 (un tramo, adyacente, vacío).
+     · salto: cada tramo salta exactamente 1 ficha RIVAL a 2 pasos en línea
+       recta hasta una casilla vacía; jumps = nº de tramos = saltos
+       encadenados (path.length-1). Solo se salta sobre ficha rival: así la
+       posición inicial no tiene ningún salto (solo deslizamientos), porque
+       rojas y negras empiezan en puntas opuestas y cada bando está en bloque.
+     · movesFrom() devuelve TODAS las secuencias legales, incluidos los
+       prefijos: el jugador puede parar de saltar en cualquier momento.
+
+   API: initialState · neighbors · slidesFrom · jumpsFrom · movesFrom ·
+        applyMove · generateMoves · chooseMove · state
+   ========================================================================= */
+
+var N=121;
+var DIRS=[[1,0],[0,1],[1,-1],[-1,0],[0,-1],[-1,1]];   /* 6 direcciones hex */
+var SQ3=Math.sqrt(3)/2;
+var CELLS=[];          /* [{q,r,s}] según el orden documentado arriba */
+var INDEX={};          /* "q,r" → índice (−1 si no existe) */
+var NB=[];             /* NB[i] = índices de vecinos de i sobre el tablero */
+var TIPS=[];           /* TIPS[0..5] = 10 índices por punta */
+var START_R=[], START_B=[];   /* casa de cada bando (10 casillas) */
+var GOAL_R=[], GOAL_B=[];     /* punta que debe llenar cada bando */
+var DR=[], DB=[];             /* DR[i] = dist. hex. mín. de i a GOAL_R (y DB) */
+var ING_R=[], ING_B=[], INH_R=[], INH_B=[];   /* flags de punta */
+var MAXD=16;           /* cota superior de la distancia a la meta */
+
+/* Pesos de evaluación. */
+var PROG_W=24;         /* avance hacia la meta (distancia hex inversa) */
+var IN_GOAL=120;       /* pieza ya dentro de la punta meta */
+var IN_HOME=18;        /* pieza todavía en su propia punta (penaliza) */
+var MOB_W=2;           /* movilidad */
+var WIN_SCORE=100000;
+var INF=1e9;
+var ENGINE_TIMEOUT={};
+
+/* ---------- construcción del tablero ---------- */
+function isHex(q,r,s){ return Math.abs(q)<=4&&Math.abs(r)<=4&&Math.abs(s)<=4; }
+
+/* Devuelve el índice 0..5 de la punta que contiene (q,r,s), o −1. */
+function tipOf(q,r,s){
+  if(q>=5&&q<=8&&r>=-4&&s>=-4)  return 0;   /* punta +q */
+  if(r>=5&&r<=8&&q>=-4&&s>=-4)  return 1;   /* punta +r (abajo) */
+  if(s>=5&&s<=8&&q>=-4&&r>=-4)  return 2;   /* punta +s */
+  if(q<=-5&&q>=-8&&r<=4&&s<=4)  return 3;   /* punta −q */
+  if(r<=-5&&r>=-8&&q<=4&&s<=4)  return 4;   /* punta −r (arriba) */
+  if(s<=-5&&s>=-8&&q<=4&&r<=4)  return 5;   /* punta −s */
+  return -1;
+}
+
+function buildCells(){
+  CELLS=[]; INDEX={}; TIPS=[[],[],[],[],[],[]];
+  for(var q=-8;q<=8;q++){
+    for(var r=-8;r<=8;r++){
+      var s=-q-r;
+      var t=tipOf(q,r,s);
+      if(!isHex(q,r,s)&&t<0) continue;
+      var idx=CELLS.length;
+      INDEX[q+','+r]=idx;
+      CELLS.push({q:q,r:r,s:s});
+      if(t>=0) TIPS[t].push(idx);
+    }
+  }
+}
+
+function stepIndex(q,r){
+  var k=INDEX[q+','+r];
+  return k===undefined?-1:k;
+}
+
+/* Índices de las 6 (o menos) casillas adyacentes de i. */
+function neighbors(i){
+  var c=CELLS[i], out=[];
+  for(var d=0;d<6;d++){
+    var j=stepIndex(c.q+DIRS[d][0],c.r+DIRS[d][1]);
+    if(j>=0) out.push(j);
+  }
+  return out;
+}
+
+function hexdist(a,b){
+  var A=CELLS[a],B=CELLS[b];
+  return (Math.abs(A.q-B.q)+Math.abs(A.r-B.r)+Math.abs(A.s-B.s))/2;
+}
+
+function buildStatic(){
+  buildCells();
+  NB=[];
+  for(var i=0;i<N;i++) NB.push(neighbors(i));
+  /* Puntas: +r (1) es la casa de las rojas, −r (4) la de las negras. */
+  START_R=TIPS[1].slice(); START_B=TIPS[4].slice();
+  GOAL_R=TIPS[4].slice();  GOAL_B=TIPS[1].slice();
+  ING_R=[]; ING_B=[]; INH_R=[]; INH_B=[];
+  for(i=0;i<N;i++){
+    ING_R[i]=GOAL_R.indexOf(i)>=0;
+    ING_B[i]=GOAL_B.indexOf(i)>=0;
+    INH_R[i]=START_R.indexOf(i)>=0;
+    INH_B[i]=START_B.indexOf(i)>=0;
+  }
+  /* Distancia mínima de cada casilla a cada punta meta. */
+  DR=[]; DB=[];
+  for(i=0;i<N;i++){
+    var dr=99,db=99,k,d;
+    for(k=0;k<GOAL_R.length;k++){ d=hexdist(i,GOAL_R[k]); if(d<dr) dr=d; }
+    for(k=0;k<GOAL_B.length;k++){ d=hexdist(i,GOAL_B[k]); if(d<db) db=d; }
+    DR[i]=dr; DB[i]=db;
+  }
+}
+buildStatic();
+
+/* ---------- estado inicial ---------- */
+function initialState(){
+  var cells=new Array(N);
+  for(var i=0;i<N;i++) cells[i]=null;
+  for(var k=0;k<START_R.length;k++) cells[START_R[k]]='r';
+  for(k=0;k<START_B.length;k++) cells[START_B[k]]='b';
+  return {cells:cells,turn:'r',over:false,result:null};
+}
+
+/* ---------- movimientos simples ---------- */
+/* Destinos por deslizamiento: casilla vacía adyacente. */
+function slidesFrom(st,i){
+  var out=[];
+  if(!st||!st.cells||st.cells[i]===null||st.cells[i]===undefined) return out;
+  var nb=NB[i];
+  for(var k=0;k<nb.length;k++) if(st.cells[nb[k]]===null) out.push(nb[k]);
+  return out;
+}
+
+/* Destinos por UN salto: saltar 1 ficha RIVAL adyacente a la casilla vacía
+   que queda 2 pasos en línea recta. (Solo sobre ficha rival.) */
+function jumpsFrom(st,i){
+  var out=[];
+  if(!st||!st.cells||st.cells[i]===null||st.cells[i]===undefined) return out;
+  var me=st.cells[i], c=CELLS[i];
+  for(var d=0;d<6;d++){
+    var m=stepIndex(c.q+DIRS[d][0],c.r+DIRS[d][1]);
+    if(m<0) continue;
+    var over=st.cells[m];
+    if(over===null||over===undefined||over===me) continue;   /* solo rival */
+    var l=stepIndex(c.q+2*DIRS[d][0],c.r+2*DIRS[d][1]);
+    if(l<0||st.cells[l]!==null) continue;
+    out.push(l);
+  }
+  return out;
+}
+
+/* Encadenado: crece sobre `cells` (copia de trabajo) con backtracking y
+   emite TODAS las secuencias, incluidos los prefijos (se puede parar). */
+function growJumps(cells,at,path,out){
+  var c=CELLS[at], lands=[], d, me=cells[at];
+  for(d=0;d<6;d++){
+    var m=stepIndex(c.q+DIRS[d][0],c.r+DIRS[d][1]);
+    if(m<0) continue;
+    var over=cells[m];
+    if(over===null||over===undefined||over===me) continue;   /* solo rival */
+    var l=stepIndex(c.q+2*DIRS[d][0],c.r+2*DIRS[d][1]);
+    if(l<0||cells[l]!==null) continue;
+    lands.push(l);
+  }
+  for(var k=0;k<lands.length;k++){
+    var L=lands[k];
+    if(path.indexOf(L)>=0) continue;            /* no repetir casilla */
+    var piece=cells[at];
+    cells[at]=null; cells[L]=piece; path.push(L);
+    out.push({from:path[0],to:L,path:path.slice(),jumps:path.length-1});
+    growJumps(cells,L,path,out);
+    path.pop();
+    cells[at]=piece; cells[L]=null;
+  }
+}
+
+/* Todas las jugadas legales de la ficha i: deslizamientos + cadenas de saltos. */
+function movesFrom(st,i){
+  var out=[];
+  if(!st||!st.cells||st.cells[i]===null||st.cells[i]===undefined) return out;
+  var sl=slidesFrom(st,i);
+  for(var k=0;k<sl.length;k++) out.push({from:i,to:sl[k],path:[i,sl[k]],jumps:0});
+  growJumps(st.cells.slice(),i,[i],out);
+  return out;
+}
+
+/* Jugadas legales de quien tenga el turno. */
+function generateMoves(st){
+  var out=[];
+  if(!st||st.over) return out;
+  var cells=st.cells;
+  for(var i=0;i<N;i++){
+    if(cells[i]!==st.turn) continue;
+    var ms=movesFrom(st,i);
+    for(var k=0;k<ms.length;k++) out.push(ms[k]);
+  }
+  return out;
+}
+
+/* ¿Tiene al menos una jugada (deslizamiento o salto) este bando? Barato. */
+function hasAnyMove(cells,player){
+  for(var i=0;i<N;i++){
+    if(cells[i]!==player) continue;
+    var nb=NB[i], c=CELLS[i];
+    for(var k=0;k<nb.length;k++){
+      if(cells[nb[k]]===null) return true;
+      if(cells[nb[k]]===player) continue;                    /* salto: solo rival */
+      var dq=CELLS[nb[k]].q-c.q, dr=CELLS[nb[k]].r-c.r;
+      var l=stepIndex(c.q+2*dq,c.r+2*dr);
+      if(l>=0&&cells[l]===null) return true;
+    }
+  }
+  return false;
+}
+
+function allEqual(cells,set,v){
+  for(var k=0;k<set.length;k++) if(cells[set[k]]!==v) return false;
+  return true;
+}
+
+/* ---------- aplicación de jugadas (NUNCA muta) ---------- */
+function applyMove(st,m){
+  if(!st||st.over||!m||!m.path) return null;
+  var path=m.path;
+  if(path.length<2||path.length>N) return null;
+  var cells=st.cells.slice();
+  var start=path[0];
+  if(!(start>=0&&start<N)||cells[start]!==st.turn) return null;
+  var piece=cells[start];
+  cells[start]=null;
+  var cur=start, jumps=0;
+  for(var k=1;k<path.length;k++){
+    var to=path[k];
+    if(!(to>=0&&to<N)) return null;
+    if(cells[to]!==null) return null;                 /* destino ocupado */
+    var dq=CELLS[to].q-CELLS[cur].q, dr=CELLS[to].r-CELLS[cur].r;
+    var adj=false, jump=false;
+    for(var d=0;d<6;d++){
+      if(DIRS[d][0]===dq&&DIRS[d][1]===dr){ adj=true; break; }
+      if(DIRS[d][0]*2===dq&&DIRS[d][1]*2===dr){ jump=true; break; }
+    }
+    if(adj){
+      if(path.length!==2) return null;                /* el deslizamiento no se encadena */
+    }else if(jump){
+      var mid=stepIndex(CELLS[cur].q+dq/2,CELLS[cur].r+dr/2);
+      if(mid<0||cells[mid]===null||cells[mid]===undefined||cells[mid]===piece) return null;
+      jumps++;
+    }else return null;                                /* no es ni ady ni salto */
+    cells[cur]=null;
+    cells[to]=piece;
+    cur=to;
+  }
+  var mover=st.turn;
+  var over=false, result=null;
+  if(mover==='r'&&allEqual(cells,GOAL_R,'r')){ over=true; result='r'; }
+  else if(mover==='b'&&allEqual(cells,GOAL_B,'b')){ over=true; result='b'; }
+  var next={cells:cells,turn:(mover==='r'?'b':'r'),over:over,result:result};
+  if(!over&&!hasAnyMove(cells,next.turn)){ next.over=true; next.result=mover; }
+  return next;
+}
+
+/* ---------- evaluación ---------- */
+/* Movilidad barata: deslizamientos + saltos (solo sobre rival) de un bando. */
+function mobility(cells,player){
+  var n=0;
+  for(var i=0;i<N;i++){
+    if(cells[i]!==player) continue;
+    var nb=NB[i], c=CELLS[i];
+    for(var k=0;k<nb.length;k++){
+      var j=nb[k];
+      if(cells[j]===null){ n++; continue; }
+      if(cells[j]===player) continue;                 /* salto: solo rival */
+      var dq=CELLS[j].q-c.q, dr=CELLS[j].r-c.r;
+      var l=stepIndex(c.q+2*dq,c.r+2*dr);
+      if(l>=0&&cells[l]===null) n++;
+    }
+  }
+  return n;
+}
+
+/* Puntuación para `player`: avance hacia su punta meta (peso alto),
+   piezas dentro de la punta ajena, piezas aún en casa, movilidad. */
+function evaluate(st,player){
+  var cells=st.cells;
+  var mine=0, theirs=0;
+  for(var i=0;i<N;i++){
+    var v=cells[i];
+    if(v===null||v===undefined) continue;
+    var prog,ing,inh;
+    if(v==='r'){ prog=DR[i]; ing=ING_R[i]; inh=INH_R[i]; }
+    else { prog=DB[i]; ing=ING_B[i]; inh=INH_B[i]; }
+    var s=(MAXD-prog)*PROG_W;
+    if(ing) s+=IN_GOAL;
+    if(inh) s-=IN_HOME;
+    if(v===player) mine+=s; else theirs+=s;
+  }
+  var mob=mobility(cells,player)-mobility(cells,(player==='r')?'b':'r');
+  return (mine-theirs)+mob*MOB_W;
+}
+
+/* ---------- búsqueda: minimax + poda alfa-beta con time-box ---------- */
+function engineNow(){
+  if(typeof performance!=='undefined'&&performance&&typeof performance.now==='function'){
+    return performance.now();
+  }
+  return Date.now();
+}
+
+/* Heurística de ordenación: avance de la ficha + bonus de salto/meta. */
+function moveOrder(st,m){
+  var p=st.cells[m.from];
+  var prog=(p==='r')?DR:DB;
+  var sc=(prog[m.from]-prog[m.to])*PROG_W;
+  if(m.jumps) sc+=m.jumps*12;
+  if(p==='r'?ING_R[m.to]:ING_B[m.to]) sc+=IN_GOAL;
+  return sc;
+}
+
+function orderMoves(st,moves){
+  for(var i=0;i<moves.length;i++) moves[i].sc=moveOrder(st,moves[i]);
+  moves.sort(function(a,b){ return b.sc-a.sc; });
+}
+
+function orderedMoves(st){
+  var moves=generateMoves(st);
+  orderMoves(st,moves);
+  return moves;
+}
+
+/* Negamax con poda alfa-beta. Devuelve la puntuación para el que mueve. */
+function negamax(st,depth,alpha,beta,ctx){
+  if(st.over) return (st.result===st.turn)?WIN_SCORE:-WIN_SCORE;
+  if(depth<=0){
+    var s=evaluate(st,st.turn);
+    if(ctx.noise) s+=(Math.random()*2-1)*ctx.noise;
+    return s;
+  }
+  ctx.nodes++;
+  if((ctx.nodes&63)===0&&engineNow()>=ctx.deadline) throw ENGINE_TIMEOUT;
+  var moves=orderedMoves(st);
+  if(!moves.length) return -WIN_SCORE;
+  var best=-Infinity;
+  for(var i=0;i<moves.length;i++){
+    var v=-negamax(applyMove(st,moves[i]),depth-1,-beta,-alpha,ctx);
+    if(v>best) best=v;
+    if(best>alpha) alpha=best;
+    if(alpha>=beta) break;
+  }
+  return best;
+}
+
+function searchRoot(st,depth,ctx,moves){
+  var bestIdx=-1, bestV=-Infinity, alpha=-Infinity;
+  for(var i=0;i<moves.length;i++){
+    var v=-negamax(applyMove(st,moves[i]),depth-1,-INF,-alpha,ctx);
+    if(v>bestV){ bestV=v; bestIdx=i; }
+    if(v>alpha) alpha=v;
+  }
+  return {index:bestIdx,score:bestV};
+}
+
+/* Niveles:
+     1 Fácil   ≤300ms  ruido ±30  profundidad ≤3
+     2 Medio   ≤900ms  sin ruido  profundidad ≤5
+     3 Difícil ≤2200ms sin ruido  profundidad ≤6
+   Deepening iterativo con time-box: devuelve la jugada de la última
+   profundidad COMPLETADA. SIEMPRE una jugada legal, o null si no hay. */
+function chooseMove(st,level){
+  if(!st||st.over) return null;
+  if(!(level>=1)) level=2;
+  if(level>3) level=3;
+  level=Math.floor(level);
+  var moves=generateMoves(st);
+  if(!moves.length) return null;
+  if(moves.length===1) return moves[0];
+  var budget=[0,300,900,2200][level];
+  var noise=[0,30,0,0][level];
+  var maxDepth=[0,3,5,6][level];
+  var ctx={deadline:engineNow()+budget,nodes:0,noise:noise};
+  orderMoves(st,moves);
+  var bestIdx=0;
+  for(var depth=1;depth<=maxDepth;depth++){
+    if(engineNow()>=ctx.deadline) break;
+    var res;
+    try{
+      res=searchRoot(st,depth,ctx,moves);
+    }catch(e){
+      if(e!==ENGINE_TIMEOUT) throw e;
+      break;
+    }
+    if(res&&res.index>=0) bestIdx=res.index;
+    if(res&&res.score>=WIN_SCORE) break;   /* ganancia forzada: parar */
+  }
+  return moves[bestIdx];
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=initialState();
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage guardado dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('sc.diff')||'2',10);
+      if(stored===1||stored===2||stored===3) diff=stored;
+    }
+  }catch(e){}
+
+  var stats={w:0,l:0};
+  try{
+    if(typeof localStorage!=='undefined'){
+      var rawStats=localStorage.getItem('sc.stats');
+      if(rawStats){
+        var parsed=JSON.parse(rawStats);
+        if(parsed&&typeof parsed==='object'){ stats.w=parsed.w|0; stats.l=parsed.l|0; }
+      }
+    }
+  }catch(e){}
+
+  var DIFF_NAMES=['','Fácil','Medio','Difícil'];
+  var RESULT_TEXT={r:'¡Has ganado!',b:'Gana la IA'};
+
+  var hist=[];              /* estados anteriores, para deshacer */
+  var aiThinking=false;
+  var aiToken=0;            /* invalida la IA en curso (nuevo/deshacer) */
+  var sel=-1;               /* ficha roja seleccionada */
+  var lastSel=-1;           /* última ficha tocada: recupera la selección si se pierde */
+  var chain=null;           /* jugada de saltos en curso {from,to,path,jumps} */
+  var dests=[];             /* casillas de destino mostradas con punto */
+  var hintFrom=-1, hintTo=-1, hintTimer=null, winTimer=null, toastTimer=null;
+  var resizeTimer=null;
+  var cellEls=[], lineEls=[], uxy=[];
+  var PAD=9;
+  var S=40, D=28, minUX=0, minUY=0, spanX=1, spanY=1;
+
+  /* ---------- util UI ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2400);
+  }
+  function saveStats(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('sc.stats',JSON.stringify(stats));
+    }catch(e){}
+  }
+  function paintStats(){
+    $('#statW').textContent=String(stats.w);
+    $('#statL').textContent=String(stats.l);
+  }
+  function setStatus(){
+    var txt,dot;
+    if(state.over){
+      txt=RESULT_TEXT[state.result]||'Terminada';
+      dot=state.result==='b'?'b':'r';
+    }else if(aiThinking){
+      txt='IA piensa…'; dot='b';
+    }else{
+      txt='Tu turno'; dot='r';
+    }
+    $('#status').textContent=txt;
+    $('#turnDot').className='dot '+dot;
+  }
+
+  function clearHint(){
+    if(hintTimer){ clearTimeout(hintTimer); hintTimer=null; }
+    hintFrom=-1; hintTo=-1;
+  }
+
+  /* ---------- tablero ---------- */
+  function cellX(i){ return (uxy[i][0]-minUX)*S+PAD+D/2; }
+  function cellY(i){ return (uxy[i][1]-minUY)*S+PAD+D/2; }
+
+  function buildBoard(){
+    var b=$('#board'), svg=$('#links'), i, k;
+    var old=b.querySelectorAll('.cell');
+    for(i=0;i<old.length;i++) old[i].parentNode.removeChild(old[i]);
+    cellEls=[]; lineEls=[]; uxy=[];
+    var minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
+    for(i=0;i<N;i++){
+      var c=CELLS[i];
+      var x=c.q+c.r/2, y=c.r*SQ3;
+      uxy.push([x,y]);
+      if(x<minx)minx=x;
+      if(x>maxx)maxx=x;
+      if(y<miny)miny=y;
+      if(y>maxy)maxy=y;
+      var el=document.createElement('div');
+      el.className='cell';
+      el.dataset.i=String(i);
+      el.dataset.v='';
+      var cls='cell';
+      if(ING_R[i]) cls+=' g-r';     /* meta de las rojas (punta superior) */
+      if(ING_B[i]) cls+=' g-b';     /* meta de las negras (punta inferior) */
+      el.className=cls;
+      b.appendChild(el);
+      cellEls.push(el);
+    }
+    minUX=minx; minUY=miny;
+    spanX=maxx-minx; spanY=maxy-miny;
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    for(i=0;i<N;i++){
+      var nb=NB[i];
+      for(k=0;k<nb.length;k++){
+        var j=nb[k];
+        if(j<i) continue;
+        var ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+        svg.appendChild(ln);
+        lineEls.push([i,j,ln]);
+      }
+    }
+    layout();
+  }
+
+  function layout(){
+    var wrap=$('.board-wrap');
+    var aw=(wrap.clientWidth||window.innerWidth)-24;
+    var ah=(wrap.clientHeight||window.innerHeight)-24;
+    if(aw<60) aw=60;
+    if(ah<60) ah=60;
+    var frac=0.74;
+    var Sw=(aw-2*PAD)/(spanX+frac);
+    var Sh=(ah-2*PAD)/(spanY+frac);
+    S=Math.min(Sw,Sh);
+    if(!(S>6)) S=6;
+    D=S*frac;
+    var bw=Math.ceil(spanX*S+D+2*PAD), bh=Math.ceil(spanY*S+D+2*PAD);
+    var b=$('#board');
+    b.style.width=bw+'px';
+    b.style.height=bh+'px';
+    for(var i=0;i<N;i++){
+      var el=cellEls[i];
+      el.style.left=cellX(i)+'px';
+      el.style.top=cellY(i)+'px';
+      el.style.width=D+'px';
+      el.style.height=D+'px';
+    }
+    var svg=$('#links');
+    svg.setAttribute('width',bw);
+    svg.setAttribute('height',bh);
+    svg.setAttribute('viewBox','0 0 '+bw+' '+bh);
+    for(var k=0;k<lineEls.length;k++){
+      var p=lineEls[k], ln=p[2];
+      ln.setAttribute('x1',cellX(p[0]).toFixed(1));
+      ln.setAttribute('y1',cellY(p[0]).toFixed(1));
+      ln.setAttribute('x2',cellX(p[1]).toFixed(1));
+      ln.setAttribute('y2',cellY(p[1]).toFixed(1));
+    }
+  }
+
+  /* Estado visible: durante un encadenado la ficha viaja por `chain.path`. */
+  function chainState(){
+    var cells=state.cells.slice();
+    var cur=chain.path[chain.path.length-1];
+    cells[chain.path[0]]=null;
+    cells[cur]=state.turn;
+    return {cells:cells,turn:state.turn,over:false,result:null};
+  }
+
+  /* Destinos que quedan por saltar en la cadena en curso (siempre frescos). */
+  function chainLands(){
+    var out=[];
+    if(!chain) return out;
+    var cs=chainState();
+    var cur=chain.path[chain.path.length-1];
+    var lands=jumpsFrom(cs,cur);
+    for(var k=0;k<lands.length;k++){
+      if(chain.path.indexOf(lands[k])<0) out.push(lands[k]);
+    }
+    return out;
+  }
+
+  /* Los destinos se recalculan SIEMPRE desde el motor: los puntos que se
+     ven en pantalla nunca pueden quedarse desactualizados respecto a `sel`. */
+  function computeDests(){
+    dests=[];
+    if(chain){
+      dests=chainLands();
+    }else if(sel>=0){
+      var ms=movesFrom(state,sel), seen={};
+      for(var k2=0;k2<ms.length;k2++){
+        var t=+ms[k2].to;
+        if(!seen[t]){ seen[t]=1; dests.push(t); }
+      }
+    }
+    return dests;
+  }
+
+  function render(){
+    computeDests();                       /* puntos ≡ motor */
+    var disp=state.cells.slice();
+    if(chain){
+      disp[chain.path[0]]=null;
+      disp[chain.path[chain.path.length-1]]=state.turn;
+    }
+    var won=state.over?state.result:null;
+    for(var i=0;i<N;i++){
+      var el=cellEls[i];
+      var v=disp[i];
+      var key=v||'';
+      if(el.dataset.v!==key){
+        el.dataset.v=key;
+        el.innerHTML=v?('<span class="piece '+v+'"></span>'):'';
+      }
+      var cls='cell';
+      if(ING_R[i]) cls+=' g-r';
+      if(ING_B[i]) cls+=' g-b';
+      if(i===sel||(chain&&i===chain.path[chain.path.length-1])) cls+=' sel';
+      if(dests.indexOf(i)>=0) cls+=' dest';
+      if(hintFrom===i||hintTo===i) cls+=' hint';
+      if(won==='r'&&ING_R[i]&&state.cells[i]==='r') cls+=' won';
+      if(won==='b'&&ING_B[i]&&state.cells[i]==='b') cls+=' won';
+      if(el.className!==cls) el.className=cls;
+    }
+    paintStats();
+    setStatus();
+  }
+
+  function renderWin(){
+    var show=!!state.over;
+    $('#win').classList.toggle('show',show);
+    if(!show) return;
+    $('#winTitle').textContent=RESULT_TEXT[state.result]||'Terminada';
+    $('#winStats').textContent='Victorias '+stats.w+' · Derrotas '+stats.l+
+      ' · '+DIFF_NAMES[diff];
+    var strip=$('#winLine');
+    strip.innerHTML='';
+    var color=state.result==='b'?'b':'r';
+    for(var i=0;i<10;i++){
+      var m=document.createElement('span');
+      m.className='mini '+color;
+      strip.appendChild(m);
+    }
+    strip.hidden=false;
+  }
+
+  /* ---------- partida ---------- */
+  function newGame(){
+    aiToken++;
+    aiThinking=false;
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    clearHint();
+    sel=-1; chain=null; dests=[];
+    hist=[];
+    state=initialState();
+    render();
+    renderWin();
+  }
+  function pushHist(){ hist.push(state); }   /* inmutable: basta la referencia */
+
+  function countStats(){
+    if(state.result==='r') stats.w++;
+    else if(state.result==='b') stats.l++;
+    saveStats();
+  }
+  function revertStats(){
+    if(state.result==='r'&&stats.w>0) stats.w--;
+    else if(state.result==='b'&&stats.l>0) stats.l--;
+    saveStats();
+  }
+
+  function finish(){
+    aiThinking=false;
+    countStats();
+    render();
+    if(winTimer) clearTimeout(winTimer);
+    winTimer=setTimeout(renderWin,900);     /* deja ver la punta pulsando */
+  }
+
+  function commit(mv){
+    var next=applyMove(state,mv);
+    if(!next){ toast('Jugada no válida'); sel=-1; chain=null; dests=[]; render(); return; }
+    clearHint();
+    pushHist();
+    state=next;
+    sel=-1; chain=null; dests=[];
+    render();
+    if(state.over) finish(); else startAI();
+  }
+
+  function startAI(){
+    aiThinking=true;
+    setStatus();
+    var token=aiToken;
+    setTimeout(function(){
+      if(token!==aiToken||state.over) return;
+      var mv=chooseMove(state,diff);
+      aiThinking=false;
+      if(!mv){ if(state.over) finish(); else setStatus(); return; }
+      var next=applyMove(state,mv);
+      if(!next){ setStatus(); return; }
+      pushHist();
+      state=next;
+      sel=-1; chain=null; dests=[];
+      render();
+      if(state.over) finish(); else setStatus();
+    },60);
+  }
+
+  function moveFor(from,to){
+    to=+to;
+    var ms=movesFrom(state,from), best=null;
+    for(var k=0;k<ms.length;k++){
+      if(+ms[k].to!==to) continue;
+      if(!best||ms[k].path.length<best.path.length) best=ms[k];   /* primer tramo */
+    }
+    return best;
+  }
+
+  /* Reconstruye el primer tramo mirando la geometría del tablero. Cubre el
+     caso en que movesFrom no puede responder (selección desfasada del estado):
+     solo devuelve jugadas que el motor applyMove() aceptará igualmente. */
+  function rawMove(from,to){
+    from=+from; to=+to;
+    if(!(from>=0&&from<N&&to>=0&&to<N)) return null;
+    var cells=state.cells;
+    if(cells[from]!==state.turn||cells[to]!==null) return null;
+    var dq=CELLS[to].q-CELLS[from].q, dr=CELLS[to].r-CELLS[from].r, d;
+    for(d=0;d<6;d++){
+      if(DIRS[d][0]===dq&&DIRS[d][1]===dr) return {from:from,to:to,path:[from,to],jumps:0};
+    }
+    for(d=0;d<6;d++){
+      if(DIRS[d][0]*2===dq&&DIRS[d][1]*2===dr){
+        var mid=stepIndex(CELLS[from].q+dq/2,CELLS[from].r+dr/2);
+        if(mid>=0&&cells[mid]!==null&&cells[mid]!==cells[from])
+          return {from:from,to:to,path:[from,to],jumps:1};
+      }
+    }
+    return null;
+  }
+
+  /* Jugada a la casilla `to`:
+     1) desde la selección (si sigue viva),
+     2) desde la última ficha que el jugador tocó,
+     3) sin selección válida, desde la pieza que pueda llegar (más cercana):
+        así un clic sobre una casilla destino NUNCA queda muerto. */
+  function moveToward(to){
+    to=+to;
+    if(!(to>=0&&to<N)||state.cells[to]!==null) return null;
+    var mv=null;
+    if(sel>=0&&state.cells[sel]===state.turn){
+      mv=moveFor(sel,to)||rawMove(sel,to);
+      if(mv) return mv;
+    }
+    if(lastSel>=0&&lastSel!==sel&&state.cells[lastSel]===state.turn){
+      mv=moveFor(lastSel,to)||rawMove(lastSel,to);
+      if(mv) return mv;
+    }
+    if(sel>=0) return null;              /* con selección, solo esa pieza */
+    var best=null,bestD=1e9;
+    for(var i=0;i<N;i++){
+      if(state.cells[i]!==state.turn) continue;
+      var m=moveFor(i,to)||rawMove(i,to);
+      if(!m) continue;
+      var d=hexdist(i,to);
+      if(d<bestD){ bestD=d; best=m; }    /* empate → índice más bajo */
+    }
+    return best;
+  }
+
+  function onCell(i){
+    i=+i;
+    if(!(i>=0&&i<N)) return;
+    /* Sanidad: la IA solo "piensa" cuando le toca a las negras. Si el
+       indicador quedara activo, todos los clics se ignorarían en silencio. */
+    if(aiThinking&&state.turn!=='b') aiThinking=false;
+    if(state.over||aiThinking||state.turn!=='r') return;
+    /* Selección apuntando a una casilla que ya no tiene ficha propia. */
+    if(sel>=0&&state.cells[sel]!==state.turn) sel=-1;
+    if(chain){
+      /* Encadenado: si hay salto siguiente lo seguimos; si no, el turno acaba.
+         Se comprueba contra el motor, nunca contra el caché de destinos. */
+      var lands=chainLands();
+      if(lands.indexOf(i)>=0){
+        chain.path.push(i);
+        chain.to=i;
+        chain.jumps=chain.path.length-1;
+        computeDests();
+        if(!dests.length){ commit(chain); return; }
+        render();
+        return;
+      }
+      commit(chain);        /* tocaste otra ficha/casilla: termina el turno */
+      return;
+    }
+    /* Destino: validado contra el MOTOR (no contra `dests`), con red de
+       seguridad geométrica. Nunca se descarta en silencio una casilla que
+       se está mostrando como destino. */
+    var mv=moveToward(i);
+    if(mv&&state.cells[i]===null){
+      if(mv.jumps===0){ commit(mv); return; }
+      chain=mv;             /* primer salto: la ficha sigue seleccionada */
+      sel=-1;
+      computeDests();
+      if(!dests.length){ commit(chain); return; }
+      render();
+      return;
+    }
+    if(state.cells[i]==='r'){
+      /* Tocar otra ficha cambia la selección; tocar LA SELECCIONADA no la
+         anula (así un segundo clic accidental no pierde el turno). */
+      if(sel!==i){ sel=i; lastSel=i; }
+      render();
+      return;
+    }
+    /* Casilla vacía sin jugada desde la selección: se MANTIENE la selección.
+       Escape (o cambiar de ficha) es lo que la anula. */
+    render();
+  }
+
+  function undo(){
+    if(aiThinking){ aiToken++; aiThinking=false; }
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    if(!hist.length){ toast('Nada que deshacer'); renderWin(); setStatus(); return; }
+    clearHint();
+    if(state.over) revertStats();
+    sel=-1; chain=null; dests=[];
+    var steps=(state.turn==='r')?2:1;     /* tu jugada + la de la IA */
+    if(steps>hist.length) steps=hist.length;
+    for(var i=0;i<steps;i++) state=hist.pop();
+    render();
+    renderWin();
+  }
+
+  function hintAction(){
+    if(state.over){ toast('Partida terminada: pulsa Nuevo'); return; }
+    if(aiThinking||state.turn!=='r'){ toast('Espera a la IA'); return; }
+    if(chain){ toast('Termina antes el salto en curso'); return; }
+    clearHint();
+    var mv=chooseMove(state,diff);
+    if(!mv){ toast('Sin jugadas disponibles'); render(); return; }
+    hintFrom=mv.from; hintTo=mv.path[1];
+    render();
+    toast(mv.jumps?('Pista: salta y encadena '+mv.jumps+' salto'+(mv.jumps>1?'s':'')):'Pista: mueve la ficha marcada');
+    hintTimer=setTimeout(function(){ clearHint(); render(); },3000);
+  }
+
+  /* ---------- cableado ---------- */
+  $('#board').addEventListener('click',function(e){
+    var el=e&&e.target&&e.target.closest?e.target.closest('.cell'):null;
+    if(!el) return;
+    var i=parseInt(el.dataset.i,10);
+    if(!isNaN(i)) onCell(i);
+  });
+  $('#btnNew').addEventListener('click',newGame);
+  $('#btnAgain').addEventListener('click',newGame);
+  $('#btnUndo').addEventListener('click',undo);
+  $('#btnHint').addEventListener('click',hintAction);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('sc.diff',String(diff)); }
+    catch(err){}
+    renderWin();
+    toast('Dificultad: '+DIFF_NAMES[diff]);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='n') newGame();
+    else if(k==='u') undo();
+    else if(k==='h') hintAction();
+    else if(k==='escape'){
+      if(chain){ commit(chain); return; }   /* escape cierra el salto en curso */
+      if(sel>=0){ sel=-1; dests=[]; render(); }
+    }
+  });
+  window.addEventListener('resize',function(){
+    if(resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer=setTimeout(layout,120);
+  });
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  buildBoard();
+  newGame();
+}
+</script>
+</body>
+</html>
