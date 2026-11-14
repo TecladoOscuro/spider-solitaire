@@ -7,8 +7,8 @@
 <title>Sudoku</title>
 <style>
 :root{
-  --cell:#f3eddd;
-  --given-bg:#e3dcc4;
+  --cell:#ffffff;
+  --given-bg:#ffffff;
   --line:#c9c1a8;
   --line-thick:#5d5647;
 }
@@ -60,7 +60,7 @@ main.play{
 }
 .cell{
   display:grid;place-items:center;position:relative;
-  background:var(--cell);color:#0d3c78;font-weight:500;
+  background:var(--cell);color:#0d3c78;font-weight:600;
   font-size:clamp(15px,5vw,30px);line-height:1;
   border-right:1px solid var(--line);border-bottom:1px solid var(--line);
   cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;
@@ -71,8 +71,8 @@ main.play{
 .cell.bB{border-bottom:2.5px solid var(--line-thick)}
 .cell:focus{outline:none}
 .cell:focus-visible{outline:2px solid #40c4ff;outline-offset:-2px}
-.cell.given{background:var(--given-bg);color:#1b5e20;font-weight:700}
-.cell.peer{background:#e6e3c7}
+.cell.given{background:var(--given-bg);color:#161f16;font-weight:700}
+.cell.peer{background:#d8e9fa}
 .cell.same{background:#ffef9e}
 .cell.sel{background:#ffd54f;box-shadow:inset 0 0 0 3px #ef6c00}
 .cell.wrong{background:#f6c9c7;color:#c62828}
