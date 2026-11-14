@@ -12,6 +12,9 @@ Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin
 | Solitario (Klondike) | `klondike.html` | 1 carta, 3 cartas |
 | Sudoku | `sudoku.html` | Fácil, Medio, Difícil, Experto |
 | Buscaminas | `buscaminas.html` | 9×9/10 · 16×16/40 · 30×16/99 |
+| Cuatro en Línea | `conecta4.html` | Fácil, Medio, Difícil (IA alfa-beta) |
+| Reversi | `reversi.html` | Fácil, Medio, Difícil (IA alfa-beta) |
+| Memoria | `memoria.html` | 4×4 · 6×6 · 8×8 |
 
 El índice `index.html` es el menú de entrada.
 

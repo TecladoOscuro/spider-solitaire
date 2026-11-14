@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Cuatro en Línea</title>
+<style>
+:root{--cw:clamp(28px,min(9.4vw,11.6vh),76px);--gap:clamp(4px,1vw,9px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%);
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- turno ---------- */
+.statusbar{display:flex;justify-content:center;padding:10px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.r{background:#e53935;color:#e53935}
+.dot.y{background:#fdd835;color:#fdd835}
+.dot.draw{background:#90a4ae;color:#90a4ae}
+
+/* ---------- tablero ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;min-height:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:clamp(3px,.7vh,8px)}
+.picks{display:flex;gap:var(--gap);padding:0 calc(var(--gap) + 2px)}
+.pick{
+  width:var(--cw);height:calc(var(--cw)*.4);display:grid;place-items:center;border-radius:999px;
+}
+.pick::after{
+  content:"▼";font-size:calc(var(--cw)*.32);line-height:1;color:rgba(255,255,255,.34);
+  transition:.15s;
+}
+.pick.on::after{color:#fff;text-shadow:0 0 10px rgba(255,255,255,.85);transform:scale(1.18)}
+.pick.hintp::after{color:#ffee58;text-shadow:0 0 10px rgba(255,238,88,.95);animation:blink .5s steps(1) infinite}
+@keyframes blink{50%{opacity:.25}}
+.board{
+  display:flex;gap:var(--gap);padding:var(--gap);
+  background:linear-gradient(180deg,#4f93e6,#1d5fb2);
+  border-radius:clamp(8px,1.4vw,16px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.4),inset 0 -3px 0 rgba(0,0,0,.28);
+}
+.column{
+  display:flex;flex-direction:column;gap:var(--gap);padding:2px;
+  border-radius:calc(var(--cw)*.2);transition:background .12s;
+  cursor:pointer;touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.column.hl{background:rgba(255,255,255,.17)}
+.column.hint{animation:hintcol .55s ease-in-out infinite alternate}
+@keyframes hintcol{
+  from{background:rgba(255,238,88,.16)}
+  to{background:rgba(255,238,88,.5)}
+}
+.cell{
+  width:var(--cw);height:var(--cw);border-radius:50%;
+  background:#0d3a1e;
+  box-shadow:inset 0 3px 7px rgba(0,0,0,.6),inset 0 -1px 0 rgba(255,255,255,.06);
+  display:grid;place-items:center;position:relative;
+}
+.cell.won{animation:cellpulse .65s ease-in-out infinite alternate}
+@keyframes cellpulse{
+  from{box-shadow:inset 0 3px 7px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.55)}
+  to{box-shadow:inset 0 3px 7px rgba(0,0,0,.6),0 0 0 6px rgba(255,255,255,.95)}
+}
+.cell.won .disc{filter:drop-shadow(0 0 5px rgba(255,255,255,.9))}
+.disc{
+  width:100%;height:100%;border-radius:50%;
+  box-shadow:inset 0 -4px 8px rgba(0,0,0,.35),inset 0 4px 7px rgba(255,255,255,.45),0 2px 4px rgba(0,0,0,.35);
+}
+.disc.r{background:radial-gradient(circle at 34% 28%,#ff9a90,#e53935 52%,#a91f1a)}
+.disc.y{background:radial-gradient(circle at 34% 28%,#ffe9a0,#fdd835 52%,#e0a800)}
+.disc.fall{animation:drop .42s both}
+@keyframes drop{
+  0%{transform:translateY(calc(-1 * var(--drop,6) * (var(--cw) + var(--gap))));animation-timing-function:cubic-bezier(.55,.06,.68,.19)}
+  72%{transform:translateY(0);animation-timing-function:cubic-bezier(.3,1.5,.6,1)}
+  86%{transform:translateY(-13%)}
+  100%{transform:translateY(0)}
+}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+.winline{display:flex;gap:7px;justify-content:center;margin:4px 0 2px}
+.winline[hidden]{display:none}
+.mini{
+  width:30px;height:30px;border-radius:50%;display:block;
+  animation:minipulse .65s ease-in-out infinite alternate;
+}
+.mini.r{background:radial-gradient(circle at 34% 28%,#ff9a90,#e53935 52%,#a91f1a)}
+.mini.y{background:radial-gradient(circle at 34% 28%,#ffe9a0,#fdd835 52%,#e0a800)}
+@keyframes minipulse{
+  from{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.75)}
+  to{transform:scale(1.14);box-shadow:0 0 0 6px rgba(255,255,255,.22)}
+}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🔴</span><h1>Cuatro en Línea</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Victorias</span><b id="statW">0</b></div>
+    <div class="stat"><span>Tablas</span><b id="statD">0</b></div>
+    <div class="stat"><span>Derrotas</span><b id="statL">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad de la IA">
+      <option value="1">Fácil</option>
+      <option value="2">Medio</option>
+      <option value="3">Difícil</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer tu jugada y la de la IA (tecla U)">Deshacer</button>
+    <button class="btn" id="btnHint" title="Pista: columna recomendada (tecla H)">Pista</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot r" id="turnDot"></i><span id="status">Tu turno</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="picks" id="picks"></div>
+    <div class="board" id="board"></div>
+  </div>
+</main>
+
+<div class="hint-bar">Toca una columna para soltar tu disco rojo · La IA juega en amarillo · Teclas: N nuevo · U deshacer · H pista</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <div class="winline" id="winLine" hidden></div>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE CUATRO EN LÍNEA PURO — sin IIFE, sin 'use strict'.
+   Sin referencias a document / window / setTimeout / localStorage en el
+   motor: todo es JavaScript plano evaluable en Node.
+
+   DISEÑO DEL ESTADO (documentado):
+     - Tablero de 7 columnas (0..6) × 6 filas (0..5).
+     - Índice de celda: idx = col*6 + row   (almacenamiento POR COLUMNA,
+       "col-major"), row 0 = fila de ABAJO (por donde caen los discos).
+       cells[idx] es null | 'r' (tú, rojo) | 'y' (IA, amarillo).
+     - state = {cells, turn, over, result, line}
+         turn   : 'r' | 'y'   → a quién le toca
+         over   : boolean
+         result : null | 'r' | 'y' | 'draw'
+         line   : array con los 4 índices de la línea ganadora, o null
+     - applyMove() NUNCA muta: devuelve un estado nuevo (copia de cells).
+     - applyMove() devuelve null si la columna está llena (jugada ilegal)
+       o si el estado recibido no existe.
+     - generateMoves() = jugadas legales ordenadas CENTRO PRIMERO
+       (mejora la poda alfa-beta). legalMoves() = mismas en orden 0..6.
+   ========================================================================= */
+
+var COLS=7, ROWS=6, NCELLS=42;
+var WIN_SCORE=100000;
+var INF=1e9;
+
+/* Pesos de evaluación. */
+var OPEN3=50;      /* 3 en línea con hueco jugable */
+var TWO=8;         /* 2 en línea con dos huecos */
+var DOUBLE=30000;  /* amenaza doble: dos tres abiertos jugables */
+var CENTER_W=[1,2,3,4,3,2,1];
+
+/* Orden de búsqueda: centro primero. */
+var CENTER_ORDER=[3,2,4,1,5,0,6];
+
+var ENGINE_TIMEOUT={};
+
+/* Las 69 ventanas de4 (24 horizontales + 21 verticales + 24 diagonales). */
+function buildWindows(){
+  var w=[],c,r;
+  for(r=0;r<ROWS;r++) for(c=0;c<4;c++) w.push([c*6+r,(c+1)*6+r,(c+2)*6+r,(c+3)*6+r]);
+  for(c=0;c<COLS;c++) for(r=0;r<3;r++) w.push([c*6+r,c*6+r+1,c*6+r+2,c*6+r+3]);
+  for(c=0;c<4;c++) for(r=0;r<3;r++) w.push([c*6+r,(c+1)*6+r+1,(c+2)*6+r+2,(c+3)*6+r+3]);
+  for(c=0;c<4;c++) for(r=3;r<ROWS;r++) w.push([c*6+r,(c+1)*6+r-1,(c+2)*6+r-2,(c+3)*6+r-3]);
+  return w;
+}
+var WINDOWS=buildWindows();
+
+/* ---------- estado ---------- */
+function initialState(){
+  var cells=new Array(NCELLS);
+  for(var i=0;i<NCELLS;i++) cells[i]=null;
+  return {cells:cells,turn:'r',over:false,result:null,line:null};
+}
+
+/* Columnas sin hueco (llenas). */
+function fullColumns(st){
+  var out=[];
+  for(var c=0;c<COLS;c++){
+    var full=true;
+    for(var r=0;r<ROWS;r++){ if(st.cells[c*6+r]===null){ full=false; break; } }
+    if(full) out.push(c);
+  }
+  return out;
+}
+
+/* Columnas 0..6 con al menos una casilla libre. */
+function legalMoves(st){
+  var out=[];
+  for(var c=0;c<COLS;c++){
+    for(var r=0;r<ROWS;r++){ if(st.cells[c*6+r]===null){ out.push(c); break; } }
+  }
+  return out;
+}
+
+/* Igual que legalMoves pero ordenadas centro primero (para la IA). */
+function generateMoves(st){
+  var out=[];
+  for(var i=0;i<CENTER_ORDER.length;i++){
+    var c=CENTER_ORDER[i];
+    for(var r=0;r<ROWS;r++){ if(st.cells[c*6+r]===null){ out.push(c); break; } }
+  }
+  return out;
+}
+
+/* Fila libre más baja de una columna, o -1 si está llena. */
+function lowestFreeRow(cells,col){
+  for(var r=0;r<ROWS;r++) if(cells[col*6+r]===null) return r;
+  return -1;
+}
+
+/* ---------- detección de4 en línea ---------- */
+/* Si hay4 iguales seguidas pasando por (col,row) en la dirección (dc,dr),
+   devuelve los 4 índices consecuentes que contienen esa casilla; si no, null. */
+function lineFrom(cells,col,row,dc,dr){
+  var v=cells[col*6+row];
+  if(v===null||v===undefined) return null;
+  var back=0,fwd=0,k,cc,rr;
+  for(k=1;;k++){
+    cc=col-dc*k; rr=row-dr*k;
+    if(cc<0||cc>=COLS||rr<0||rr>=ROWS) break;
+    if(cells[cc*6+rr]!==v) break;
+    back++;
+  }
+  for(k=1;;k++){
+    cc=col+dc*k; rr=row+dr*k;
+    if(cc<0||cc>=COLS||rr<0||rr>=ROWS) break;
+    if(cells[cc*6+rr]!==v) break;
+    fwd++;
+  }
+  if(back+fwd+1<4) return null;
+  var a=Math.min(back,3), b=3-a, out=[];
+  for(k=a;k>=0;k--) out.push((col-dc*k)*6+(row-dr*k));
+  for(k=1;k<=b;k++) out.push((col+dc*k)*6+(row+dr*k));
+  return out;
+}
+
+/* Línea ganadora que termina en la última ficha de la columna `col`
+   (la más alta ocupada = la recién colocada). null si no gana. */
+function winnerLine(cells,col){
+  if(col<0||col>=COLS) return null;
+  var row=-1;
+  for(var r=0;r<ROWS;r++){
+    var v=cells[col*6+r];
+    if(v!==null&&v!==undefined) row=r;
+  }
+  if(row<0) return null;
+  var dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(var d=0;d<dirs.length;d++){
+    var l=lineFrom(cells,col,row,dirs[d][0],dirs[d][1]);
+    if(l) return l;
+  }
+  return null;
+}
+
+/* ---------- aplicación de jugadas (deep copy, no muta) ---------- */
+function applyMove(st,col){
+  if(!st) return null;
+  var cells=st.cells.slice();
+  var row=lowestFreeRow(cells,col);
+  if(row<0) return null;                 /* columna llena: ilegal */
+  var mover=st.turn;
+  cells[col*6+row]=mover;
+  var line=winnerLine(cells,col);
+  var over=!!line;
+  var result=line?mover:null;
+  if(!over&&legalMoves({cells:cells}).length===0){ over=true; result='draw'; }
+  return {
+    cells:cells,
+    turn:(mover==='r'?'y':'r'),
+    over:over,
+    result:result,
+    line:line
+  };
+}
+
+/* ---------- evaluación ---------- */
+function playableCell(cells,idx){
+  var col=Math.floor(idx/6), row=idx%6;
+  for(var r=0;r<row;r++) if(cells[col*6+r]===null) return false;
+  return true;
+}
+
+/* Puntuación para `player`:4 en línea +100000 ·3 abiertas jugables +50 ·
+   2 +8 · control de centro (peso por columna) · amenaza doble ±30000. */
+function evaluate(cells,player){
+  var opp=(player==='r')?'y':'r';
+  var score=0, mine=0, theirs=0;
+  for(var i=0;i<WINDOWS.length;i++){
+    var w=WINDOWS[i], p=0, o=0, e=-1;
+    for(var k=0;k<4;k++){
+      var v=cells[w[k]];
+      if(v===player) p++;
+      else if(v===opp) o++;
+      else e=w[k];
+    }
+    if(p===4){ score+=WIN_SCORE; continue; }
+    if(o===0&&p===3&&e>=0){
+      if(playableCell(cells,e)){ score+=OPEN3; mine++; }
+      continue;
+    }
+    if(o===3&&p===0&&e>=0){
+      if(playableCell(cells,e)) theirs++;
+      continue;
+    }
+    if(o===0&&p===2&&e>=0){ score+=TWO; continue; }
+  }
+  for(var c=0;c<COLS;c++){
+    var cw=CENTER_W[c];
+    for(var r=0;r<ROWS;r++){
+      var vv=cells[c*6+r];
+      if(vv===player) score+=cw;
+      else if(vv===opp) score-=cw;
+    }
+  }
+  if(mine>=2) score+=DOUBLE;
+  if(theirs>=2) score-=DOUBLE;
+  return score;
+}
+
+function engineNow(){
+  if(typeof performance!=='undefined'&&performance&&typeof performance.now==='function'){
+    return performance.now();
+  }
+  return Date.now();
+}
+
+/* Negamax con poda alfa-beta. Devuelve la puntuación para el que mueve. */
+function negamax(st,depth,alpha,beta,ctx){
+  if(st.over){
+    if(st.result==='draw') return 0;
+    return (st.result===st.turn)?WIN_SCORE:-WIN_SCORE;
+  }
+  if(depth<=0){
+    var s=evaluate(st.cells,st.turn);
+    if(ctx.noise) s+=(Math.random()*2-1)*ctx.noise;
+    return s;
+  }
+  ctx.nodes++;
+  if((ctx.nodes&255)===0&&engineNow()>=ctx.deadline) throw ENGINE_TIMEOUT;
+  var moves=generateMoves(st);
+  if(!moves.length) return 0;
+  var best=-Infinity;
+  for(var i=0;i<moves.length;i++){
+    var v=-negamax(applyMove(st,moves[i]),depth-1,-beta,-alpha,ctx);
+    if(v>best) best=v;
+    if(best>alpha) alpha=best;
+    if(alpha>=beta) break;
+  }
+  return best;
+}
+
+function searchRoot(st,depth,ctx){
+  var moves=generateMoves(st);
+  var best=null,bestV=-Infinity,alpha=-Infinity;
+  for(var i=0;i<moves.length;i++){
+    var v=-negamax(applyMove(st,moves[i]),depth-1,-INF,-alpha,ctx);
+    if(v>bestV){ bestV=v; best=moves[i]; }
+    if(v>alpha) alpha=v;
+  }
+  return {move:best,score:bestV};
+}
+
+/* Niveles:
+     1 Fácil   ≤300ms  ruido ±60  profundidad ≤3   (falla a propósito)
+     2 Medio   ≤800ms  ruido ±20  profundidad ≤5
+     3 Difícil ≤2000ms sin ruido  profundidad ≤6
+   Iterative deepening con time-box: devuelve la jugada de la última
+   profundidad COMPLETADA. Devuelve SIEMPRE una columna de generateMoves
+   (que coincide con legalMoves), o null si no hay jugada legal. */
+function chooseMove(st,level){
+  if(!(level>=1)) level=2;
+  if(level>3) level=3;
+  level=Math.floor(level);
+  var moves=generateMoves(st);
+  if(!moves.length) return null;
+  if(moves.length===1) return moves[0];
+  var budget=[0,300,800,2000][level];
+  var noise=[0,60,20,0][level];
+  var maxDepth=[0,3,5,6][level];
+  var ctx={deadline:engineNow()+budget,nodes:0,noise:noise};
+  var best=moves[0];
+  for(var depth=1;depth<=maxDepth;depth++){
+    if(engineNow()>=ctx.deadline) break;
+    var res;
+    try{
+      res=searchRoot(st,depth,ctx);
+    }catch(e){
+      if(e!==ENGINE_TIMEOUT) throw e;
+      break;
+    }
+    if(res&&res.move) best=res.move;
+    if(res&&res.score>=WIN_SCORE) break;   /* ganancia forzada: no seguir */
+  }
+  return (moves.indexOf(best)>=0)?best:moves[0];
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=initialState();
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage guardado dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('c4.diff')||'2',10);
+      if(stored===1||stored===2||stored===3) diff=stored;
+    }
+  }catch(e){}
+
+  var stats={w:0,d:0,l:0};
+  try{
+    if(typeof localStorage!=='undefined'){
+      var rawStats=localStorage.getItem('c4.stats');
+      if(rawStats){
+        var parsed=JSON.parse(rawStats);
+        if(parsed&&typeof parsed==='object'){
+          stats.w=parsed.w|0; stats.d=parsed.d|0; stats.l=parsed.l|0;
+        }
+      }
+    }
+  }catch(e){}
+
+  var DIFF_NAMES=['','Fácil','Medio','Difícil'];
+  var RESULT_TEXT={draw:'¡Empate!',r:'¡Has ganado!',y:'Gana la IA'};
+
+  var hist=[];            /* estados anteriores, para deshacer */
+  var aiThinking=false;
+  var aiToken=0;          /* invalida la IA en curso (nuevo/deshacer) */
+  var anim=null;          /* {col,row} del último disco colocado */
+  var hintCol=-1, hintTimer=null, winTimer=null;
+  var hoverCol=-1;
+  var toastTimer=null;
+  var cellEls=[], colEls=[];   /* cellEls[col][row] con row0 = abajo */
+
+  /* ---------- util UI ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
+  }
+  function saveStats(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('c4.stats',JSON.stringify(stats));
+    }catch(e){}
+  }
+  function paintStats(){
+    $('#statW').textContent=String(stats.w);
+    $('#statD').textContent=String(stats.d);
+    $('#statL').textContent=String(stats.l);
+  }
+  function setStatus(){
+    var txt,dot;
+    if(state.over){
+      txt=RESULT_TEXT[state.result]||'Terminada';
+      dot=state.result==='draw'?'draw':state.result;
+    }else if(aiThinking){
+      txt='IA piensa…'; dot='y';
+    }else{
+      txt='Tu turno'; dot='r';
+    }
+    $('#status').textContent=txt;
+    $('#turnDot').className='dot '+dot;
+  }
+
+  /* ---------- tablero ---------- */
+  function buildBoard(){
+    var b=$('#board'), pk=$('#picks');
+    b.innerHTML=''; pk.innerHTML='';
+    cellEls=[]; colEls=[];
+    for(var c=0;c<COLS;c++){
+      var col=document.createElement('div');
+      col.className='column';
+      col.dataset.col=String(c);
+      var cellsInCol=new Array(ROWS);
+      for(var r=ROWS-1;r>=0;r--){       /* de arriba (fila5) a abajo (fila0) */
+        var d=document.createElement('div');
+        d.className='cell';
+        d.dataset.v='';
+        col.appendChild(d);
+        cellsInCol[r]=d;
+      }
+      b.appendChild(col);
+      colEls[c]=col;
+      cellEls[c]=cellsInCol;
+      var p=document.createElement('div');
+      p.className='pick';
+      p.dataset.col=String(c);
+      pk.appendChild(p);
+    }
+  }
+
+  function clearHint(){
+    if(hintTimer){ clearTimeout(hintTimer); hintTimer=null; }
+    if(hintCol>=0&&colEls[hintCol]){
+      colEls[hintCol].classList.remove('hint');
+      var p=$('#picks').children[hintCol];
+      if(p) p.classList.remove('hintp');
+    }
+    hintCol=-1;
+  }
+  function setHover(col){
+    if(hoverCol===col) return;
+    if(hoverCol>=0&&colEls[hoverCol]){
+      colEls[hoverCol].classList.remove('hl');
+      var p0=$('#picks').children[hoverCol];
+      if(p0) p0.classList.remove('on');
+    }
+    hoverCol=col;
+    if(col>=0&&colEls[col]){
+      colEls[col].classList.add('hl');
+      var p1=$('#picks').children[col];
+      if(p1) p1.classList.add('on');
+    }
+  }
+
+  /* Disco recién colocado: cae desde `drop` celdas por encima de su fila. */
+  function fallDisc(d,drop){
+    if(!d) return;
+    d.style.setProperty('--drop',String(drop));
+    d.classList.add('fall');
+    setTimeout(function(){ if(d&&d.parentNode) d.classList.remove('fall'); },520);
+  }
+
+  function render(){
+    var won=state.line;
+    for(var c=0;c<COLS;c++){
+      for(var r=0;r<ROWS;r++){
+        var el=cellEls[c][r];
+        var v=state.cells[c*6+r];
+        var key=v||'';
+        var isWon=!!(won&&won.indexOf(c*6+r)>=0);
+        var cls='cell'+(isWon?' won':'');
+        if(el.dataset.v!==key||el.className!==cls){
+          el.className=cls;
+          el.dataset.v=key;
+          el.innerHTML=v?'<div class="disc '+v+'"></div>':'';
+          if(v&&anim&&anim.col===c&&anim.row===r&&el.firstChild){
+            fallDisc(el.firstChild,ROWS-r);
+          }
+        }
+      }
+    }
+    anim=null;
+    paintStats();
+    setStatus();
+  }
+
+  function renderWin(){
+    var show=!!state.over;
+    $('#win').classList.toggle('show',show);
+    if(!show) return;
+    $('#winTitle').textContent=RESULT_TEXT[state.result]||'Terminada';
+    $('#winStats').textContent='Victorias '+stats.w+' · Tablas '+stats.d+
+      ' · Derrotas '+stats.l+' · '+DIFF_NAMES[diff];
+    var strip=$('#winLine');
+    strip.innerHTML='';
+    if(state.line&&state.line.length===4){
+      for(var i=0;i<state.line.length;i++){
+        var m=document.createElement('span');
+        m.className='mini '+state.cells[state.line[i]];
+        strip.appendChild(m);
+      }
+      strip.hidden=false;
+    }else{
+      strip.hidden=true;
+    }
+  }
+
+  /* ---------- partida ---------- */
+  function newGame(){
+    aiToken++;
+    aiThinking=false;
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    clearHint();
+    setHover(-1);
+    hist=[];
+    state=initialState();
+    anim=null;
+    render();
+    renderWin();
+  }
+  function pushHist(){ hist.push(state); }   /* inmutable: basta la referencia */
+
+  function countStats(){
+    if(state.result==='r') stats.w++;
+    else if(state.result==='y') stats.l++;
+    else if(state.result==='draw') stats.d++;
+    saveStats();
+  }
+  function revertStats(){
+    if(state.result==='r'&&stats.w>0) stats.w--;
+    else if(state.result==='y'&&stats.l>0) stats.l--;
+    else if(state.result==='draw'&&stats.d>0) stats.d--;
+    saveStats();
+  }
+
+  function finish(){
+    aiThinking=false;
+    countStats();
+    render();
+    if(winTimer) clearTimeout(winTimer);
+    winTimer=setTimeout(renderWin,900);     /* deja ver la línea pulsando */
+  }
+
+  function startAI(){
+    aiThinking=true;
+    setStatus();
+    var token=aiToken;
+    setTimeout(function(){
+      if(token!==aiToken||state.over) return;
+      var mv=chooseMove(state,diff);
+      aiThinking=false;
+      if(mv===null){ finish(); return; }
+      var row=lowestFreeRow(state.cells,mv);
+      pushHist();
+      state=applyMove(state,mv);
+      if(!state){ aiThinking=false; setStatus(); return; }
+      anim={col:mv,row:row};
+      render();
+      if(state.over) finish(); else setStatus();
+    },45);
+  }
+
+  function playerMove(col){
+    if(!state||state.over||aiThinking) return;
+    if(state.turn!=='r') return;
+    if(legalMoves(state).indexOf(col)<0){ toast('Esa columna está llena'); return; }
+    clearHint();
+    var row=lowestFreeRow(state.cells,col);
+    pushHist();
+    state=applyMove(state,col);
+    if(!state){ setStatus(); return; }
+    anim={col:col,row:row};
+    render();
+    if(state.over) finish(); else startAI();
+  }
+
+  function undo(){
+    if(aiThinking){ aiToken++; aiThinking=false; }
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    if(!hist.length){ toast('Nada que deshacer'); renderWin(); setStatus(); return; }
+    clearHint();
+    if(state.over) revertStats();
+    /* deshace tu jugada + la de la IA (1 si la IA aún no ha respondido) */
+    var steps=(state.turn==='r')?2:1;
+    if(steps>hist.length) steps=hist.length;
+    for(var i=0;i<steps;i++) state=hist.pop();
+    anim=null;
+    render();
+    renderWin();
+  }
+
+  function hintAction(){
+    if(state.over){ toast('Partida terminada: pulsa Nuevo'); return; }
+    if(aiThinking||state.turn!=='r'){ toast('Espera a la IA'); return; }
+    clearHint();
+    var mv=chooseMove(state,diff);
+    if(mv===null){ toast('Sin jugadas disponibles'); return; }
+    hintCol=mv;
+    colEls[mv].classList.add('hint');
+    var p=$('#picks').children[mv];
+    if(p) p.classList.add('hintp');
+    toast('Pista: columna '+(mv+1));
+    hintTimer=setTimeout(clearHint,3000);
+  }
+
+  /* ---------- cableado ---------- */
+  /* Tanto el tablero como las flechas de arriba sueltan el disco. */
+  function colFromEvent(e){
+    var el=e&&e.target&&e.target.closest?e.target.closest('[data-col]'):null;
+    return el?parseInt(el.dataset.col,10):-1;
+  }
+  $('.stage').addEventListener('click',function(e){
+    var col=colFromEvent(e);
+    if(col>=0) playerMove(col);
+  });
+  $('.stage').addEventListener('pointerover',function(e){ setHover(colFromEvent(e)); });
+  $('.stage').addEventListener('pointerleave',function(){ setHover(-1); });
+
+  $('#btnNew').addEventListener('click',newGame);
+  $('#btnAgain').addEventListener('click',newGame);
+  $('#btnUndo').addEventListener('click',undo);
+  $('#btnHint').addEventListener('click',hintAction);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('c4.diff',String(diff)); }
+    catch(err){}
+    renderWin();
+    toast('Dificultad: '+DIFF_NAMES[diff]);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='n') newGame();
+    else if(k==='u') undo();
+    else if(k==='h') hintAction();
+  });
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  buildBoard();
+  newGame();
+}
+</script>
+</body>
+</html>

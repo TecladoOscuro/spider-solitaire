@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Reversi</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%);
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px;color:#ffca28}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+.status{
+  width:max-content;margin:11px auto 0;padding:6px 18px;border-radius:999px;
+  background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.15);
+  font-size:14px;font-weight:650;letter-spacing:.3px;font-variant-numeric:tabular-nums;
+}
+
+/* ---------- tablero clásico 8x8 ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:14px;min-height:0}
+.board{
+  display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+  width:min(94vw,540px,calc(100dvh - 230px));aspect-ratio:1;
+  border:10px solid #0a3a20;border-radius:8px;overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.06);
+}
+.sq{
+  position:relative;display:grid;place-items:center;overflow:hidden;
+  background:linear-gradient(145deg,#17764a,#0e5733);
+  border:1px solid rgba(0,0,0,.55);
+  cursor:default;touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+/* puntos de estrella en las cuatro esquinas del bloque central */
+.sq.star-tl::before{content:"";position:absolute;left:2px;top:2px;width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.5)}
+.sq.star-tr::before{content:"";position:absolute;right:2px;top:2px;width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.5)}
+.sq.star-bl::before{content:"";position:absolute;left:2px;bottom:2px;width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.5)}
+.sq.star-br::before{content:"";position:absolute;right:2px;bottom:2px;width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.5)}
+.sq.legal{cursor:pointer}
+.sq.legal::after{
+  content:"";position:absolute;width:26%;height:26%;border-radius:50%;
+  background:rgba(255,255,255,.26);box-shadow:0 0 8px rgba(255,255,255,.35);
+  pointer-events:none;
+}
+.sq.legal:hover::after{background:rgba(255,255,255,.5);transform:scale(1.15)}
+.sq.chosen{box-shadow:inset 0 0 0 3px #ffd54f}
+.sq.hint{animation:hintglow .7s ease-in-out infinite alternate}
+@keyframes hintglow{
+  from{box-shadow:inset 0 0 0 3px rgba(64,196,255,.75)}
+  to{box-shadow:inset 0 0 0 4px #ffee58}
+}
+.disc{
+  position:relative;z-index:1;width:82%;aspect-ratio:1;border-radius:50%;pointer-events:none;
+  box-shadow:0 4px 9px rgba(0,0,0,.45), inset 0 -5px 10px rgba(0,0,0,.38), inset 0 5px 8px rgba(255,255,255,.22);
+  user-select:none;-webkit-user-select:none;
+}
+.disc.b{background:radial-gradient(circle at 34% 28%,#6b6b6b,#1c1c1c 55%,#000)}
+.disc.w{background:radial-gradient(circle at 34% 28%,#ffffff,#ececec 55%,#c2c2c2)}
+@keyframes popIn{from{transform:scale(.05);opacity:.4}to{transform:scale(1);opacity:1}}
+.disc.placing{animation:popIn .22s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes flipx{0%{transform:scaleX(1)}50%{transform:scaleX(.05)}100%{transform:scaleX(1)}}
+.disc.flip{animation:flipx .28s ease-in-out}
+
+/* ---------- toast / overlay ---------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:28px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:6px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+.winbox p.count{font-size:17px;font-weight:650;opacity:1}
+.hint-bar{padding:6px 14px 16px;font-size:12px;opacity:.6;text-align:center}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .status{margin-top:8px;font-size:13px;padding:5px 14px}
+  .board-wrap{padding:10px 8px 6px}
+  .board{border-width:6px;width:min(96vw,540px,calc(100dvh - 215px))}
+  .hint-bar{padding:4px 10px 12px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{padding:6px 9px;font-size:12.5px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">◉</span><h1>Reversi</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Negras</span><b id="stB">2</b></div>
+    <div class="stat"><span>Blancas</span><b id="stW">2</b></div>
+    <div class="stat"><span>Récord</span><b id="stWLD" title="Victorias - Derrotas - Empates">0-0-0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad">
+      <option value="1">Fácil</option>
+      <option value="2">Medio</option>
+      <option value="3">Difícil</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nueva partida">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer tu jugada y la respuesta de la IA">Deshacer</button>
+    <button class="btn" id="btnHint" title="Resalta la jugada recomendada">Pista</button>
+  </div>
+</header>
+
+<div class="status" id="status">Tu turno</div>
+
+<main class="board-wrap">
+  <div class="board" id="board"></div>
+</main>
+
+<div class="hint-bar">Negras (tú) empiezan · Toca una casilla con punto para jugar · Teclas: N nuevo · U deshacer · H pista</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle">¡Has ganado!</h2>
+    <p class="count" id="winCount"></p>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* ================= MOTOR DE REVERSI (OTHELLO) — funciones puras ================= */
+/* Diseño documentado:
+   - Tablero 8x8. `cells` es un array de 64 casillas en orden fila-major:
+     índice = r*8+c con r=0 la fila SUPERIOR y c=0 la columna izquierda.
+     Valores: null (vacía) | 'b' (negro, tú) | 'w' (blanco, la IA).
+   - El negro empieza. Centro inicial: negras en e4 (36) y d5 (27),
+     blancas en d4 (35) y e5 (28). Los 4 discos centrales.
+   - Jugada legal: casilla vacía donde el bando que mueve flanquea al menos
+     un disco rival en alguna de las 8 direcciones (el tramo rival debe
+     terminar en un disco propio). flipsFor() devuelve SOLO los índices a
+     voltear (no incluye la casilla jugada).
+   - applyMove() SIEMPRE devuelve un estado NUEVO (deep copy): no muta.
+   - Tras jugar cambia el turno y resuelve el auto-pase:
+       * si el nuevo turno NO tiene jugadas y el otro SÍ → pasa: el turno
+         vuelve al otro y `passed` queda en el bando que no pudo jugar;
+       * si NINGUNO tiene jugadas → over=true y `result` = 'b' | 'w' |
+         'draw' según el recuento de discos;
+       * si hay jugadas → passed=null.
+     Invariante resultante: si !over entonces state.turn SIEMPRE tiene
+     jugadas legales (la IA nunca recibe un turno sin jugadas).
+   - Elegir nivel: 1=Fácil, 2=Medio, 3=Difícil (minimax alfa-beta con
+     time-box; ver chooseMove). */
+
+var DIRS=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+var ENGINE_TIMEOUT={};
+
+function otherSide(s){ return s==='b'?'w':'b'; }
+
+function engineNow(){
+  if(typeof performance!=='undefined'&&performance&&typeof performance.now==='function'){
+    return performance.now();
+  }
+  return Date.now();
+}
+
+/* ---------------- estado ---------------- */
+function initialState(){
+  var cells=new Array(64);
+  for(var i=0;i<64;i++) cells[i]=null;
+  cells[36]='b'; /* e4 negro */
+  cells[27]='b'; /* d5 negro */
+  cells[35]='w'; /* d4 blanco */
+  cells[28]='w'; /* e5 blanco */
+  return {cells:cells, turn:'b', over:false, result:null, passed:null};
+}
+
+function copyState(st){
+  return {cells:st.cells.slice(), turn:st.turn, over:!!st.over, result:st.result, passed:st.passed||null};
+}
+
+/* ---------------- flanqueos ---------------- */
+/* Índices que voltearía jugar en i con el bando `me`. Vacío = ilegal. */
+function flipsIn(cells, i, me){
+  var r=i>>3, c=i&7, out=[];
+  for(var d=0;d<8;d++){
+    var dr=DIRS[d][0], dc=DIRS[d][1];
+    var rr=r+dr, cc=c+dc, line=[];
+    while(rr>=0&&rr<8&&cc>=0&&cc<8){
+      var v=cells[rr*8+cc];
+      if(v===null) break;
+      if(v===me){
+        for(var k=0;k<line.length;k++) out.push(line[k]);
+        break;
+      }
+      line.push(rr*8+cc);
+      rr+=dr; cc+=dc;
+    }
+  }
+  return out;
+}
+
+function flipsFor(st, i){
+  if(!st||st.over) return [];
+  if(!(i>=0&&i<64)) return [];
+  if(st.cells[i]!==null) return [];
+  return flipsIn(st.cells, i, st.turn);
+}
+
+/* Jugadas legales de `side` sobre un array de celdas (sin pasar por estado). */
+function movesFor(cells, side){
+  var out=[];
+  for(var i=0;i<64;i++){
+    if(cells[i]!==null) continue;
+    if(flipsIn(cells, i, side).length) out.push(i);
+  }
+  return out;
+}
+
+function legalMoves(st){
+  if(!st||st.over) return [];
+  return movesFor(st.cells, st.turn);
+}
+
+function countDiscs(st){
+  var b=0, w=0, cells=st?st.cells:[];
+  for(var i=0;i<64;i++){
+    var v=cells[i];
+    if(v==='b') b++;
+    else if(v==='w') w++;
+  }
+  return {b:b, w:w};
+}
+
+function resultByCount(st){
+  var c=countDiscs(st);
+  if(c.b>c.w) return 'b';
+  if(c.w>c.b) return 'w';
+  return 'draw';
+}
+
+/* ---------------- aplicar jugada (estado NUEVO, sin mutar) ---------------- */
+function applyMove(st, i){
+  if(!st||st.over) return copyState(st);
+  var flips=flipsFor(st, i);
+  if(!flips.length) return copyState(st);   /* ilegal: copia intacta */
+  var ns=copyState(st);
+  ns.cells[i]=st.turn;
+  for(var k=0;k<flips.length;k++) ns.cells[flips[k]]=st.turn;
+  ns.turn=otherSide(st.turn);
+  ns.passed=null;
+  /* auto-pase / fin de partida */
+  if(movesFor(ns.cells, ns.turn).length===0){
+    var blocked=ns.turn;              /* bando que no puede jugar */
+    ns.passed=blocked;
+    ns.turn=otherSide(ns.turn);
+    if(movesFor(ns.cells, ns.turn).length===0){
+      ns.over=true;                   /* ninguno tiene jugadas: fin */
+      ns.result=resultByCount(ns);
+    }
+  }
+  return ns;
+}
+
+/* ---------------- evaluación ---------------- */
+/* Discos que una esquina CONQUISTA para `side`: la esquina + los discos
+   propios contiguos por los dos bordes (nunca se voltean). Si la esquina
+   está vacía, los cuadrados X/C vecinos son peligrosos: se penalizan. */
+var CORNERS=[
+  {i:0,  r:0, c:0, d:[[0,1],[1,0]]},
+  {i:7,  r:0, c:7, d:[[0,-1],[1,0]]},
+  {i:56, r:7, c:0, d:[[0,1],[-1,0]]},
+  {i:63, r:7, c:7, d:[[0,-1],[-1,0]]}
+];
+var ADJ_EMPTY_CORNER=[[9,1,8],[14,6,15],[49,48,57],[54,55,62]]; /* [diagonal, borde1, borde2] */
+
+function edgeRun(cells, r, c, dr, dc, side){
+  var n=0, rr=r+dr, cc=c+dc;
+  while(rr>=0&&rr<8&&cc>=0&&cc<8&&cells[rr*8+cc]===side){ n++; rr+=dr; cc+=dc; }
+  return n;
+}
+
+function stability(cells, side){
+  var s=0;
+  for(var k=0;k<4;k++){
+    var C=CORNERS[k], v=cells[C.i];
+    if(v===side){
+      s+=120;
+      s+=8*edgeRun(cells, C.r, C.c, C.d[0][0], C.d[0][1], side);
+      s+=8*edgeRun(cells, C.r, C.c, C.d[1][0], C.d[1][1], side);
+    }else if(v===null){
+      var a=ADJ_EMPTY_CORNER[k];
+      if(cells[a[0]]===side) s-=45;   /* X-cuadrado junto a esquina vacía */
+      if(cells[a[1]]===side) s-=35;   /* C-cuadrados */
+      if(cells[a[2]]===side) s-=35;
+    }
+  }
+  return s;
+}
+
+/* Eval desde la perspectiva del bando que mueve:
+   discos (más peso en el final), movilidad, frontera y estabilidad de esquinas. */
+function evalState(st){
+  var cells=st.cells, me=st.turn, opp=otherSide(me);
+  var my=0, their=0, empties=0, myF=0, theirF=0, i, r, c, d, rr, cc, v;
+  for(i=0;i<64;i++){
+    v=cells[i];
+    if(v===null){ empties++; continue; }
+    if(v===me) my++; else their++;
+  }
+  for(i=0;i<64;i++){                      /* frontera: disco con casilla vacía al lado */
+    v=cells[i];
+    if(v===null) continue;
+    r=i>>3; c=i&7;
+    for(d=0;d<8;d++){
+      rr=r+DIRS[d][0]; cc=c+DIRS[d][1];
+      if(rr<0||rr>7||cc<0||cc>7) continue;
+      if(cells[rr*8+cc]===null){
+        if(v===me) myF++; else theirF++;
+        break;
+      }
+    }
+  }
+  var score=(my-their)*(empties<=14?18:6);
+  score+=12*(movesFor(cells, me).length-movesFor(cells, opp).length);
+  score+=2*(theirF-myF);
+  score+=stability(cells, me)-stability(cells, opp);
+  return score;
+}
+
+/* Valor de posición terminada desde la perspectiva del bando que mueve. */
+function terminalValue(st){
+  var c=countDiscs(st);
+  var mine=(st.turn==='b')?c.b:c.w;
+  var theirs=(st.turn==='b')?c.w:c.b;
+  var d=mine-theirs;
+  if(d>0) return 100000+d;
+  if(d<0) return -100000+d;
+  return 0;
+}
+
+function isCorner(i){ return i===0||i===7||i===56||i===63; }
+
+function moveOrderScore(i){
+  var r=i>>3, c=i&7, s=0;
+  if(isCorner(i)) s+=1000;
+  else if(r===0||r===7||c===0||c===7) s-=100;      /* bordes malos salvo esquinas */
+  s-=(Math.abs(r-3.5)+Math.abs(c-3.5))*2;          /* preferir el centro */
+  return s;
+}
+
+function orderMoves(moves){
+  return moves.slice().sort(function(a,b){ return moveOrderScore(b)-moveOrderScore(a); });
+}
+
+/* ---------------- minimax alfa-beta ---------------- */
+function negamax(st, depth, alpha, beta, ctx){
+  ctx.nodes++;
+  if((ctx.nodes&63)===0&&engineNow()>=ctx.deadline) throw ENGINE_TIMEOUT;
+  if(st.over) return terminalValue(st);
+  if(depth<=0) return evalState(st);
+  var moves=movesFor(st.cells, st.turn);
+  if(!moves.length) return terminalValue(st);      /* no debería ocurrir (invariante) */
+  moves=orderMoves(moves);
+  var best=-Infinity;
+  for(var i=0;i<moves.length;i++){
+    var v=-negamax(applyMove(st, moves[i]), depth-1, -beta, -alpha, ctx);
+    if(v>best) best=v;
+    if(best>alpha) alpha=best;
+    if(alpha>=beta) break;
+  }
+  return best;
+}
+
+function searchRoot(st, depth, ctx){
+  var moves=orderMoves(movesFor(st.cells, st.turn));
+  var scores=new Array(moves.length);
+  var alpha=-Infinity;
+  for(var i=0;i<moves.length;i++){
+    var v=-negamax(applyMove(st, moves[i]), depth-1, -Infinity, -alpha, ctx);
+    scores[i]=v;
+    if(v>alpha) alpha=v;
+  }
+  return {moves:moves, scores:scores};
+}
+
+/* Niveles (time-box + profundidad + ruido de raíz):
+   1 Fácil  : <=300ms,  profundidad 3, ruido ±40
+   2 Medio  : <=900ms,  profundidad 4, ruido ±15
+   3 Difícil: <=2200ms, profundidad 6, sin ruido
+   Devuelve el índice de la jugada, o null si no hay jugadas (pase). */
+function chooseMove(st, level){
+  if(!st||st.over) return null;
+  var moves=movesFor(st.cells, st.turn);
+  if(!moves.length) return null;
+  if(moves.length===1) return moves[0];
+  if(level!==2&&level!==3) level=1;
+  var maxDepth=(level===1)?3:((level===2)?4:6);
+  var noise=(level===1)?40:((level===2)?15:0);
+  var budget=(level===1)?300:((level===2)?900:2200);
+  var ctx={deadline:engineNow()+budget, nodes:0};
+  var doneMoves=null, doneScores=null;
+  for(var depth=1; depth<=maxDepth; depth++){
+    if(engineNow()>=ctx.deadline) break;
+    var res;
+    try{
+      res=searchRoot(st, depth, ctx);
+    }catch(e){
+      if(e!==ENGINE_TIMEOUT) throw e;
+      break;
+    }
+    if(res&&res.moves.length){ doneMoves=res.moves; doneScores=res.scores; }
+  }
+  if(!doneMoves) return orderMoves(moves)[0];   /* ninguna profundidad completada */
+  var bi=0, bv=-Infinity;
+  for(var i=0;i<doneMoves.length;i++){
+    var v=doneScores[i];
+    if(noise) v+=(Math.random()*2-1)*noise;
+    if(v>bv){ bv=v; bi=i; }
+  }
+  return doneMoves[bi];
+}
+
+var state=initialState();
+
+/* ================= INTERFAZ ================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var storedDiff=parseInt(localStorage.getItem('oth.diff')||'2',10);
+      if(storedDiff===1||storedDiff===2||storedDiff===3) diff=storedDiff;
+    }
+  }catch(e){}
+
+  var DIFF_NAMES={1:'Fácil',2:'Medio',3:'Difícil'};
+  var FLIP_START=110, FLIP_SWAP=140;
+
+  var cellEls=[];
+  var undoStack=[];
+  var busy=false;
+  var busyTimers=[];
+  var aiTimer=null;
+  var lastMove=-1;
+  var hintIdx=-1, hintTimer=null;
+  var toastTimer=null;
+  var movesCount=0;
+  var recorded=false;
+  var rec={w:0,l:0,d:0};
+
+  /* ---------- util UI ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2400);
+  }
+  function loadRec(){
+    try{
+      if(typeof localStorage==='undefined') return {w:0,l:0,d:0};
+      var raw=localStorage.getItem('oth.stats');
+      if(!raw) return {w:0,l:0,d:0};
+      var o=JSON.parse(raw);
+      return {w:(o&&o.w)|0, l:(o&&o.l)|0, d:(o&&o.d)|0};
+    }catch(e){ return {w:0,l:0,d:0}; }
+  }
+  function saveRec(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('oth.stats',JSON.stringify(rec));
+    }catch(e){}
+  }
+  function fmtRec(r){ return r.w+'-'+r.l+'-'+r.d; }
+  function recordResult(){
+    if(recorded) return;
+    recorded=true;
+    if(state.result==='b') rec.w++;
+    else if(state.result==='w') rec.l++;
+    else rec.d++;
+    saveRec();
+  }
+  function statusText(){
+    if(state.over) return 'Fin de la partida';
+    if(busy) return 'Volteando…';
+    if(aiTimer||state.turn==='w') return 'IA piensando…';
+    return 'Tu turno';
+  }
+  function clearHint(){
+    if(hintTimer) clearTimeout(hintTimer);
+    hintTimer=null;
+    hintIdx=-1;
+  }
+  function clearAnim(){
+    for(var k=0;k<busyTimers.length;k++) clearTimeout(busyTimers[k]);
+    busyTimers=[];
+    busy=false;
+  }
+
+  /* ---------- render ---------- */
+  function buildBoard(){
+    var b=$('#board');
+    b.innerHTML='';
+    cellEls=[];
+    var frag=document.createDocumentFragment();
+    for(var i=0;i<64;i++){
+      var sq=document.createElement('div');
+      sq.className='sq';
+      sq.dataset.i=String(i);
+      var r=i>>3, c=i&7;
+      if(r===3&&c===3) sq.classList.add('star-tl');
+      else if(r===3&&c===4) sq.classList.add('star-tr');
+      else if(r===4&&c===3) sq.classList.add('star-bl');
+      else if(r===4&&c===4) sq.classList.add('star-br');
+      frag.appendChild(sq);
+      cellEls.push(sq);
+    }
+    b.appendChild(frag);
+  }
+  function render(){
+    if(state.over) recordResult();
+    var legal=(!state.over&&state.turn==='b'&&!busy)?legalMoves(state):[];
+    for(var i=0;i<64;i++){
+      var sq=cellEls[i], v=state.cells[i], disc=sq.firstChild;
+      if(v===null){
+        if(disc) sq.removeChild(disc);
+      }else if(!disc){
+        disc=document.createElement('div');
+        disc.className='disc '+v;
+        sq.appendChild(disc);
+      }else if(!busy){
+        var want='disc '+v;
+        if(disc.className!==want) disc.className=want;
+      }
+      sq.classList.toggle('legal', legal.indexOf(i)>=0);
+      sq.classList.toggle('chosen', i===lastMove);
+      sq.classList.toggle('hint', i===hintIdx);
+    }
+    var cnt=countDiscs(state);
+    $('#stB').textContent=String(cnt.b);
+    $('#stW').textContent=String(cnt.w);
+    $('#stWLD').textContent=fmtRec(rec);
+    $('#status').textContent=statusText();
+    var win=$('#win');
+    if(state.over){
+      win.classList.add('show');
+      $('#winTitle').textContent=state.result==='b'?'¡Has ganado!':(state.result==='w'?'Has perdido':'Empate');
+      $('#winCount').textContent='Negras '+cnt.b+' — blancas '+cnt.w;
+      $('#winStats').textContent='Victorias: '+rec.w+' · Derrotas: '+rec.l+' · Empates: '+rec.d+
+        ' · Dificultad: '+DIFF_NAMES[diff];
+    }else{
+      win.classList.remove('show');
+    }
+  }
+
+  /* ---------- flujo ---------- */
+  function scheduleAI(){
+    if(busy||state.over||state.turn!=='w') return;
+    if(aiTimer) return;
+    aiTimer=setTimeout(function(){
+      aiTimer=null;
+      if(busy||state.over||state.turn!=='w'){ render(); return; }
+      var m=chooseMove(state, diff);
+      if(m===null){ render(); return; }
+      playMove(m);
+    },320);
+    render();
+  }
+  function afterMove(){
+    if(!state.over){
+      if(state.passed==='w') toast('IA pasa');
+      else if(state.passed==='b') toast('Tú pasas');
+    }
+    render();
+    scheduleAI();
+  }
+  /* Juega i (negro o blanco): aplica el estado, coloca el disco y anima
+     TODOS los volteos en secuencia (rotación CSS scaleX + cambio de color
+     en el punto exacto del canto). */
+  function playMove(i){
+    var flips=flipsFor(state, i);
+    if(!flips.length) return;
+    var mover=state.turn;
+    state=applyMove(state, i);
+    movesCount++;
+    busy=true;
+    if(aiTimer){ clearTimeout(aiTimer); aiTimer=null; }
+    clearHint();
+    for(var k=0;k<64;k++) cellEls[k].classList.remove('legal','hint','chosen');
+    lastMove=i;
+    cellEls[i].classList.add('chosen');
+    var old=cellEls[i].firstChild;
+    if(old) cellEls[i].removeChild(old);
+    var disc=document.createElement('div');
+    disc.className='disc '+mover+' placing';
+    cellEls[i].appendChild(disc);
+    $('#stB').textContent=String(countDiscs(state).b);
+    $('#stW').textContent=String(countDiscs(state).w);
+    $('#status').textContent=statusText();
+    var stag=flips.length>8?45:70;
+    for(var f=0;f<flips.length;f++){
+      (function(fi, delay){
+        var fd=cellEls[fi].firstChild;
+        if(!fd) return;
+        busyTimers.push(setTimeout(function(){
+          fd.classList.remove('placing');
+          fd.classList.add('flip');
+          busyTimers.push(setTimeout(function(){
+            fd.classList.remove('b','w');
+            fd.classList.add(mover);
+          },FLIP_SWAP));
+        },delay));
+      })(flips[f], FLIP_START+f*stag);
+    }
+    var total=FLIP_START+Math.max(0,flips.length-1)*stag+300;
+    busyTimers.push(setTimeout(function(){
+      busyTimers=[];
+      busy=false;
+      afterMove();
+    },total));
+  }
+  function newGameUI(){
+    clearAnim();
+    if(aiTimer){ clearTimeout(aiTimer); aiTimer=null; }
+    clearHint();
+    state=initialState();
+    undoStack=[];
+    lastMove=-1;
+    movesCount=0;
+    recorded=false;
+    render();
+  }
+  function undo(){
+    if(state.over){ toast('Partida terminada'); return; }
+    if(!undoStack.length){ toast('Nada que deshacer'); return; }
+    clearAnim();
+    if(aiTimer){ clearTimeout(aiTimer); aiTimer=null; }
+    clearHint();
+    state=JSON.parse(undoStack.pop());
+    lastMove=-1;
+    render();
+  }
+  function hintAction(){
+    if(busy){ return; }
+    if(state.over||state.turn!=='b'){ toast('Espera tu turno'); return; }
+    clearHint();
+    var m=chooseMove(state, 1);
+    if(m===null){ toast('Sin jugadas disponibles'); return; }
+    hintIdx=m;
+    render();
+    hintTimer=setTimeout(function(){ hintIdx=-1; hintTimer=null; render(); },3000);
+  }
+  function confirmNew(){
+    if(movesCount>0&&!state.over&&!confirm('¿Empezar una nueva partida? Se perderá la actual.')) return false;
+    return true;
+  }
+
+  /* ---------- entrada ---------- */
+  function handleTap(i){
+    if(busy||state.over) return;
+    if(state.turn!=='b') return;
+    if(!flipsFor(state, i).length) return;
+    undoStack.push(JSON.stringify(state));
+    if(undoStack.length>200) undoStack.shift();
+    playMove(i);
+  }
+  $('#board').addEventListener('pointerdown',function(e){
+    var sq=e.target&&e.target.closest?e.target.closest('.sq'):null;
+    if(!sq) return;
+    e.preventDefault();
+    handleTap(parseInt(sq.dataset.i,10));
+  });
+
+  $('#btnNew').addEventListener('click',function(){ if(confirmNew()) newGameUI(); });
+  $('#btnAgain').addEventListener('click',function(){ newGameUI(); });
+  $('#btnUndo').addEventListener('click',undo);
+  $('#btnHint').addEventListener('click',hintAction);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('oth.diff',String(diff)); }
+    catch(err){}
+    toast('Dificultad: '+DIFF_NAMES[diff]);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='n'){ if(confirmNew()) newGameUI(); }
+    else if(k==='u'){ undo(); }
+    else if(k==='h'){ hintAction(); }
+  });
+
+  /* ---------- arranque ---------- */
+  rec=loadRec();
+  $('#diffSel').value=String(diff);
+  buildBoard();
+  render();
+}
+</script>
+</body>
+</html>

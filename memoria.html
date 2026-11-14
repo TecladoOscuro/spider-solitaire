@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Memoria</title>
+<style>
+:root{--cols:4;--gap:8px;--maxw:600px;--symfs:26px}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%);
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- tablero de cartas ---------- */
+.board{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:14px 12px;min-height:0;overflow:auto;
+}
+.grid{
+  display:grid;gap:var(--gap);
+  grid-template-columns:repeat(var(--cols),minmax(0,1fr));
+  width:100%;max-width:var(--maxw);margin:0 auto;
+}
+.card{
+  position:relative;aspect-ratio:5/7;perspective:700px;cursor:pointer;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;
+}
+.inner{
+  position:absolute;inset:0;transform-style:preserve-3d;
+  transition:transform .3s cubic-bezier(.2,.7,.3,1);
+}
+.card.up .inner,.card.peek .inner{transform:rotateY(180deg)}
+.face{
+  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:8px;display:grid;place-items:center;overflow:hidden;
+}
+/* dorso: patrón dorado elegante sobre índigo (sin imágenes) */
+.face.front{
+  background:
+    repeating-linear-gradient(45deg,rgba(226,190,110,.15) 0 6px,rgba(0,0,0,0) 6px 13px),
+    repeating-linear-gradient(-45deg,rgba(226,190,110,.15) 0 6px,rgba(0,0,0,0) 6px 13px),
+    radial-gradient(circle at 50% 40%,#3b2b66 0%,#1c1340 78%);
+  border:2px solid #d9b463;
+  box-shadow:inset 0 0 0 2.5px rgba(0,0,0,.4),inset 0 0 0 4.5px rgba(217,180,99,.55);
+}
+.face.front::after{
+  content:"";position:absolute;left:50%;top:50%;width:42%;height:42%;
+  transform:translate(-50%,-50%) rotate(45deg);
+  border:2px solid rgba(226,190,110,.8);border-radius:4px;background:rgba(226,190,110,.14);
+}
+.face.back{
+  background:#fdfdf7;border:1px solid #cfd8dc;color:#111;
+  box-shadow:0 2px 5px rgba(0,0,0,.35);
+  transform:rotateY(180deg);
+}
+.sym{font-size:var(--symfs);line-height:1;font-weight:700}
+.card.matched{cursor:default;animation:flashgreen .55s ease-out}
+.card.matched .face.back{box-shadow:inset 0 0 0 2px rgba(60,220,130,.65),0 2px 5px rgba(0,0,0,.35)}
+@keyframes flashgreen{
+  0%{box-shadow:0 0 0 0 rgba(70,255,150,.95),0 2px 6px rgba(0,0,0,.4)}
+  55%{box-shadow:0 0 0 9px rgba(70,255,150,0),0 2px 6px rgba(0,0,0,.4)}
+  100%{box-shadow:0 2px 6px rgba(0,0,0,.4)}
+}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 10px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:28px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:6px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board{padding:10px 8px}
+  .hint-bar{padding:0 10px 8px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 9px}
+  select.btn{padding:6px 6px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🃏</span><h1>Memoria</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Tiempo</span><b id="stTime">0:00</b></div>
+    <div class="stat"><span>Movimientos</span><b id="stMoves">0</b></div>
+    <div class="stat"><span>Aciertos</span><b id="stPairs">0/8</b></div>
+    <div class="stat"><span>Récord</span><b id="stRec">—</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Nivel">
+      <option value="0">Fácil · 4×4 (8 parejas)</option>
+      <option value="1">Normal · 6×6 (18 parejas)</option>
+      <option value="2">Experto · 8×8 (32 parejas)</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo juego</button>
+    <button class="btn" id="btnRestart" title="Reiniciar la partida actual">Reiniciar</button>
+    <button class="btn" id="btnHint" title="Pista (tecla H)">Pista</button>
+  </div>
+</header>
+
+<main class="board" id="board">
+  <div class="grid" id="grid"></div>
+</main>
+
+<div class="hint-bar">Toca una carta para girarla · Dos iguales se quedan destapadas · Teclas: N nuevo · H pista</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2>¡Completado!</h2>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* ================= MOTOR DE MEMORIA — funciones puras =================
+   Diseño documentado:
+   - Estado: {n, cards, flipped, moves, started, won}.
+     cards = n*n objetos {sym, col, up, matched}; la pareja comparte sym+col.
+     flipped = índices de las 2 cartas boca arriba sin decidir.
+   - deal(level) reparte n*n cartas (n = 4/6/8 según level 0/1/2) con
+     Fisher-Yates sobre un mazo de 2×(n²/2) símbolos.
+   - flip(st,i) aplica las reglas: no-op si la carta ya está up/matched o si
+     ya hay 2 en flipped; la 2ª carta incrementa moves y resuelve la pareja
+     (match → matched en ambas y flipped vacío; no match → flipped=[a,b]
+     pendiente hasta resolveMismatch).
+   - resolveMismatch(st) gira hacia abajo las 2 pendientes (flipped=[]).
+   - isWon(st) true si todas las cartas están matched.
+   El motor no toca document/window/localStorage/setTimeout. */
+
+var LEVEL_N=[4,6,8];
+var SYMS=['♠','♥','♦','♣','★','☆','●','○','◆','◇','■','□','▲','△','♪','♫',
+          '✦','✧','⚑','⚐','☾','☀','⚡','❄','⚓','⚙','⚘','❀','⧫','⬟','⬢','✺'];
+var COLORS=[];
+for(var ci=0;ci<32;ci++) COLORS.push('hsl('+Math.round((ci*137.508)%360)+',72%,56%)');
+
+function deal(level){
+  var L=(level>=0&&level<LEVEL_N.length)?level:0;
+  var n=LEVEL_N[L];
+  var total=n*n;
+  var deck=new Array(total);
+  for(var p=0;p<total;p++) deck[p]=Math.floor(p/2);
+  for(var i=deck.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var t=deck[i];deck[i]=deck[j];deck[j]=t;
+  }
+  var cards=new Array(total);
+  for(var k=0;k<total;k++) cards[k]={sym:deck[k],col:deck[k],up:false,matched:false};
+  return {n:n,cards:cards,flipped:[],moves:0,started:false,won:false};
+}
+
+function flip(st,i){
+  if(!st) return st;
+  if(!(i>=0&&i<st.cards.length)) return st;
+  var c=st.cards[i];
+  if(c.up||c.matched) return st;
+  if(st.flipped.length>=2) return st;
+  if(!st.started) st.started=true;
+  c.up=true;
+  st.flipped.push(i);
+  if(st.flipped.length===2){
+    st.moves++;
+    var a=st.cards[st.flipped[0]],b=st.cards[st.flipped[1]];
+    if(a.sym===b.sym&&a.col===b.col){
+      a.matched=true;b.matched=true;
+      st.flipped=[];
+      if(isWon(st)) st.won=true;
+    }
+  }
+  return st;
+}
+
+function resolveMismatch(st){
+  if(!st||st.flipped.length!==2) return st;
+  for(var k=0;k<2;k++){
+    var c=st.cards[st.flipped[k]];
+    if(c&&!c.matched) c.up=false;
+  }
+  st.flipped=[];
+  return st;
+}
+
+function isWon(st){
+  if(!st||!st.cards||!st.cards.length) return false;
+  for(var i=0;i<st.cards.length;i++) if(!st.cards[i].matched) return false;
+  return true;
+}
+
+function pairsFound(st){
+  if(!st||!st.cards) return 0;
+  var m=0;
+  for(var i=0;i<st.cards.length;i++) if(st.cards[i].matched) m++;
+  return m/2;
+}
+
+function symOf(st,i){
+  if(!st||!(i>=0&&i<st.cards.length)) return null;
+  return st.cards[i].sym;
+}
+
+var state=deal(0);
+
+/* ================= INTERFAZ ================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=0;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('mem.diff')||'0',10);
+      if(stored===0||stored===1||stored===2) diff=stored;
+    }
+  }catch(e){}
+
+  /* El estado ES el global `state` (var state=deal(0) del motor): la UI
+     NUNCA crea un objeto de juego propio. flip() muta ese mismo objeto y
+     render() deriva de él todas las clases y stats. */
+  var t0=0, endAt=0;          /* el cronómetro arranca en la primera carta */
+  var mismatchTimer=null, hintTimer=null, toastTimer=null;
+  var peekIdx=[];             /* pareja revelada temporalmente por la pista */
+  var cardEls=[];
+  var bestTime=null;
+
+  /* ---------- util UI ---------- */
+  function fmtTime(s){
+    var m=Math.floor(s/60);
+    return m+':'+String(s%60).padStart(2,'0');
+  }
+  function elapsed(){
+    if(!state||t0===0) return 0;
+    var end=(state.won&&endAt)?endAt:Date.now();
+    return Math.max(0,Math.floor((end-t0)/1000));
+  }
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
+  }
+  function getBest(){
+    try{
+      if(typeof localStorage==='undefined') return null;
+      var v=localStorage.getItem('mem.best.'+diff);
+      if(v==null) return null;
+      v=parseInt(v,10);
+      return (isNaN(v)||v<0)?null:v;
+    }catch(e){ return null; }
+  }
+  function setBest(s){
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('mem.best.'+diff,String(s)); }
+    catch(e){}
+  }
+  function hasProgress(){
+    return !!(state&&(state.started||state.moves>0||pairsFound(state)>0));
+  }
+  function clearTimers(){
+    if(mismatchTimer){ clearTimeout(mismatchTimer); mismatchTimer=null; }
+    if(hintTimer){ clearTimeout(hintTimer); hintTimer=null; }
+    peekIdx=[];
+  }
+
+  /* ---------- render ---------- */
+  function fit(){
+    if(!state) return;
+    var n=state.n;
+    var gap=n>=8?4:n>=6?6:9;
+    var availW=Math.max(140,(window.innerWidth||1024)-28);
+    var availH=Math.max(140,(window.innerHeight||768)-170);
+    var cs=Math.min(Math.floor((availW-gap*(n-1))/n),Math.floor((availH-gap*(n-1))/n/1.4));
+    cs=Math.max(22,Math.min(92,cs));
+    document.documentElement.style.setProperty('--gap',gap+'px');
+    document.documentElement.style.setProperty('--maxw',(n*cs+(n-1)*gap)+'px');
+    document.documentElement.style.setProperty('--symfs',Math.round(cs*0.56)+'px');
+  }
+
+  function buildGrid(){
+    var g=$('#grid');
+    g.style.setProperty('--cols',String(state.n));
+    g.textContent='';
+    cardEls=[];
+    var frag=document.createDocumentFragment();
+    for(var i=0;i<state.cards.length;i++){
+      var c=state.cards[i];
+      var d=document.createElement('div');
+      d.className='card';
+      d.dataset.i=String(i);
+      var inner=document.createElement('div');
+      inner.className='inner';
+      var front=document.createElement('div');
+      front.className='face front';
+      var back=document.createElement('div');
+      back.className='face back';
+      var sym=document.createElement('span');
+      sym.className='sym';
+      sym.textContent=SYMS[c.sym];
+      sym.style.color=COLORS[c.col];
+      back.appendChild(sym);
+      inner.appendChild(front);
+      inner.appendChild(back);
+      d.appendChild(inner);
+      frag.appendChild(d);
+      cardEls.push(d);
+    }
+    g.appendChild(frag);
+    fit();
+  }
+
+  function render(){
+    if(!state) return;
+    for(var i=0;i<cardEls.length;i++){
+      var c=state.cards[i],el=cardEls[i];
+      el.classList.toggle('up',!!c.up);
+      el.classList.toggle('matched',!!c.matched);
+      el.classList.toggle('peek',peekIdx.indexOf(i)>=0);
+    }
+    $('#stTime').textContent=fmtTime(elapsed());
+    $('#stMoves').textContent=String(state.moves);
+    $('#stPairs').textContent=pairsFound(state)+'/'+(state.cards.length/2);
+    $('#stRec').textContent=bestTime===null?'—':fmtTime(bestTime);
+  }
+
+  function startGame(){
+    state=deal(diff);
+    t0=0; endAt=0;
+    clearTimers();
+    bestTime=getBest();
+    $('#win').classList.remove('show');
+    buildGrid();
+    render();
+  }
+  function newGame(){
+    if(hasProgress()&&!confirm('¿Empezar una nueva partida? Se perderá la actual.')) return;
+    startGame();
+  }
+  function restart(){
+    if(!state) return;
+    if(hasProgress()&&!confirm('¿Reiniciar la partida actual? Se perderá el progreso.')) return;
+    clearTimers();
+    for(var i=0;i<state.cards.length;i++){ state.cards[i].up=false; state.cards[i].matched=false; }
+    state.flipped=[]; state.moves=0; state.started=false; state.won=false;
+    t0=0; endAt=0;
+    $('#win').classList.remove('show');
+    render();
+  }
+
+  function finish(){
+    if(endAt) return;
+    endAt=Date.now();
+    var secs=elapsed();
+    var rec=(bestTime===null||secs<bestTime);
+    if(rec){ bestTime=secs; setBest(secs); }
+    var moves=state.moves||1;
+    var pct=Math.round(pairsFound(state)/moves*100);
+    $('#winStats').textContent='Tiempo: '+fmtTime(secs)+
+      ' · Movimientos: '+state.moves+
+      ' · Aciertos: '+pairsFound(state)+'/'+(state.cards.length/2)+' ('+pct+'%) · '+
+      (rec?'🏆 ¡Nuevo récord: '+fmtTime(secs)+'!':'Récord: '+fmtTime(bestTime));
+    render();
+    $('#win').classList.add('show');
+    if(rec) toast('🏆 ¡Nuevo récord: '+fmtTime(secs)+'!');
+  }
+
+  /* ---------- acciones ---------- */
+  function tap(i){
+    if(!state||state.won) return;
+    if(!(i>=0&&i<state.cards.length)) return;
+    var c=state.cards[i];
+    /* bloqueo derivado del estado: con 2 pendientes el motor hace no-op */
+    if(c.up||c.matched||state.flipped.length>=2) return;
+    var first=!state.started;
+    flip(state,i);              /* muta el global state (motor in-place) */
+    if(first) t0=Date.now();
+    if(state.flipped.length===2){
+      mismatchTimer=setTimeout(function(){
+        mismatchTimer=null;
+        resolveMismatch(state);
+        render();
+      },800);
+    }
+    var wonNow=state.won;
+    render();
+    if(wonNow) finish();
+  }
+
+  function hint(){
+    if(!state||state.won) return;
+    if(state.flipped.length>0){ toast('Termina la jugada actual primero'); return; }
+    if(peekIdx.length){ return; }
+    var bySym={},i,k,keys;
+    for(i=0;i<state.cards.length;i++){
+      var c=state.cards[i];
+      if(c.matched||c.up) continue;
+      if(!bySym[c.sym]) bySym[c.sym]=[];
+      bySym[c.sym].push(i);
+    }
+    keys=[];
+    for(k in bySym){ if(bySym[k].length===2) keys.push(k); }
+    if(!keys.length){ toast('No quedan parejas ocultas'); return; }
+    var pick=keys[Math.floor(Math.random()*keys.length)];
+    peekIdx=bySym[pick].slice(0);
+    render();
+    hintTimer=setTimeout(function(){
+      hintTimer=null;
+      peekIdx=[];
+      render();
+    },1200);
+  }
+
+  /* ---------- cableado ---------- */
+  $('#grid').addEventListener('click',function(e){
+    var el=e.target&&e.target.closest?e.target.closest('.card'):null;
+    if(!el) return;
+    tap(parseInt(el.dataset.i,10));
+  });
+  $('#btnNew').addEventListener('click',newGame);
+  $('#btnRestart').addEventListener('click',restart);
+  $('#btnHint').addEventListener('click',hint);
+  $('#btnAgain').addEventListener('click',startGame);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===0||v===1||v===2)?v:0;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('mem.diff',String(diff)); }
+    catch(err){}
+    startGame();
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='n') newGame();
+    else if(k==='h') hint();
+  });
+  window.addEventListener('resize',fit);
+  setInterval(function(){
+    if(!state||!state.started||state.won) return;
+    $('#stTime').textContent=fmtTime(elapsed());
+  },250);
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  startGame();
+}
+</script>
+</body>
+</html>
