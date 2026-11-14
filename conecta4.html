@@ -701,11 +701,15 @@ if (typeof document !== 'undefined') {
       if(token!==aiToken||state.over) return;
       var mv=chooseMove(state,diff);
       aiThinking=false;
-      if(mv===null){ finish(); return; }
+      if(mv===null||legalMoves(state).indexOf(mv)<0){
+        if(state.over) finish(); else setStatus();
+        return;
+      }
       var row=lowestFreeRow(state.cells,mv);
+      var next=applyMove(state,mv);
+      if(!next){ setStatus(); return; }
       pushHist();
-      state=applyMove(state,mv);
-      if(!state){ aiThinking=false; setStatus(); return; }
+      state=next;
       anim={col:mv,row:row};
       render();
       if(state.over) finish(); else setStatus();
@@ -718,9 +722,10 @@ if (typeof document !== 'undefined') {
     if(legalMoves(state).indexOf(col)<0){ toast('Esa columna está llena'); return; }
     clearHint();
     var row=lowestFreeRow(state.cells,col);
+    var next=applyMove(state,col);
+    if(!next){ setStatus(); return; }
     pushHist();
-    state=applyMove(state,col);
-    if(!state){ setStatus(); return; }
+    state=next;
     anim={col:col,row:row};
     render();
     if(state.over) finish(); else startAI();
