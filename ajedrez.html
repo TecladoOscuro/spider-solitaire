@@ -44,9 +44,10 @@ body{
 select.btn{background:#263238;padding:7px 8px}
 .game{
   flex:1;display:flex;gap:16px;padding:14px;justify-content:center;align-items:flex-start;
+  flex-wrap:wrap;max-width:100%;
 }
 .board{
-  width:min(92vw,560px);aspect-ratio:1/1;flex:none;
+  width:min(92vw,560px,calc(100dvh - 190px));aspect-ratio:1/1;flex:none;
   display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
   border-radius:6px;overflow:hidden;
   box-shadow:0 12px 34px rgba(0,0,0,.45),0 0 0 3px rgba(0,0,0,.25);
@@ -137,7 +138,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .pbtn:hover{background:#455a64}
 .pbtn:active{transform:translateY(1px)}
 .pbtn .g{font-size:30px;line-height:1}
-@media (max-width:760px){
+@media (max-width:600px),(max-width:890px) and (orientation:portrait){
   .top{gap:7px;padding:8px 10px}
   .brand h1{font-size:15px}
   .stat{min-width:56px;padding:3px 8px}

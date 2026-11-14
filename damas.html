@@ -53,7 +53,7 @@ select.btn{background:#263238;padding:7px 8px}
 .board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:14px}
 .board{
   display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
-  width:min(94vw,540px);aspect-ratio:1;
+  width:min(94vw,540px,calc(100dvh - 190px));aspect-ratio:1;
   border:9px solid #3b2716;border-radius:10px;overflow:hidden;
   box-shadow:0 20px 50px rgba(0,0,0,.55);
   container-type:inline-size;
@@ -120,7 +120,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   .status{margin-top:8px;font-size:13px;padding:5px 14px}
   .trays{gap:8px;padding:7px 8px 0}
   .board-wrap{padding:10px 8px 6px}
-  .board{border-width:6px;width:min(96vw,540px)}
+  .board{border-width:6px;width:min(96vw,540px,calc(100dvh - 190px))}
   .hint-bar{padding:4px 10px 12px}
 }
 </style>

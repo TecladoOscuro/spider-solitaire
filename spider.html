@@ -134,6 +134,14 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   .col{min-width:52px;padding:5px 4px 10px}
   .toolbar{padding:8px 10px 0;gap:12px}
 }
+@media (max-width:600px){
+  .board{gap:3px;padding:8px 6px 20px}
+  .col{min-width:0;padding:4px 3px 9px}
+  .card{font-size:26cqw}
+  .tl{top:2px;left:2px}
+  .br{bottom:2px;right:2px}
+  .pip{font-size:2.3em}
+}
 </style>
 </head>
 <body>
@@ -400,10 +408,11 @@ function render(){
     var cw=el.clientWidth||120;
     var stl=getComputedStyle(el);
     var cardW=cw-(parseFloat(stl.paddingLeft)||0)-(parseFloat(stl.paddingRight)||0);
-    if(cardW<40)cardW=cw;
+    if(!(cardW>10))cardW=cw;
     var cardH=Math.round(cardW*1.4);
-    var overUp=cardH-Math.max(16,Math.round(cardW*0.26));
-    var overDown=cardH-Math.max(8,Math.round(cardW*0.09));
+    var visUp=cardW<64?Math.round(cardH*0.45):Math.max(16,Math.round(cardW*0.26));
+    var visDown=cardW<64?Math.max(4,Math.round(cardH*0.11)):Math.max(8,Math.round(cardW*0.09));
+    var overUp=cardH-visUp, overDown=cardH-visDown;
     var prevUp=false;
     for(ki=0;ki<col.length;ki++){
       var card=col[ki];
@@ -456,7 +465,7 @@ function beginGhost(){
   g.style.width=r.width+'px';
   var col=S.cols[drag.col];
   var cardH=Math.round(r.width*1.4);
-  var overUp=cardH-Math.max(16,Math.round(r.width*0.26));
+  var overUp=cardH-(r.width<64?Math.round(cardH*0.45):Math.max(16,Math.round(r.width*0.26)));
   for(var i=drag.idx;i<col.length;i++){
     var c=document.createElement('div');
     c.className='card up';
