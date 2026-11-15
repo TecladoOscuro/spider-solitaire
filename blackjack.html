@@ -81,6 +81,10 @@ select.btn{background:#263238;padding:7px 8px}
 }
 .val.bust{color:#ff8a80;border-color:#ef5350;background:rgba(80,0,0,.5)}
 .midline{text-align:center;font-size:13px;opacity:.82;font-variant-numeric:tabular-nums}
+.midline.result{font-size:20px;font-weight:800;opacity:1;margin:4px 0;letter-spacing:.4px}
+.midline.result[data-r=win],.midline.result[data-r=bj]{color:#ffe082}
+.midline.result[data-r=lose]{color:#ff8a80}
+.midline.result[data-r=push]{color:#cfd8dc}
 .cards{display:flex;gap:var(--gc);justify-content:center;align-items:flex-start;min-height:calc(var(--cw)*1.4)}
 .slot{
   width:var(--cw);aspect-ratio:5/7;border:2px dashed rgba(255,255,255,.28);
@@ -866,7 +870,9 @@ function render(){
   var si=statusInfo();
   $('#status').textContent=si.t;
   $('#stDot').className='dot '+si.d;
-  $('#midline').textContent=midText();
+  var _ml=$('#midline'); _ml.textContent=midText();
+  _ml.className='midline'+(state.phase==='over'?' result':'');
+  if(state.phase==='over') _ml.dataset.r=state.result||'';
   $('#statChips').textContent=String(state.chips);
   $('#statHands').textContent=String(state.hands);
   syncBest();
@@ -893,17 +899,13 @@ function showOverlay(){
 function hideOverlay(){ $('#win').classList.remove('show'); }
 function overlayOpen(){ return $('#win').classList.contains('show'); }
 function queueOverlay(){
-  /* Resultado en la mesa (banner) y vuelta automatica a la apuesta:
-     el jugador sentado en la mesa decide cuándo repartir, sin modales. */
-  if(ovTimer) clearTimeout(ovTimer);
-  var delay=state.broke?600:(state.result==='bj'?900:1700);
-  ovTimer=setTimeout(function(){
-    ovTimer=null;
-    if(state.phase!=='over') return;
-    if(state.broke){ showOverlay(); return; }
-    var n=nextHand(state);
-    if(n){ state=n; resetCounts(); render(); }
-  },delay);
+  /* Sin auto-avance: el resultado queda en la mesa (marcador grande,
+     cartas destapadas) hasta que el jugador pulse Siguiente mano/ESPACIO.
+     Tiempo de sobra para leer el resultado y contar las cartas. */
+  if(ovTimer){ clearTimeout(ovTimer); ovTimer=null; }
+  if(state.broke){
+    ovTimer=setTimeout(function(){ ovTimer=null; if(state.broke) showOverlay(); },600);
+  }
 }
 
 /* ---------- acciones ---------- */
@@ -1034,6 +1036,7 @@ function nuevaMano(){
 function onSpace(){
   if(overlayOpen()){ fromOverlay(); return; }
   if(busy) return;
+  if(state.phase==='over'&&!state.broke){ fromOverlay(); return; }
   if(state.phase==='bet'){ doDeal(); return; }
   if(state.phase==='player'){ doHit(); }
 }
