@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<meta name="theme-color" content="#14471c">
+<title>FreeCell Solitaire</title>
+<style>
+html{background-color:#14471c}
+:root{--g:8px}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .spade{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- fila superior: celdas libres | fundaciones ---------- */
+.toolbar{display:flex;gap:20px;align-items:flex-start;justify-content:center;flex-wrap:wrap;padding:10px 14px 0}
+.group{display:flex;flex-direction:column;align-items:center;gap:4px}
+.cap{font-size:10px;letter-spacing:.8px;text-transform:uppercase;opacity:.65}
+.cap b{font-weight:700;opacity:.95;font-variant-numeric:tabular-nums}
+.slots{display:flex;gap:var(--g,8px);justify-content:center}
+.slot{
+  position:relative;flex:none;width:var(--cw,56px);height:calc(var(--cw,56px)*1.4);
+  border:1.5px solid rgba(255,255,255,.4);border-radius:7px;background:rgba(0,0,0,.14);
+}
+.slot.fc{border-style:dashed;background:rgba(0,0,0,.24)}
+.slot.empty{opacity:.62}
+.slot .card{position:absolute;inset:0;width:100%;height:100%;font-size:calc(var(--cw,56px)*.16);cursor:pointer}
+.slot.fc.empty::after{
+  content:"";position:absolute;inset:15%;border:1.5px dashed rgba(255,255,255,.35);border-radius:5px;
+}
+.slot.fnd.empty::after{
+  content:"";position:absolute;inset:15%;border:1.5px dotted rgba(255,255,255,.32);border-radius:50%;
+}
+
+/* ---------- tablero ---------- */
+.board{
+  flex:1;display:flex;gap:var(--g,8px);padding:12px 14px 26px;overflow-x:auto;align-items:flex-start;justify-content:center;
+}
+.col{
+  flex:1 1 0;min-width:62px;max-width:118px;background:rgba(0,0,0,.17);border-radius:8px;
+  padding:6px 0 12px;position:relative;min-height:96px;container-type:inline-size;
+}
+.col.empty::after{
+  content:"";position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:60%;aspect-ratio:5/7;border:2px dashed rgba(255,255,255,.22);border-radius:7px;
+}
+.card{
+  position:relative;width:100%;aspect-ratio:5/7;border-radius:7px;background:#fdfdf7;color:#111;
+  box-shadow:0 1px 3px rgba(0,0,0,.45);user-select:none;-webkit-user-select:none;
+  touch-action:none;cursor:default;font-size:14px;
+}
+@supports (font-size:1cqw){ .card{font-size:16cqw} }
+.card.up{border:1px solid #cfd8dc}
+.card.back{
+  border:3px solid #fff;
+  background:
+    repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 5px,transparent 5px 11px),
+    radial-gradient(circle at 50% 45%,#2f74dd,#17458f 75%);
+}
+.corner{position:absolute;line-height:1;display:flex;flex-direction:column;align-items:center;gap:1px}
+.corner b{font-weight:700}
+.corner i{font-style:normal;font-size:.92em}
+.tl{top:4px;left:4px}
+.br{bottom:4px;right:4px;transform:rotate(180deg)}
+.pip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2.7em;line-height:1}
+.red{color:#d32f2f}
+.black{color:#111}
+.card.sel{outline:3px solid #ffd54f;outline-offset:-1px}
+.card.can{cursor:grab}
+.card.dragging{opacity:0;pointer-events:none}
+body.dragging,body.dragging *{cursor:grabbing!important}
+.hint-card{animation:hintglow .7s ease-in-out infinite alternate}
+.col.hint-col,.slot.hint-col{animation:hintcol 1s ease-in-out infinite alternate}
+@keyframes hintglow{
+  from{box-shadow:0 0 0 2px #40c4ff,0 1px 3px rgba(0,0,0,.45)}
+  to{box-shadow:0 0 0 4px #ffee58,0 1px 3px rgba(0,0,0,.45)}
+}
+@keyframes hintcol{
+  from{background:rgba(64,196,255,.18)}
+  to{background:rgba(64,196,255,.42)}
+}
+.col.drop-ok,.slot.drop-ok{background:rgba(65,190,100,.32);box-shadow:inset 0 0 0 2px #81c784}
+.col.drop-bad,.slot.drop-bad{box-shadow:inset 0 0 0 2px #ef5350}
+.ghost{
+  position:fixed;z-index:100;pointer-events:none;opacity:.96;
+  container-type:inline-size;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.5));
+}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:28px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:6px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+.hint-bar{padding:0 14px 6px;font-size:12px;opacity:.6}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  :root{--g:5px}
+  .board{padding:10px 8px 22px}
+  .col{min-width:52px;padding:5px 0 10px}
+  .toolbar{padding:8px 8px 0;gap:14px}
+  .hint-bar{padding:0 10px 6px}
+}
+@media (max-width:600px){
+  :root{--g:3px}
+  .board{padding:8px 6px 20px}
+  .col{min-width:0;padding:4px 0 9px}
+  .toolbar{padding:6px 6px 0;gap:10px}
+  .card{font-size:26cqw}
+  .tl{top:2px;left:2px}
+  .br{bottom:2px;right:2px}
+  .pip{font-size:2.3em}
+  .slot .card{font-size:calc(var(--cw,56px)*.24)}
+  .cap{font-size:9px}
+}
+/* app nativa apple: safe areas (notch/status bar/home indicator) */
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@supports(padding:env(safe-area-inset-top)){
+  body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+  .top{top:env(safe-area-inset-top)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="spade">♠</span><h1>FreeCell</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Puntos</span><b id="score">0</b></div>
+    <div class="stat"><span>Tiempo</span><b id="time">0:00</b></div>
+    <div class="stat"><span>Movs</span><b id="moves">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad: número de celdas libres">
+      <option value="6">Fácil · 6 celdas</option>
+      <option value="4">Normal · 4 celdas</option>
+      <option value="2">Experto · 2 celdas</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer (tecla U)">Deshacer</button>
+    <button class="btn" id="btnHint" title="Pista (tecla H)">Pista</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="group">
+    <div class="cap">Celdas libres <b id="fcN">4/4</b></div>
+    <div class="slots" id="fcs"></div>
+  </div>
+  <div class="group">
+    <div class="cap">Fundaciones</div>
+    <div class="slots" id="fnds"></div>
+  </div>
+</div>
+
+<main class="board" id="board"></main>
+
+<div class="hint-bar">Arrastra series alterno-descendentes · Toca carta y luego destino · Doble toque: a fundación · Teclas: N nueva · U deshacer · H pista</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle">¡Has ganado!</h2>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* ==================== MOTOR PURO DE FREECELL ====================
+   Zona de datos y funciones: sin acceso al DOM, sin temporizadores, sin
+   almacenamiento. Todo plano, en el ámbito global: se ejecuta igual en el
+   navegador que en node (los tests de tests/t_freecell.js la extraen y la
+   corren en un contexto aislado). Sin IIFE ni directiva de modo estricto.
+
+   Zonas de movimiento (los tests y la interfaz usan la misma forma):
+     {z:'t', i, j}  columna i, la secuencia empieza en la posición j
+                    (j omitido = solo la carta superior)
+     {z:'w', i}     celda libre i (1 carta)
+     {z:'f', i}     fundación i (1 carta)
+
+   Reglas:
+     · a columna: descendente y de color alterno; la columna vacía acepta
+       cualquier carta o serie (regla libre estándar).
+     · a fundación: mismo palo ascendente desde el As (fila 0 = 13 cartas);
+       al empezar cualquier As vale para cualquier hueco (regla clásica).
+     · a celda libre: solo 1 carta y hueco vacío.
+     · serie movible a destino NO vacío: como máximo (celdas libres+1)·2^huecos
+       vacíos (sin contar la columna de origen) — el cálculo clásico de FreeCell.
+
+   Dificultad = número de celdas libres (variantes reales de FreeCell: de 1 a 8):
+     6 = Fácil · 4 = Normal (estándar) · 2 = Experto
+   Persistencia de la elección: 'fc.diff'.
+
+   Reparto: las 52 cartas en 7 columnas, 8-8-8-7-7-7-7, todas boca arriba.
+   Ojo: 1+2+…+7 = 28 es el reparto de Klondike (que deja 24 en el mazo); aquí
+   dejaría 24 cartas fuera del tablero y haría imposible completar las 4
+   fundaciones de 13. FreeCell reparte 52 y no lleva mazo.
+   ================================================================= */
+function cardColor(s){ return (s===1||s===2)?'r':'b'; } /* palos: 0♠ 1♥ 2♦ 3♣ */
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function isCard(x){ return !!x && typeof x==='object' && !Array.isArray(x) && x.r!==undefined && x.s!==undefined; }
+function shuffle(a, rnd){
+  var r=(typeof rnd==='function')?rnd:Math.random;
+  for(var i=a.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+/* newState(freecells, rnd): reparto nuevo. rnd opcional (inyectable). */
+function newState(freecells, rnd){
+  if(freecells!==6 && freecells!==2) freecells=4;
+  var deck=[], s, r;
+  for(s=0;s<4;s++) for(r=1;r<=13;r++) deck.push({s:s,r:r,up:true});
+  shuffle(deck, rnd);
+  var st={tableau:[],freecells:[],foundations:[[],[],[],[]],moves:0,score:0,won:false};
+  var deal=[8,8,8,7,7,7,7], c, k;
+  for(c=0;c<7;c++){
+    var col=[];
+    for(k=0;k<deal[c];k++) col.push(deck.pop());
+    st.tableau.push(col);
+  }
+  for(c=0;c<freecells;c++) st.freecells.push(null);
+  return st;
+}
+function countFree(st){
+  var n=0;
+  for(var i=0;i<st.freecells.length;i++) if(!st.freecells[i]) n++;
+  return n;
+}
+function emptyCols(st, exceptI){
+  var n=0;
+  for(var i=0;i<st.tableau.length;i++){ if(i===exceptI) continue; if(!st.tableau[i].length) n++; }
+  return n;
+}
+/* Máximo de cartas movibles en bloque a una columna no vacía. */
+function capacity(st, fromI){
+  var cap=(countFree(st)+1)*Math.pow(2, emptyCols(st, fromI));
+  return cap>13?13:cap;
+}
+/* ¿La cola de la columna desde j es una serie arrastrable? */
+function runOk(col, j){
+  if(!col||j<0||j>=col.length) return false;
+  if(!col[j].up) return false;
+  for(var i=j;i<col.length-1;i++){
+    var a=col[i], b=col[i+1];
+    if(!b.up) return false;
+    if(cardColor(a.s)===cardColor(b.s)) return false;
+    if(b.r!==a.r-1) return false;
+  }
+  return true;
+}
+/* canPlace(destino, carta): admite también el orden invertido y una serie
+   como segundo argumento (usa su primera carta). */
+function canPlace(destino, carta){
+  if(isCard(destino) && Array.isArray(carta)){ var t=destino; destino=carta; carta=t; }
+  if(Array.isArray(carta)) carta=carta[0];
+  if(!Array.isArray(destino) || !carta) return false;
+  if(!destino.length) return true; /* columna vacía: cualquier carta o serie */
+  var top=destino[destino.length-1];
+  if(!top.up) return false;
+  if(top.r!==carta.r+1) return false;
+  return cardColor(top.s)!==cardColor(carta.s);
+}
+function canToFoundation(fnd, carta){
+  if(isCard(fnd) && Array.isArray(carta)){ var t=fnd; fnd=carta; carta=t; }
+  if(!Array.isArray(fnd) || !carta) return false;
+  if(!fnd.length) return carta.r===1;
+  var top=fnd[fnd.length-1];
+  return top.s===carta.s && carta.r===top.r+1;
+}
+function peek(st, from){
+  if(!st||!from) return null;
+  if(from.z==='w'){
+    var fc=st.freecells[from.i];
+    return (fc===null||fc===undefined)?null:fc;
+  }
+  if(from.z==='f'){
+    var fp=st.foundations[from.i];
+    return (fp&&fp.length)?fp[fp.length-1]:null;
+  }
+  if(from.z==='t'){
+    var col=st.tableau[from.i];
+    if(!col||!col.length) return null;
+    var j=(from.j===undefined||from.j===null)?col.length-1:from.j;
+    if(!runOk(col,j)) return null;
+    return col[j];
+  }
+  return null;
+}
+function moveOk(st, m){
+  if(!st||!m||!m.from||!m.to) return false;
+  var tz=m.to.z;
+  if(tz!=='t'&&tz!=='f'&&tz!=='w') return false;
+  if(m.from.z===tz && tz!=='t') return false;          /* w→w y f→f no */
+  var card=peek(st, m.from);
+  if(!card) return false;
+  if(tz==='w'){
+    var dest=st.freecells[m.to.i];
+    if(dest!==null && dest!==undefined) return false;  /* celda ocupada */
+    if(m.from.z==='f') return false;                   /* fundación→celda: inútil */
+    if(m.from.z==='t'){
+      var col=st.tableau[m.from.i];
+      var j=(m.from.j===undefined||m.from.j===null)?col.length-1:m.from.j;
+      if(j!==col.length-1) return false;               /* solo 1 carta */
+    }
+    return true;
+  }
+  if(tz==='f'){
+    if(m.from.z==='t'){
+      var c2=st.tableau[m.from.i];
+      if(m.from.j!==undefined && m.from.j!==null && m.from.j!==c2.length-1) return false;
+    }
+    return canToFoundation(st.foundations[m.to.i], card);
+  }
+  /* destino: columna */
+  if(m.from.z==='t' && m.from.i===m.to.i) return false;
+  var tgt=st.tableau[m.to.i];
+  if(!tgt) return false;
+  if(!canPlace(tgt, card)) return false;
+  if(tgt.length){
+    var len=1;
+    if(m.from.z==='t'){
+      var c3=st.tableau[m.from.i];
+      var j3=(m.from.j===undefined||m.from.j===null)?c3.length-1:m.from.j;
+      len=c3.length-j3;
+    }
+    if(len>capacity(st, m.from.i)) return false;
+  }
+  return true;
+}
+/* applyMove: devuelve un estado NUEVO (nunca muta el original) o null. */
+function applyMove(st, m){
+  if(!moveOk(st,m)) return null;
+  var s=clone(st), moving=[], i;
+  if(m.from.z==='w'){
+    moving=[s.freecells[m.from.i]];
+    s.freecells[m.from.i]=null;
+  } else if(m.from.z==='f'){
+    moving=[s.foundations[m.from.i].pop()];
+  } else {
+    var col=s.tableau[m.from.i];
+    var j=(m.from.j===undefined||m.from.j===null)?col.length-1:m.from.j;
+    moving=col.splice(j);
+  }
+  if(m.to.z==='f'){
+    s.foundations[m.to.i].push(moving[0]);
+    s.score+=10;
+  } else if(m.to.z==='w'){
+    s.freecells[m.to.i]=moving[0];
+  } else {
+    var tgt=s.tableau[m.to.i];
+    for(i=0;i<moving.length;i++) tgt.push(moving[i]);
+  }
+  s.moves++;
+  var won=true;
+  for(i=0;i<4;i++) if(s.foundations[i].length!==13){ won=false; break; }
+  if(won){ s.won=true; s.score+=500; }
+  return s;
+}
+/* autoFoundation(st, i): movimiento a fundación del tope de la columna i;
+   también acepta autoFoundation(st, {z,i,j}) o (st, i, j). null si no encaja. */
+function autoFoundation(st, i, j){
+  if(!st || st.won) return null;
+  var from=null, col, k;
+  if(typeof i==='object' && i!==null){
+    if(i.z!=='t' && i.z!=='w' && i.z!=='f') return null;
+    from={z:i.z, i:i.i};
+    if(i.z==='t') from.j=i.j;
+  } else if(typeof i==='number' && i>=0){
+    col=st.tableau[i];
+    if(!col || !col.length) return null;
+    from={z:'t', i:i, j:(j===undefined||j===null)?col.length-1:j};
+  } else return null;
+  if(from.z==='t'){
+    col=st.tableau[from.i];
+    if(!col || !col.length) return null;
+    if(from.j===undefined || from.j===null) from.j=col.length-1;
+    if(from.j!==col.length-1) return null;
+  }
+  var card=peek(st, from);
+  if(!card) return null;
+  for(k=0;k<st.foundations.length;k++){
+    if(!canToFoundation(st.foundations[k], card)) continue;
+    var mv={from:{z:from.z, i:from.i}, to:{z:'f', i:k}};
+    if(from.z==='t') mv.from.j=from.j;
+    if(moveOk(st, mv)) return mv;
+  }
+  return null;
+}
+function legalMoves(st){
+  var out=[];
+  if(!st || st.won) return out;
+  var i,j,k,f,t,col,card,top;
+  for(i=0;i<st.tableau.length;i++){
+    col=st.tableau[i];
+    if(!col.length) continue;
+    top=col[col.length-1];
+    if(top.up){
+      for(k=0;k<st.freecells.length;k++){
+        if(st.freecells[k]===null || st.freecells[k]===undefined){
+          out.push({from:{z:'t',i:i,j:col.length-1}, to:{z:'w',i:k}});
+          break; /* una celda basta para la pista */
+        }
+      }
+      for(f=0;f<st.foundations.length;f++){
+        if(canToFoundation(st.foundations[f], top))
+          out.push({from:{z:'t',i:i,j:col.length-1}, to:{z:'f',i:f}});
+      }
+    }
+    for(j=0;j<col.length;j++){
+      if(!runOk(col,j)) continue;
+      card=col[j];
+      for(t=0;t<st.tableau.length;t++){
+        if(t===i) continue;
+        if(!canPlace(st.tableau[t], card)) continue;
+        if(st.tableau[t].length && (col.length-j)>capacity(st,i)) continue;
+        out.push({from:{z:'t',i:i,j:j}, to:{z:'t',i:t}});
+      }
+    }
+  }
+  for(i=0;i<st.freecells.length;i++){
+    card=st.freecells[i];
+    if(!card) continue;
+    for(f=0;f<st.foundations.length;f++){
+      if(canToFoundation(st.foundations[f], card))
+        out.push({from:{z:'w',i:i}, to:{z:'f',i:f}});
+    }
+    for(t=0;t<st.tableau.length;t++){
+      if(!canPlace(st.tableau[t], card)) continue;
+      out.push({from:{z:'w',i:i}, to:{z:'t',i:t}});
+    }
+  }
+  for(f=0;f<st.foundations.length;f++){
+    var fp=st.foundations[f];
+    if(!fp.length) continue;
+    card=fp[fp.length-1];
+    for(t=0;t<st.tableau.length;t++){
+      if(!canPlace(st.tableau[t], card)) continue;
+      out.push({from:{z:'f',i:f}, to:{z:'t',i:t}});
+    }
+  }
+  return out;
+}
+function status(st){
+  if(!st) return {over:false, result:null};
+  if(st.won) return {over:true, result:'win'};
+  if(!legalMoves(st).length) return {over:true, result:'stuck'};
+  return {over:false, result:null};
+}
+var state=newState(4);
+
+/* ================= UI (solo navegador) ================= */
+if (typeof document !== 'undefined') {
+
+var SUITS=['♠','♥','♦','♣'];
+var RN=[null,'A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+var $=function(s){return document.querySelector(s);};
+
+var diff=4;
+if(typeof localStorage!=='undefined'){
+  try{
+    var saved=localStorage.getItem('fc.diff');
+    if(saved==='6'||saved==='2'||saved==='4') diff=parseInt(saved,10);
+  }catch(_e){}
+}
+
+var undoStack=[], sel=null, hint=null, hintTimer=null, drag=null, toastTimer=null;
+var t0=Date.now(), wonAt=0;
+var lastTap={key:null,t:0};
+
+/* ---------- util ---------- */
+function face(card){
+  var rn=RN[card.r], sy=SUITS[card.s];
+  var cls=(card.s===1||card.s===2)?'red':'black';
+  return '<span class="corner tl '+cls+'"><b>'+rn+'</b><i>'+sy+'</i></span>'+
+         '<span class="pip '+cls+'">'+sy+'</span>'+
+         '<span class="corner br '+cls+'"><b>'+rn+'</b><i>'+sy+'</i></span>';
+}
+function fmtTime(s){
+  var m=Math.floor(s/60);
+  return m+':'+String(s%60).padStart(2,'0');
+}
+function elapsed(){
+  var end=state.won?wonAt:Date.now();
+  return Math.floor((end-t0)/1000);
+}
+function toast(msg){
+  var t=$('#toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
+}
+function clearHint(){
+  if(hintTimer) clearTimeout(hintTimer);
+  hintTimer=null; hint=null;
+}
+function fromOf(src){ return src.z==='t'? {z:'t',i:src.i,j:src.j} : {z:src.z,i:src.i}; }
+function sameSrc(a,b){
+  return !!a&&!!b&&a.z===b.z&&a.i===b.i&&(a.z!=='t'||a.j===b.j);
+}
+function moveOf(src,dst){
+  return {from:fromOf(src), to:{z:dst.z, i:dst.i}};
+}
+function srcKey(src){ return src? (src.z+':'+src.i+':'+(src.j===undefined?'':src.j)) : ''; }
+function isSelfTarget(src,dst){
+  if(!src||!dst||src.z!==dst.z) return false;
+  return src.i===dst.i;
+}
+function hasFrom(list,src){
+  for(var i=0;i<list.length;i++){
+    var m=list[i].from;
+    if(m.z!==src.z) continue;
+    if(src.z==='t'){ if(m.i===src.i&&m.j===src.j) return true; }
+    else if(m.i===src.i) return true;
+  }
+  return false;
+}
+
+/* ---------- partida ---------- */
+function newGame(){
+  state=newState(diff);
+  undoStack=[]; sel=null; clearHint(); cleanupDrag();
+  t0=Date.now(); wonAt=0; lastTap={key:null,t:0};
+  render();
+}
+function tryMove(m){
+  var next=applyMove(state,m);
+  if(!next) return false;
+  undoStack.push(JSON.stringify(state));
+  if(undoStack.length>1000) undoStack.shift();
+  state=next;
+  if(state.won&&!wonAt) wonAt=Date.now();
+  clearHint();
+  return true;
+}
+function undo(){
+  if(!undoStack.length){ toast('Nada que deshacer'); return; }
+  clearHint();
+  state=JSON.parse(undoStack.pop());
+  if(!state.won) wonAt=0;
+  sel=null;
+  render();
+}
+function hintAction(){
+  if(drag) return;
+  if(!state||state.won) return;
+  clearHint();
+  var ms=legalMoves(state);
+  if(!ms.length){ toast('Sin movimientos disponibles'); render(); return; }
+  var best=null, bestPri=-1;
+  for(var i=0;i<ms.length;i++){
+    var m=ms[i], pri=3;
+    if(m.to.z==='f') pri=8;                                  /* a fundación */
+    else if(m.from.z==='w') pri=6;                           /* libera celda */
+    else if(m.from.z==='t' && state.tableau[m.from.i].length===1) pri=5; /* vacía columna */
+    else if(m.to.z==='t' && state.tableau[m.to.i].length===0) pri=4;     /* ocupa hueco */
+    if(m.from.z==='f') pri=1;                                /* devolver: último recurso */
+    if(pri>bestPri){ bestPri=pri; best=m; }
+  }
+  hint=best;
+  render();
+  hintTimer=setTimeout(function(){ hint=null; render(); },3000);
+}
+
+/* ---------- render ---------- */
+function render(){
+  var legal=legalMoves(state), i, f;
+
+  /* celdas libres */
+  var fEl=$('#fcs');
+  fEl.innerHTML='';
+  for(i=0;i<state.freecells.length;i++){
+    var slot=document.createElement('div');
+    slot.className='slot fc'+(state.freecells[i]?'':' empty');
+    slot.dataset.z='w';
+    slot.dataset.i=i;
+    slot.title='Celda libre';
+    if(hint&&hint.to.z==='w'&&hint.to.i===i) slot.classList.add('hint-col');
+    var fc=state.freecells[i];
+    if(fc){
+      var ce=document.createElement('div');
+      ce.className='card up';
+      ce.innerHTML=face(fc);
+      ce.dataset.z='w';
+      ce.dataset.i=i;
+      if(sel&&sel.z==='w'&&sel.i===i) ce.classList.add('sel');
+      if(hint&&hint.from.z==='w'&&hint.from.i===i) ce.classList.add('hint-card');
+      if(hasFrom(legal,{z:'w',i:i})) ce.classList.add('can');
+      slot.appendChild(ce);
+    }
+    fEl.appendChild(slot);
+  }
+  $('#fcN').textContent=countFree(state)+'/'+state.freecells.length;
+
+  /* fundaciones */
+  var dEl=$('#fnds');
+  dEl.innerHTML='';
+  for(f=0;f<4;f++){
+    var pile=state.foundations[f];
+    var fs=document.createElement('div');
+    fs.className='slot fnd'+(pile.length?'':' empty');
+    fs.dataset.z='f';
+    fs.dataset.i=f;
+    fs.title='Fundación';
+    if(hint&&hint.to.z==='f'&&hint.to.i===f) fs.classList.add('hint-col');
+    if(pile.length){
+      var tc=pile[pile.length-1];
+      var fe=document.createElement('div');
+      fe.className='card up';
+      fe.innerHTML=face(tc);
+      fe.dataset.z='f';
+      fe.dataset.i=f;
+      if(sel&&sel.z==='f'&&sel.i===f) fe.classList.add('sel');
+      if(hint&&hint.from.z==='f'&&hint.from.i===f) fe.classList.add('hint-card');
+      if(hasFrom(legal,{z:'f',i:f})) fe.classList.add('can');
+      fs.appendChild(fe);
+    }
+    dEl.appendChild(fs);
+  }
+
+  /* columnas */
+  var board=$('#board');
+  board.innerHTML='';
+  var els=[], ci, ki;
+  for(ci=0;ci<7;ci++){
+    var colA=state.tableau[ci];
+    var elA=document.createElement('div');
+    elA.className='col'+(colA.length?'':' empty');
+    elA.dataset.i=ci;
+    board.appendChild(elA);
+    els.push(elA);
+  }
+  /* el tamaño --cw (cartas y huecos de arriba) se fija ANTES de medir: cambia la
+     altura de la fila superior y por tanto la altura libre del tablero */
+  var c0=document.querySelector('.col');
+  if(c0) document.documentElement.style.setProperty('--cw', c0.clientWidth+'px');
+
+  var bTop=board.getBoundingClientRect().top;
+  /* hueco real disponible dentro del tablero (resta su relleno y el de las columnas) */
+  var bh=board.clientHeight||Math.max(200, window.innerHeight-bTop);
+  var avail=Math.max(160, bh-38-18);
+  for(ci=0;ci<7;ci++){
+    var col=state.tableau[ci];
+    var el=els[ci];
+    var cw=el.clientWidth||120;
+    var stl=getComputedStyle(el);
+    var cardW=cw-(parseFloat(stl.paddingLeft)||0)-(parseFloat(stl.paddingRight)||0);
+    if(!(cardW>10)) cardW=cw;
+    var cardH=Math.round(cardW*1.4);
+    var visUp=cardW<64?Math.round(cardH*0.45):Math.max(16,Math.round(cardW*0.26));
+    var n=col.length;
+    var over=cardH-visUp;              /* margen negativo: el paso visible es cardH-over */
+    if(n>1){
+      var step=cardH-over;
+      var total=cardH+(n-1)*step;
+      if(total>avail){
+        var s2=(avail-cardH)/(n-1);
+        step=Math.max(Math.round(cardH*0.14), Math.min(step,s2));
+        over=cardH-step;
+      }
+    }
+    for(ki=0;ki<n;ki++){
+      var card=col[ki];
+      var cEl=document.createElement('div');
+      cEl.className='card up';
+      cEl.dataset.z='t';
+      cEl.dataset.i=ci;
+      cEl.dataset.j=ki;
+      cEl.style.marginTop=(ki===0?'0px':(-over)+'px');
+      cEl.innerHTML=face(card);
+      if(hasFrom(legal,{z:'t',i:ci,j:ki})) cEl.classList.add('can');
+      if(sel&&sel.z==='t'&&sel.i===ci&&sel.j===ki) cEl.classList.add('sel');
+      if(hint&&hint.from.z==='t'&&hint.from.i===ci&&hint.from.j===ki) cEl.classList.add('hint-card');
+      el.appendChild(cEl);
+    }
+    if(hint&&hint.to.z==='t'&&hint.to.i===ci) el.classList.add('hint-col');
+  }
+
+  $('#score').textContent=state.score;
+  $('#moves').textContent=state.moves;
+  $('#time').textContent=fmtTime(elapsed());
+
+  var stt=status(state);
+  $('#win').classList.toggle('show', !!stt.over);
+  if(stt.over){
+    if(stt.result==='win'){
+      $('#winTitle').textContent='¡Has ganado!';
+      $('#winStats').textContent='Puntos: '+state.score+' · Tiempo: '+fmtTime(elapsed())+' · Movimientos: '+state.moves;
+    } else {
+      $('#winTitle').textContent='Sin movimientos';
+      $('#winStats').textContent='La partida está bloqueada · Movimientos: '+state.moves;
+    }
+  }
+}
+
+/* ---------- entrada ---------- */
+function srcFromEl(el){
+  if(!el||!el.dataset||!el.dataset.z) return null;
+  var z=el.dataset.z;
+  if(z==='w') return {z:'w',i:+el.dataset.i};
+  if(z==='f') return {z:'f',i:+el.dataset.i};
+  if(z==='t') return {z:'t',i:+el.dataset.i,j:+el.dataset.j};
+  return null;
+}
+function dstFromEl(el){
+  if(!el||!el.closest) return null;
+  var col=el.closest('.col');
+  if(col) return {z:'t',i:+col.dataset.i};
+  var fc=el.closest('.fc');
+  if(fc) return {z:'w',i:+fc.dataset.i};
+  var fnd=el.closest('.fnd');
+  if(fnd) return {z:'f',i:+fnd.dataset.i};
+  return null;
+}
+function beginGhost(){
+  var r=drag.rect;
+  drag.ox=drag.x-r.left;
+  drag.oy=drag.y-r.top;
+  var g=document.createElement('div');
+  g.className='ghost';
+  g.style.width=r.width+'px';
+  var src=drag.src;
+  var cards=[], i;
+  if(src.z==='t'){
+    var col=state.tableau[src.i];
+    for(i=src.j;i<col.length;i++) cards.push(col[i]);
+  } else if(src.z==='w'){
+    cards.push(state.freecells[src.i]);
+  } else {
+    var fp=state.foundations[src.i];
+    cards.push(fp[fp.length-1]);
+  }
+  var cardH=Math.round(r.width*1.4);
+  var overUp=cardH-(r.width<64?Math.round(cardH*0.45):Math.max(16,Math.round(r.width*0.26)));
+  for(var k=0;k<cards.length;k++){
+    var c=document.createElement('div');
+    c.className='card up';
+    c.innerHTML=face(cards[k]);
+    if(k>0) c.style.marginTop=(-overUp)+'px';
+    g.appendChild(c);
+  }
+  document.body.appendChild(g);
+  drag.ghost=g;
+  document.body.classList.add('dragging');
+  if(src.z==='t'){
+    var colEl=document.querySelector('.col[data-i="'+src.i+'"]');
+    if(colEl){
+      var kids=colEl.children;
+      for(var k2=src.j;k2<kids.length;k2++) kids[k2].classList.add('dragging');
+    }
+  } else if(src.z==='w'){
+    var we=document.querySelector('.fc[data-i="'+src.i+'"] .card');
+    if(we) we.classList.add('dragging');
+  } else {
+    var fe=document.querySelector('.fnd[data-i="'+src.i+'"] .card');
+    if(fe) fe.classList.add('dragging');
+  }
+}
+function positionGhost(e){
+  drag.ghost.style.left=(e.clientX-drag.ox)+'px';
+  drag.ghost.style.top=(e.clientY-drag.oy)+'px';
+}
+function clearDropMarks(){
+  var m=document.querySelectorAll('.col.drop-ok,.col.drop-bad,.slot.drop-ok,.slot.drop-bad');
+  for(var i=0;i<m.length;i++) m[i].classList.remove('drop-ok','drop-bad');
+}
+function updateHover(e){
+  clearDropMarks();
+  var el=document.elementFromPoint(e.clientX,e.clientY);
+  var dst=dstFromEl(el);
+  if(!dst||isSelfTarget(drag.src,dst)) return;
+  var target=null;
+  if(dst.z==='t') target=document.querySelector('.col[data-i="'+dst.i+'"]');
+  else if(dst.z==='w') target=document.querySelector('.fc[data-i="'+dst.i+'"]');
+  else if(dst.z==='f') target=document.querySelector('.fnd[data-i="'+dst.i+'"]');
+  if(!target) return;
+  target.classList.add(moveOk(state,moveOf(drag.src,dst))?'drop-ok':'drop-bad');
+}
+function cleanupDrag(){
+  document.body.classList.remove('dragging');
+  var ghosts=document.querySelectorAll('body > .ghost');
+  for(var i=0;i<ghosts.length;i++) ghosts[i].parentNode.removeChild(ghosts[i]);
+  var hidden=document.querySelectorAll('.card.dragging');
+  for(var i2=0;i2<hidden.length;i2++) hidden[i2].classList.remove('dragging');
+  clearDropMarks();
+}
+function finishClick(src,dst){
+  if(sel&&dst&&moveOk(state,moveOf(sel,dst))){
+    if(tryMove(moveOf(sel,dst))){ sel=null; render(); return; }
+  }
+  if(src&&peek(state,fromOf(src))){
+    if(sameSrc(sel,src)) sel=null; else sel=src;
+  } else {
+    sel=null;
+  }
+  render();
+}
+function autoMoveTap(src){
+  var mv=autoFoundation(state, src);
+  if(mv && tryMove(mv)){ sel=null; render(); return; }
+  toast('No puede ir a la fundación');
+}
+function onDown(e){
+  if(!state||state.won) return;
+  if(e.pointerType==='mouse'&&e.button!==0) return;
+  var zoneEl=e.target.closest('.col, .slot');
+  if(!zoneEl) return;
+  var cardEl=e.target.closest('.card');
+  var src=cardEl?srcFromEl(cardEl):null;
+  if(src&&!peek(state,fromOf(src))) src=null;
+  drag={
+    src:src, x:e.clientX, y:e.clientY, started:false,
+    el:cardEl, rect:cardEl?cardEl.getBoundingClientRect():null, pid:e.pointerId
+  };
+  if(cardEl&&cardEl.setPointerCapture){
+    try{ cardEl.setPointerCapture(e.pointerId); }catch(_e){}
+  }
+  e.preventDefault();
+}
+function onMove(e){
+  if(!drag) return;
+  if(drag.el&&!document.contains(drag.el)){ onCancel(); return; }
+  if(!drag.started){
+    if(Math.abs(e.clientX-drag.x)<5&&Math.abs(e.clientY-drag.y)<5) return;
+    if(!drag.src){ drag=null; return; }
+    drag.started=true;
+    beginGhost();
+  }
+  positionGhost(e);
+  updateHover(e);
+}
+function onUp(e){
+  if(!drag) return;
+  var d=drag;
+  drag=null;
+  if(d.el&&!document.contains(d.el)){ cleanupDrag(); render(); return; }
+  if(!d.started){
+    var under=document.elementFromPoint(e.clientX,e.clientY);
+    var dst=dstFromEl(under);
+    var key=srcKey(d.src);
+    var now=Date.now();
+    if(d.src&&key===lastTap.key&&now-lastTap.t<400){
+      lastTap={key:null,t:0};
+      autoMoveTap(d.src);
+      return;
+    }
+    lastTap=d.src?{key:key,t:now}:{key:null,t:0};
+    finishClick(d.src,dst);
+    return;
+  }
+  var under2=document.elementFromPoint(e.clientX,e.clientY);
+  var dst2=dstFromEl(under2);
+  cleanupDrag();
+  var m=(dst2&&!isSelfTarget(d.src,dst2))?moveOf(d.src,dst2):null;
+  if(m&&moveOk(state,m)&&tryMove(m)) sel=null;
+  render();
+}
+function onCancel(){
+  if(!drag){ cleanupDrag(); return; }
+  drag=null;
+  cleanupDrag();
+  render();
+}
+function confirmNew(){
+  if(state.moves>0&&!confirm('¿Empezar una nueva partida? Se perderá la actual.')) return;
+  newGame();
+}
+
+/* ---------- wiring ---------- */
+$('#board').addEventListener('pointerdown',onDown);
+$('#fcs').addEventListener('pointerdown',onDown);
+$('#fnds').addEventListener('pointerdown',onDown);
+window.addEventListener('pointermove',onMove);
+window.addEventListener('pointerup',onUp);
+window.addEventListener('pointercancel',onCancel);
+window.addEventListener('blur',onCancel);
+window.addEventListener('lostpointercapture',function(){ if(drag&&drag.started) onCancel(); });
+window.addEventListener('resize',function(){ if(state&&!state.won) render(); });
+window.addEventListener('load',function(){ render(); });
+$('#btnUndo').addEventListener('click',undo);
+$('#btnHint').addEventListener('click',hintAction);
+$('#btnNew').addEventListener('click',confirmNew);
+$('#btnAgain').addEventListener('click',newGame);
+$('#diffSel').addEventListener('change',function(e){
+  var v=parseInt(e.target.value,10);
+  diff=(v===6)?6:((v===2)?2:4);
+  if(typeof localStorage!=='undefined'){
+    try{ localStorage.setItem('fc.diff',String(diff)); }catch(_e){}
+  }
+  newGame();
+});
+document.addEventListener('keydown',function(e){
+  if(e.target&&e.target.tagName==='SELECT') return;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  var k=e.key.toLowerCase();
+  if(k==='u'){ undo(); }
+  else if(k==='h'){ hintAction(); }
+  else if(k==='n'){ confirmNew(); }
+});
+setInterval(function(){ if(state&&!state.won) $('#time').textContent=fmtTime(elapsed()); },500);
+
+$('#diffSel').value=String(diff);
+newGame();
+
+if(typeof window!=='undefined'){
+  window.__freecell={
+    state:function(){ return state; },
+    newState:newState, legalMoves:legalMoves, applyMove:applyMove, status:status,
+    canPlace:canPlace, canToFoundation:canToFoundation, moveOk:moveOk, runOk:runOk,
+    autoFoundation:autoFoundation, capacity:capacity,
+    newGame:newGame, undo:undo, hint:hintAction
+  };
+}
+
+}
+</script>
+</body>
+</html>
