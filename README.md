@@ -16,6 +16,7 @@ Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin
 | Memoria | `memoria.html` | 4×4 · 6×6 · 8×8 |
 | Damas Chinas | `damas-chinas.html` | Fácil, Medio, Difícil (IA alfa-beta) |
 | 2048 | `2048.html` | 4×4 · 5×5 · 6×6 |
+| Serpiente | `serpiente.html` | Lento, Medio, Rápido (velocidad) |
 
 El índice `index.html` es el menú de entrada.
 

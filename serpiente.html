@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Serpiente</title>
+<style>
+html{background-color:#14471c}
+:root{--cw:clamp(11px,min(4.0vw,calc((100vh - 200px)/20)),24px);--gap:clamp(2px,.5vw,5px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- estado ---------- */
+.statusbar{display:flex;justify-content:center;padding:10px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.g{background:#43a047;color:#43a047}
+.dot.r{background:#e53935;color:#e53935}
+.dot.y{background:#fdd835;color:#fdd835}
+.dot.n{background:#90a4ae;color:#90a4ae}
+
+/* ---------- tablero ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 12px;min-height:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:clamp(4px,.8vh,9px)}
+.board{
+  display:grid;grid-template-columns:repeat(var(--n,20),var(--cw));gap:var(--gap);
+  padding:var(--gap);
+  background:linear-gradient(180deg,#17512a,#0d3a1e);
+  border-radius:clamp(8px,1.4vw,16px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.22),inset 0 -3px 0 rgba(0,0,0,.35);
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.cell{
+  width:var(--cw);height:var(--cw);border-radius:24%;
+  background:rgba(255,255,255,.045);
+  display:grid;place-items:center;position:relative;
+}
+/* serpiente */
+.cell.b{
+  border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#b6e86f,#5cb85c 55%,#2e7d32);
+  box-shadow:inset 0 -2px 4px rgba(0,0,0,.32),inset 0 2px 3px rgba(255,255,255,.45),0 1px 3px rgba(0,0,0,.35);
+}
+.cell.h{
+  border-radius:50%;z-index:3;transform:scale(1.16);
+  background:radial-gradient(circle at 34% 30%,#e0ffa8,#9ccc65 55%,#4a8f24);
+  box-shadow:inset 0 -3px 5px rgba(0,0,0,.3),inset 0 3px 4px rgba(255,255,255,.55),0 2px 5px rgba(0,0,0,.4);
+}
+.cell.h .eye{
+  position:absolute;width:30%;height:34%;background:#fff;border-radius:50%;
+  box-shadow:0 0 0 1px rgba(0,0,0,.2);
+}
+.cell.h .eye::after{
+  content:"";position:absolute;top:26%;left:30%;width:44%;height:44%;border-radius:50%;background:#0b2410;
+}
+.cell.h.d-right .e1{top:14%;left:54%}
+.cell.h.d-right .e2{top:52%;left:54%}
+.cell.h.d-right .eye::after{left:44%}
+.cell.h.d-left .e1{top:14%;left:16%}
+.cell.h.d-left .e2{top:52%;left:16%}
+.cell.h.d-left .eye::after{left:12%}
+.cell.h.d-up .e1{top:14%;left:14%}
+.cell.h.d-up .e2{top:14%;left:56%}
+.cell.h.d-up .eye::after{top:12%}
+.cell.h.d-down .e1{top:52%;left:14%}
+.cell.h.d-down .e2{top:52%;left:56%}
+.cell.h.d-down .eye::after{top:44%}
+/* manzana */
+.cell.f .apple{
+  position:relative;display:block;width:78%;height:78%;border-radius:50%;
+  background:radial-gradient(circle at 32% 26%,#ff9a90,#e53935 52%,#a91f1a);
+  box-shadow:0 0 9px rgba(255,80,70,.5),inset -2px -3px 6px rgba(0,0,0,.35),inset 2px 3px 5px rgba(255,255,255,.45);
+  animation:apple 1.5s ease-in-out infinite alternate;
+}
+@keyframes apple{from{transform:scale(1)}to{transform:scale(1.1)}}
+.cell.f .apple::after{
+  content:"";position:absolute;top:16%;left:20%;width:26%;height:18%;border-radius:50%;
+  background:rgba(255,255,255,.75);transform:rotate(-20deg);
+}
+.cell.f .apple::before{
+  content:"";position:absolute;top:-18%;left:47%;width:12%;height:28%;border-radius:3px;
+  background:#8bc34a;transform:rotate(18deg);
+}
+
+/* ---------- botones táctiles ---------- */
+.dpad{
+  display:none;grid-template-columns:repeat(3,clamp(46px,13vw,60px));
+  grid-template-rows:repeat(3,clamp(46px,13vw,60px));gap:7px;justify-content:center;
+}
+.dbtn{
+  font:inherit;font-size:19px;background:rgba(0,0,0,.38);color:#eaf5ea;
+  border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:0;cursor:pointer;
+  display:grid;place-items:center;touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
+}
+.dbtn:active{background:rgba(255,255,255,.22);transform:translateY(1px)}
+.dbtn[data-d=up]{grid-area:1/2}
+.dbtn[data-d=left]{grid-area:2/1}
+.dbtn[data-d=down]{grid-area:3/2}
+.dbtn[data-d=right]{grid-area:2/3}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+
+@media (max-width:760px),(hover:none) and (pointer:coarse){
+  .dpad{display:grid}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .dpad{display:none}
+}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🐍</span><h1>Serpiente</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Puntos</span><b id="statP">0</b></div>
+    <div class="stat"><span>Récord</span><b id="statB">0</b></div>
+    <div class="stat"><span>Tiempo</span><b id="statT">0:00</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Velocidad de la serpiente">
+      <option value="1">Lento · Principiante</option>
+      <option value="2">Medio</option>
+      <option value="3">Rápido · Experto</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnPause" title="Pausa (tecla Espacio)">Pausa</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot g" id="stDot"></i><span id="status">En marcha</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="board" id="board"></div>
+    <div class="dpad" id="dpad">
+      <button class="dbtn" data-d="up" aria-label="Arriba" title="Arriba">▲</button>
+      <button class="dbtn" data-d="left" aria-label="Izquierda" title="Izquierda">◀</button>
+      <button class="dbtn" data-d="down" aria-label="Abajo" title="Abajo">▼</button>
+      <button class="dbtn" data-d="right" aria-label="Derecha" title="Derecha">▶</button>
+    </div>
+  </div>
+</main>
+
+<div class="hint-bar">Flechas o WASD para mover · Desliza el tablero · Espacio pausa · N nueva partida</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE SERPIENTE PURO — sin IIFE, sin 'use strict'.
+   Sin referencias a document / window / setTimeout / localStorage en el
+   motor: todo es JavaScript plano evaluable en Node.
+
+   DISEÑO DEL ESTADO (documentado):
+     - Tablero cuadrado de size × size celdas, filas r y columnas c.
+     - snake: array de celdas [r,c] con la CABEZA en snake[0] y la cola
+       al final. Longitud inicial = 3.
+     - dir     : dirección en curso ('up'|'down'|'left'|'right').
+     - nextDir : dirección pedida por el jugador; step() la consume.
+     - food    : [r,c] de la manzana, o null si el tablero está lleno.
+     - score   : puntos (10 por manzana comida).
+     - over    : true si choca contra muro o contra su propio cuerpo.
+     - won     : true si la serpiente ocupa TODO el tablero.
+     - step(st) NUNCA muta: devuelve un estado nuevo (snake copiado).
+     - setDir(st,d) NUNCA muta: devuelve un estado nuevo, o el mismo si el
+       giro es ilegal (180° sobre sí misma = muerte garantizada).
+     - spawnFood(st) NUNCA muta: coloca la manzana en una celda libre al
+       azar; si no queda ninguna, devuelve el estado con won = true.
+   ========================================================================= */
+
+var DIRS={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
+var OPPOSITE={up:'down',down:'up',left:'right',right:'left'};
+var DEFAULT_SIZE=20;
+var START_LEN=3;
+var FOOD_POINTS=10;
+
+function inBounds(size,r,c){
+  return r>=0&&r<size&&c>=0&&c<size;
+}
+
+/* Copia profunda del estado: la inmutabilidad vive aquí. */
+function cloneState(st){
+  var snake=[],i;
+  for(i=0;i<st.snake.length;i++) snake.push([st.snake[i][0],st.snake[i][1]]);
+  return {
+    size:st.size,
+    snake:snake,
+    dir:st.dir,
+    nextDir:st.nextDir,
+    food:st.food?[st.food[0],st.food[1]]:null,
+    score:st.score,
+    over:st.over,
+    won:st.won
+  };
+}
+
+/* Estado inicial: serpiente de 3 en el centro, mirando a la derecha,
+   con la primera manzana ya colocada. */
+function newGame(size){
+  size=Math.floor(size);
+  if(!(size>=4)) size=DEFAULT_SIZE;
+  var mid=Math.floor(size/2),i;
+  var snake=[];
+  for(i=0;i<START_LEN;i++) snake.push([mid,mid-i]);
+  var st={
+    size:size,snake:snake,dir:'right',nextDir:'right',
+    food:null,score:0,over:false,won:false
+  };
+  return spawnFood(st);
+}
+
+/* Manzana en celda libre al azar. Tablero lleno → won. No muta. */
+function spawnFood(st){
+  var next=cloneState(st);
+  var used={},free=[],i,r,c;
+  for(i=0;i<next.snake.length;i++) used[next.snake[i][0]+','+next.snake[i][1]]=true;
+  for(r=0;r<next.size;r++){
+    for(c=0;c<next.size;c++){
+      if(!used[r+','+c]) free.push([r,c]);
+    }
+  }
+  if(!free.length){ next.won=true; next.food=null; return next; }
+  var pick=free[Math.floor(Math.random()*free.length)];
+  next.food=[pick[0],pick[1]];
+  return next;
+}
+
+/* Pide una dirección. Bloquea el giro de 180° (y los repetidos).
+   Devuelve el MISMO estado si la petición se ignora. No muta. */
+function setDir(st,d){
+  if(!st||!DIRS[d]) return st;
+  if(d===st.nextDir) return st;
+  if(OPPOSITE[d]===st.dir) return st;
+  var next=cloneState(st);
+  next.nextDir=d;
+  return next;
+}
+
+/* ¿Es jugable el paso en dirección d (por defecto nextDir)?
+   Misma regla que step(): la cola se libera salvo que se coma. */
+function canMove(st,d){
+  if(!st||st.over||st.won) return false;
+  if(d===undefined||d===null) d=st.nextDir;
+  if(!DIRS[d]) d=st.dir;
+  var v=DIRS[d];
+  if(!v) return false;
+  var r=st.snake[0][0]+v[0], c=st.snake[0][1]+v[1];
+  if(!inBounds(st.size,r,c)) return false;
+  var eats=!!(st.food&&st.food[0]===r&&st.food[1]===c);
+  var limit=eats?st.snake.length:st.snake.length-1;
+  for(var i=0;i<limit;i++){
+    if(st.snake[i][0]===r&&st.snake[i][1]===c) return false;
+  }
+  return true;
+}
+
+/* Avanza un paso. Devuelve un estado NUEVO.
+   - Mueve la cabeza en nextDir (o dir si nextDir no es válida).
+   - Muro o cuerpo → over (la serpiente no se mueve).
+   - Choca la manzana → crece 1, score + 10 y nueva manzana
+     (spawnFood puede marcar won si el tablero queda lleno). */
+function step(st){
+  if(!st) return null;
+  var next=cloneState(st);
+  if(next.over||next.won) return next;
+  var d=(DIRS[next.nextDir]?next.nextDir:next.dir);
+  var v=DIRS[d];
+  if(!v){ next.over=true; return next; }
+  var head=next.snake[0];
+  var r=head[0]+v[0], c=head[1]+v[1];
+  if(!inBounds(next.size,r,c)){ next.over=true; return next; }
+  var eats=!!(next.food&&next.food[0]===r&&next.food[1]===c);
+  var limit=eats?next.snake.length:next.snake.length-1;
+  for(var i=0;i<limit;i++){
+    if(next.snake[i][0]===r&&next.snake[i][1]===c){ next.over=true; return next; }
+  }
+  next.snake.unshift([r,c]);
+  next.dir=d;
+  if(eats){
+    next.score+=FOOD_POINTS;
+    next=spawnFood(next);
+  }else{
+    next.snake.pop();
+  }
+  return next;
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=newGame(20);
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage guardado dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var DIFF_NAMES={1:'Lento · Principiante',2:'Medio',3:'Rápido · Experto'};
+  var SPEEDS={1:180,2:120,3:70};          /* ms por paso y dificultad */
+  var boardSize=20;
+
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('snake.diff')||'2',10);
+      if(stored===1||stored===2||stored===3) diff=stored;
+    }
+  }catch(e){}
+
+  /* Récord por dificultad: 'snake.best.N' */
+  var best=0;
+  function loadBest(){
+    best=0;
+    try{
+      if(typeof localStorage!=='undefined'){
+        var v=parseInt(localStorage.getItem('snake.best.'+diff)||'0',10);
+        if(isFinite(v)&&v>0) best=v;
+      }
+    }catch(e){}
+  }
+  function saveBest(){
+    try{
+      if(typeof localStorage!=='undefined'){
+        localStorage.setItem('snake.best.'+diff,String(best));
+      }
+    }catch(e){}
+  }
+  loadBest();
+
+  var cellEls=[];
+  var timer=null;                 /* timeout propio del juego */
+  var paused=false;
+  var frozen=null;                /* ms congelados al morir */
+  var startedAt=Date.now(), pausedAt=0, pausedAcc=0;
+  var runId=0, endTimer=null, toastTimer=null, lastBlock=0;
+
+  /* ---------- tiempo / util ---------- */
+  function elapsedMs(){
+    if(frozen!==null) return frozen;
+    if(paused) return pausedAcc+(pausedAt-startedAt);
+    return pausedAcc+(Date.now()-startedAt);
+  }
+  function fmtTime(ms){
+    var t=Math.max(0,Math.floor(ms/1000));
+    var m=Math.floor(t/60), s=t%60;
+    return m+':'+(s<10?'0':'')+s;
+  }
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2200);
+  }
+
+  /* ---------- pintura ---------- */
+  function paintStats(){
+    $('#statP').textContent=String(state.score);
+    $('#statB').textContent=String(Math.max(best,state.score));
+    $('#statT').textContent=fmtTime(elapsedMs());
+  }
+  function paintStatus(){
+    var txt,dot;
+    if(state.over){ txt='Fin de la partida'; dot='r'; }
+    else if(state.won){ txt='¡Tablero completo!'; dot='y'; }
+    else if(paused){ txt='En pausa'; dot='n'; }
+    else{ txt='En marcha'; dot='g'; }
+    $('#status').textContent=txt;
+    $('#stDot').className='dot '+dot;
+    $('#btnPause').textContent=paused?'Seguir':'Pausa';
+  }
+  function buildBoard(){
+    var b=$('#board');
+    b.innerHTML='';
+    cellEls=[];
+    b.style.setProperty('--n',String(boardSize));
+    for(var r=0;r<boardSize;r++){
+      var row=[];
+      for(var c=0;c<boardSize;c++){
+        var d=document.createElement('div');
+        d.className='cell';
+        d.dataset.v='';
+        b.appendChild(d);
+        row.push(d);
+      }
+      cellEls.push(row);
+    }
+  }
+  function render(){
+    var s=state, occ={}, i, r, c;
+    for(i=0;i<s.snake.length;i++){
+      var p=s.snake[i];
+      occ[p[0]+','+p[1]]=(i===0)?('h'+s.dir):'b';
+    }
+    if(s.food) occ[s.food[0]+','+s.food[1]]='f';
+    for(r=0;r<s.size;r++){
+      for(c=0;c<s.size;c++){
+        var el=cellEls[r][c];
+        var key=occ[r+','+c]||'';
+        if(el.dataset.v===key) continue;
+        el.dataset.v=key;
+        var cls='cell';
+        if(key==='b') cls+=' b';
+        else if(key==='f') cls+=' f';
+        else if(key.charAt(0)==='h') cls+=' h d-'+key.slice(1);
+        el.className=cls;
+        el.innerHTML=(key==='f')?'<i class="apple"></i>'
+          :(key.charAt(0)==='h')?'<i class="eye e1"></i><i class="eye e2"></i>':'';
+      }
+    }
+    paintStats();
+    paintStatus();
+  }
+
+  /* ---------- bucle de juego ---------- */
+  function schedule(){
+    if(timer){ clearTimeout(timer); timer=null; }
+    if(paused||state.over||state.won) return;
+    timer=setTimeout(tick,SPEEDS[diff]);
+  }
+  function tick(){
+    timer=null;
+    if(paused||state.over||state.won) return;
+    state=step(state);
+    render();
+    if(state.over||state.won){ endGame(); return; }
+    schedule();
+  }
+  function endGame(){
+    if(timer){ clearTimeout(timer); timer=null; }
+    if(frozen===null) frozen=elapsedMs();
+    var record=state.score>best;
+    if(record){ best=state.score; saveBest(); }
+    render();
+    var id=runId;
+    if(endTimer) clearTimeout(endTimer);
+    endTimer=setTimeout(function(){
+      if(id!==runId) return;
+      $('#winTitle').textContent=state.won?'¡Tablero completo!':'Fin de la partida';
+      $('#winStats').textContent='Puntos '+state.score+' · Récord '+best+
+        ' · Tiempo '+fmtTime(frozen);
+      $('#win').classList.add('show');
+    },550);
+    if(record) toast('¡Nuevo récord! '+best+' puntos');
+  }
+  function togglePause(){
+    if(state.over||state.won) return;
+    if(paused){
+      paused=false;
+      pausedAcc+=Date.now()-pausedAt;
+      pausedAt=0;
+      schedule();
+      toast('En marcha');
+    }else{
+      paused=true;
+      pausedAt=Date.now();
+      if(timer){ clearTimeout(timer); timer=null; }
+      toast('En pausa · Espacio para continuar');
+    }
+    render();
+  }
+  function startNew(silent){
+    runId++;
+    if(timer){ clearTimeout(timer); timer=null; }
+    if(endTimer){ clearTimeout(endTimer); endTimer=null; }
+    $('#win').classList.remove('show');
+    paused=false;
+    frozen=null;
+    startedAt=Date.now();
+    pausedAt=0;
+    pausedAcc=0;
+    state=newGame(boardSize);
+    render();
+    schedule();
+    if(!silent) toast('Nueva partida · '+DIFF_NAMES[diff]);
+  }
+
+  /* ---------- entrada ---------- */
+  function turn(d){
+    if(state.over||state.won) return;
+    var before=state;
+    state=setDir(state,d);
+    if(state===before&&OPPOSITE[d]===state.dir){
+      var now=Date.now();
+      if(now-lastBlock>1500){
+        lastBlock=now;
+        toast('No puedes girar 180° sobre ti mismo');
+      }
+    }
+  }
+
+  $('#btnNew').addEventListener('click',function(){ startNew(false); });
+  $('#btnAgain').addEventListener('click',function(){ startNew(false); });
+  $('#btnPause').addEventListener('click',togglePause);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('snake.diff',String(diff));
+    }catch(err){}
+    loadBest();
+    render();
+    toast('Dificultad: '+DIFF_NAMES[diff]+' ('+SPEEDS[diff]+' ms)');
+  });
+
+  /* Flechas + WASD + Espacio + N */
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    var map={arrowup:'up',w:'up',arrowdown:'down',s:'down',
+             arrowleft:'left',a:'left',arrowright:'right',d:'right'};
+    if(map[k]){ e.preventDefault(); turn(map[k]); return; }
+    if(k===' '||k==='spacebar'){ e.preventDefault(); togglePause(); return; }
+    if(k==='n'){ startNew(false); }
+  });
+
+  /* Botones-dirección táctiles */
+  $('#dpad').addEventListener('click',function(e){
+    var el=e.target&&e.target.closest?e.target.closest('[data-d]'):null;
+    if(el) turn(el.getAttribute('data-d'));
+  });
+
+  /* Swipe táctil con umbral */
+  var swipeFrom=null;
+  var SWIPE_MIN=24;
+  var board=$('#board');
+  board.addEventListener('touchstart',function(e){
+    if(e.touches.length!==1){ swipeFrom=null; return; }
+    var t=e.touches[0];
+    swipeFrom={x:t.clientX,y:t.clientY};
+  },{passive:true});
+  board.addEventListener('touchend',function(e){
+    if(!swipeFrom) return;
+    var t=e.changedTouches[0];
+    var dx=t.clientX-swipeFrom.x, dy=t.clientY-swipeFrom.y;
+    swipeFrom=null;
+    if(Math.abs(dx)<SWIPE_MIN&&Math.abs(dy)<SWIPE_MIN) return;
+    if(Math.abs(dx)>Math.abs(dy)) turn(dx>0?'right':'left');
+    else turn(dy>0?'down':'up');
+  },{passive:true});
+  board.addEventListener('touchcancel',function(){ swipeFrom=null; },{passive:true});
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  buildBoard();
+  startNew(true);
+  setInterval(function(){ paintStats(); },250);
+}
+</script>
+</body>
+</html>

@@ -8,7 +8,7 @@ const VPS=[
   ['small',360,640],
   ['laptop',1440,900],
 ];
-const PAGES=[['index','/index.html'],['spider','/spider.html'],['damas','/damas.html'],['ajedrez','/ajedrez.html'],['klondike','/klondike.html'],['sudoku','/sudoku.html'],['buscaminas','/buscaminas.html']];
+const PAGES=[['index','/index.html'],['spider','/spider.html'],['damas','/damas.html'],['ajedrez','/ajedrez.html'],['klondike','/klondike.html'],['buscaminas','/buscaminas.html'],['memoria','/memoria.html'],['reversi','/reversi.html'],['conecta4','/conecta4.html'],['damas-chinas','/damas-chinas.html'],['2048','/2048.html'],['serpiente','/serpiente.html']];
 let fails=0;
 const ok=(n,c,x)=>{console.log((c?'PASS ':'FAIL ')+n+(c?'':' -> '+JSON.stringify(x)));if(!c)fails++;};
 (async()=>{
@@ -38,10 +38,14 @@ for(const [game,path] of PAGES){
       if(g==='spider'){const bd=document.querySelector('#board');hscroll=bd.scrollWidth-bd.clientWidth;}
       // botones home presentes en los juegos
       const homeOk=g==='index'?true:!!(document.querySelector('.top a.brand[href="index.html"]')&&document.querySelector('.top a.btn[href="index.html"]'));
+      // tarjetas con icono de reglas ⓘ
+      const games=document.querySelectorAll('.game').length;
+      const infos=document.querySelectorAll('.game .info').length;
+      const infoOk=g==='index'?(infos===games&&games>=10):true;
       // tablero con altura razonable
       const mainBoard=boards[0];
       const br=mainBoard?mainBoard.getBoundingClientRect():null;
-      return {pageX,btnOff,bBad,pBad,hscroll,homeOk,hdrH:hr?Math.round(hr.height):0,
+      return {pageX,btnOff,bBad,pBad,hscroll,homeOk,infoOk,games,infos,hdrH:hr?Math.round(hr.height):0,
         board:br?{w:Math.round(br.width),h:Math.round(br.height),l:Math.round(br.left),r:Math.round(br.right)}:null};
     },game);
     const tag=`${game} ${vp}`;
@@ -52,6 +56,15 @@ for(const [game,path] of PAGES){
     if(game==='ajedrez') ok(`${tag}: panel dentro del viewport`,!m.pBad,{pBad:m.pBad});
     if(game==='spider') ok(`${tag}: sin scroll horizontal (10 columnas caben)`,m.hscroll!==null&&m.hscroll<=1,{hscroll:m.hscroll});
     ok(`${tag}: botones home (marca + ⌂ Juegos)`,m.homeOk,{homeOk:m.homeOk});
+    ok(`${tag}: tarjetas con icono reglas ⓘ`,m.infoOk,{games:m.games,infos:m.infos});
+    if(game==='index'){
+      await p.click('.game .info');
+      const inf=await p.evaluate(()=>({show:document.querySelector('#infoOv').classList.contains('show'),t:document.getElementById('infText').textContent.length,ti:document.getElementById('infTitle').textContent}));
+      ok(`${tag}: ⓘ abre reglas del juego`,inf.show&&inf.t>60&&inf.ti.length>2,inf);
+      await p.keyboard.press('Escape');
+      const closed=await p.evaluate(()=>!document.querySelector('#infoOv').classList.contains('show'));
+      ok(`${tag}: cierra reglas (ESC)`,closed);
+    }
     ok(`${tag}: sin errores JS`,errs.length===0,errs);
     await p.screenshot({path:`/tmp/resp2_${game}_${vp}.png`,fullPage:false});
     await p.close();

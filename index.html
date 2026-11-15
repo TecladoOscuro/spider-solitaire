@@ -144,6 +144,13 @@ footer{padding:16px;text-align:center;font-size:12px;opacity:.55}
     <span class="lv">4×4 · 5×5 · 6×6</span>
     <button class="info" data-g="2048" aria-label="Cómo jugar: 2048">ⓘ</button>
   </a>
+  <a class="game" href="serpiente.html">
+    <span class="icon">〜</span>
+    <h2>Serpiente</h2>
+    <p>Crece comiendo manzanas sin chocar contigo misma.</p>
+    <span class="lv">LENTO · MEDIO · RÁPIDO</span>
+    <button class="info" data-g="serpiente" aria-label="Cómo jugar: Serpiente">ⓘ</button>
+  </a>
 </main>
 
 <footer>Un archivo HTML por juego, sin dependencias.</footer>
@@ -168,7 +175,8 @@ var RULES={
   'reversi':{t:'Reversi',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas negras (empiezas).\n\n• Toca una casilla con punto: coloca tu disco y voltea todos los discos enemigos flanqueados.\n• Si no tienes jugada, pasas automáticamente. Gana quien tenga más discos al final.\nTeclas: U deshacer · H pista · N nuevo.'},
   'conecta4':{t:'Cuatro en Línea',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas rojas (abajo).\n\n• Toca una columna (o su flecha) y tu disco cae a la casilla libre más baja.\n• Gana quien alinee 4 en horizontal, vertical o diagonal antes que la rival.\nTeclas: U deshacer · H pista · N nuevo.'},
   'damas-chinas':{t:'Damas Chinas',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas rojas (punta inferior) contra las negras.\n\n• Mueve 1 casilla a una casilla vacía adyacente, o SALTA sobre una ficha enemiga.\n• Los saltos se pueden encadenar: la ficha sigue seleccionada si puede seguir.\n• Termina tu turno tocando otra ficha.\nGana el primero en ocupar por completo la punta contraria.\nTeclas: U deshacer · H pista · N nuevo.'},
-  '2048':{t:'2048',lv:'4×4 · 5×5 · 6×6',r:'Desliza todas las casillas con las flechas (o deslizando el dedo / WASD).\n\n• Dos casillas iguales que colisionan se fusionan en su doble y suman puntos.\n• Cada jugada crea una casilla nueva (2 o 4).\n• Objetivo: llegar a 2048 (y seguir si quieres).\nTeclas: U deshacer (1 paso) · N nuevo.'}
+  '2048':{t:'2048',lv:'4×4 · 5×5 · 6×6',r:'Desliza todas las casillas con las flechas (o deslizando el dedo / WASD).\n\n• Dos casillas iguales que colisionan se fusionan en su doble y suman puntos.\n• Cada jugada crea una casilla nueva (2 o 4).\n• Objetivo: llegar a 2048 (y seguir si quieres).\nTeclas: U deshacer (1 paso) · N nuevo.'},
+  'serpiente':{t:'Serpiente',lv:'LENTO · MEDIO · RÁPIDO',r:'Mueve la serpiente con flechas, WASD, deslizando el dedo o el crucero táctil.\n\n• Cada manzana te hace crecer1 y suma10 puntos.\n• No choques con el muro ni con tu propio cuerpo (la cola se libera al moverse).\n• Récord guardado por velocidad.\nTeclas: Espacio pausa · N nuevo.'}
 };
 var ov=document.getElementById('infoOv');
 function openInfo(g){
