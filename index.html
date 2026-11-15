@@ -151,6 +151,34 @@ footer{padding:16px;text-align:center;font-size:12px;opacity:.55}
     <span class="lv">LENTO · MEDIO · RÁPIDO</span>
     <button class="info" data-g="serpiente" aria-label="Cómo jugar: Serpiente">ⓘ</button>
   </a>
+  <a class="game" href="puzzle15.html">
+    <span class="icon">▣</span>
+    <h2>Rompecabezas15</h2>
+    <p>Desliza las fichas1-15 hasta ordenarlas.</p>
+    <span class="lv">FÁCIL · MEDIO · EXPERTO</span>
+    <button class="info" data-g="puzzle15" aria-label="Cómo jugar: Rompecabezas15">ⓘ</button>
+  </a>
+  <a class="game" href="tres-en-raya.html">
+    <span class="icon">✕</span>
+    <h2>Tres en Raya</h2>
+    <p>Clásico gato contra la IA: en Difícil es inbatible.</p>
+    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="tres-en-raya" aria-label="Cómo jugar: Tres en Raya">ⓘ</button>
+  </a>
+  <a class="game" href="palabra.html">
+    <span class="icon">✎</span>
+    <h2>Palabra</h2>
+    <p>Adivina la palabra en6 intentos, al estilo Wordle.</p>
+    <span class="lv">4 · 5 · 6 LETRAS</span>
+    <button class="info" data-g="palabra" aria-label="Cómo jugar: Palabra">ⓘ</button>
+  </a>
+  <a class="game" href="damas-internacionales.html">
+    <span class="icon">◆</span>
+    <h2>Damas Internacionales</h2>
+    <p>10×10 con damas voladoras y la regla de la mayor captura.</p>
+    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="damas-internacionales" aria-label="Cómo jugar: Damas Internacionales">ⓘ</button>
+  </a>
 </main>
 
 <footer>Un archivo HTML por juego, sin dependencias.</footer>
@@ -176,7 +204,12 @@ var RULES={
   'conecta4':{t:'Cuatro en Línea',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas rojas (abajo).\n\n• Toca una columna (o su flecha) y tu disco cae a la casilla libre más baja.\n• Gana quien alinee 4 en horizontal, vertical o diagonal antes que la rival.\nTeclas: U deshacer · H pista · N nuevo.'},
   'damas-chinas':{t:'Damas Chinas',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas rojas (punta inferior) contra las negras.\n\n• Mueve 1 casilla a una casilla vacía adyacente, o SALTA sobre una ficha enemiga.\n• Los saltos se pueden encadenar: la ficha sigue seleccionada si puede seguir.\n• Termina tu turno tocando otra ficha.\nGana el primero en ocupar por completo la punta contraria.\nTeclas: U deshacer · H pista · N nuevo.'},
   '2048':{t:'2048',lv:'4×4 · 5×5 · 6×6',r:'Desliza todas las casillas con las flechas (o deslizando el dedo / WASD).\n\n• Dos casillas iguales que colisionan se fusionan en su doble y suman puntos.\n• Cada jugada crea una casilla nueva (2 o 4).\n• Objetivo: llegar a 2048 (y seguir si quieres).\nTeclas: U deshacer (1 paso) · N nuevo.'},
-  'serpiente':{t:'Serpiente',lv:'LENTO · MEDIO · RÁPIDO',r:'Mueve la serpiente con flechas, WASD, deslizando el dedo o el crucero táctil.\n\n• Cada manzana te hace crecer1 y suma10 puntos.\n• No choques con el muro ni con tu propio cuerpo (la cola se libera al moverse).\n• Récord guardado por velocidad.\nTeclas: Espacio pausa · N nuevo.'}
+  'serpiente':{t:'Serpiente',lv:'LENTO · MEDIO · RÁPIDO',r:'Mueve la serpiente con flechas, WASD, deslizando el dedo o el crucero táctil.\n\n• Cada manzana te hace crecer1 y suma10 puntos.\n• No choques con el muro ni con tu propio cuerpo (la cola se libera al moverse).\n• Récord guardado por velocidad.\nTeclas: Espacio pausa · N nuevo.'},
+
+  'puzzle15':{t:'Rompecabezas15',lv:'FÁCIL · MEDIO · EXPERTO',r:'Desliza fichas numeradas al hueco hasta ordenar1..15 (hueco abajo-derecha).\n\n• Solo entra al hueco una ficha adyacente (o usa las flechas).\n• El barajado siempre es resoluble.\n• Dificultad = profundidad del barajado; récord de tiempo por nivel.\nTeclas: flechas · U deshacer · N nuevo.'},
+  'tres-en-raya':{t:'Tres en Raya',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas ✕ (azul), la IA ○ (rojo).\n\n• Tres en línea horizontal, vertical o diagonal gana.\n• En Difícil la IA es inbatible (empata siempre).\n• Estadísticas de victorias, tablas y derrotas.\nTeclas: U deshacer · N nuevo.'},
+  'palabra':{t:'Palabra',lv:'4 · 5 · 6 LETRAS',r:'Adivina la palabra oculta en6 intentos.\n\n• Verde = letra exacta · Amarillo = letra en otra posición · Gris = no está.\n• Se respeta la regla de duplicados de Wordle.\n• Teclado en pantalla con Ñ, o escribe con el teclado.\n• Estadísticas y distribución por longitud.\nTecla N: nueva partida.'},
+  'damas-internacionales':{t:'Damas Internacionales',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'10×10,16 piezas por bando. Tú con rojas.\n\n• Los hombres capturan en las4 diagonales (también atrás).\n• La dama vuela por las diagonales y captura a distancia.\n• Captura obligatoria y siempre la de MÁS piezas.\n• Coronación al terminar en la fila meta.\nTeclas: U deshacer · H pista · N nuevo.'}
 };
 var ov=document.getElementById('infoOv');
 function openInfo(g){

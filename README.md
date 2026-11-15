@@ -17,6 +17,10 @@ Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin
 | Damas Chinas | `damas-chinas.html` | Fácil, Medio, Difícil (IA alfa-beta) |
 | 2048 | `2048.html` | 4×4 · 5×5 · 6×6 |
 | Serpiente | `serpiente.html` | Lento, Medio, Rápido (velocidad) |
+| Rompecabezas15 | `puzzle15.html` | Fácil, Medio, Experto |
+| Tres en Raya | `tres-en-raya.html` | Fácil, Medio, Difícil (IA inbatible) |
+| Palabra | `palabra.html` | 4, 5, 6 letras |
+| Damas Internacionales | `damas-internacionales.html` | Fácil, Medio, Difícil (IA alfa-beta) |
 
 El índice `index.html` es el menú de entrada.
 

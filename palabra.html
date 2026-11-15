@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Palabra</title>
+<style>
+html{background-color:#14471c}
+:root{--cw:clamp(18px,min(9vw,calc((100vh - 330px)/8)),50px);--gap:clamp(3px,.6vw,6px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- estado ---------- */
+.statusbar{display:flex;justify-content:center;padding:8px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.g{background:#43a047;color:#43a047}
+.dot.r{background:#e53935;color:#e53935}
+.dot.y{background:#fdd835;color:#fdd835}
+.dot.n{background:#90a4ae;color:#90a4ae}
+
+/* ---------- tablero ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 12px;min-height:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1.6vh,16px);width:100%}
+.board{
+  display:flex;flex-direction:column;gap:var(--gap);
+  padding:var(--gap);
+  background:linear-gradient(180deg,#17512a,#0d3a1e);
+  border-radius:clamp(8px,1.4vw,16px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.22),inset 0 -3px 0 rgba(0,0,0,.35);
+  perspective:700px;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.brow{display:grid;grid-template-columns:repeat(var(--cols,5),var(--cw));gap:var(--gap)}
+.brow.bad{animation:shake .42s}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-7px)}40%{transform:translateX(7px)}
+  60%{transform:translateX(-5px)}80%{transform:translateX(5px)}
+}
+.tile{
+  width:var(--cw);height:var(--cw);display:grid;place-items:center;
+  background:#121314;border:2px solid #3a3a3a;border-radius:4px;
+  font-size:calc(var(--cw)*.6);font-weight:700;color:#fff;text-transform:uppercase;
+  transform-style:preserve-3d;
+}
+.tile.fill{background:#565758;border-color:#565758}
+/* paleta clásica: verde exacta, amarillo otra posición, gris ausente */
+.tile.g{--c:#538d4e;background:#538d4e;border-color:#538d4e}
+.tile.y{--c:#b59f3b;background:#b59f3b;border-color:#b59f3b}
+.tile.k{--c:#3a3a3a;background:#3a3a3a;border-color:#3a3a3a}
+/* volteo: el color cambia exacto al 50% (a 90°, canto a la vista) */
+.tile.flip{animation:flip .45s ease both}
+@keyframes flip{
+  0%{transform:rotateX(0);background:#565758;border-color:#565758}
+  49.9%{background:#565758;border-color:#565758}
+  50%{transform:rotateX(90deg);background:var(--c,#565758);border-color:var(--c,#565758)}
+  100%{transform:rotateX(0);background:var(--c,#565758);border-color:var(--c,#565758)}
+}
+
+/* ---------- teclado en pantalla ---------- */
+.kb{display:flex;flex-direction:column;gap:6px;width:100%;max-width:560px;padding:0 6px}
+.krow{display:flex;gap:5px;justify-content:center}
+.key{
+  flex:1;min-width:0;height:clamp(42px,7vh,58px);
+  font:inherit;font-size:clamp(12px,2.8vw,15px);font-weight:650;
+  background:#565758;color:#fff;border:1px solid rgba(255,255,255,.18);
+  border-radius:6px;cursor:pointer;padding:0;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
+}
+.key:hover{background:#6b6c6e}
+.key:active{transform:translateY(1px)}
+.key.wide{flex:1.5;font-size:11.5px;letter-spacing:-.2px}
+.key.k1{background:#3a3a3a;border-color:#3a3a3a;color:#9a9a9a}
+.key.k2{background:#b59f3b;border-color:#b59f3b;color:#fff}
+.key.k3{background:#538d4e;border-color:#538d4e;color:#fff}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:24px 30px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);
+  max-width:90vw;max-height:92vh;overflow:auto;
+}
+.winbox h2{margin:0 0 6px;font-size:26px}
+.winbox .word{font-size:21px;font-weight:750;letter-spacing:4px;margin:8px 0;color:#9ccc65}
+.winbox p{margin:10px 0 12px;opacity:.85;font-variant-numeric:tabular-nums;font-size:14px}
+.winbox h3{margin:4px 0 8px;font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.8px}
+.dist{display:flex;flex-direction:column;gap:5px;margin:0 0 18px;text-align:left}
+.drow{display:flex;align-items:center;gap:8px;font-size:13px;font-variant-numeric:tabular-nums}
+.drow span{width:9px;opacity:.75}
+.drow .bar{flex:1;height:16px;background:rgba(255,255,255,.09);border-radius:4px;overflow:hidden}
+.drow .bar i{display:block;height:100%;background:#538d4e}
+.drow.hit .bar i{background:#b59f3b}
+.drow b{width:26px;text-align:right}
+
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🔤</span><h1>Palabra</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Partidas</span><b id="statP">0</b></div>
+    <div class="stat"><span>Ganadas</span><b id="statW">0</b></div>
+    <div class="stat"><span>Racha</span><b id="statS">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Longitud de la palabra">
+      <option value="4">4 letras · Fácil</option>
+      <option value="5">5 letras · Normal</option>
+      <option value="6">6 letras · Experto</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nueva palabra (tecla N)">Nueva</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot n" id="stDot"></i><span id="status">Intento 1 de 6</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="board" id="board"></div>
+    <div class="kb" id="kb"></div>
+  </div>
+</main>
+
+<div class="hint-bar">Escribe o toca las teclas · Enter valida · ⌫ borra · N nueva palabra</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <div class="word" id="winWord"></div>
+    <p id="winStats"></p>
+    <h3>Distribución · 6 intentos</h3>
+    <div class="dist" id="winDist"></div>
+    <button class="btn" id="btnAgain">Nueva palabra</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   PALABRA — motor puro (sin IIFE, sin 'use strict', sin document/localStorage).
+
+   REGLAS (convención Wordle / Wordle en español):
+     - 6 intentos por partida.
+     - evaluate() ancla primero las coincidencias EXACTAS (verde) y después
+       reparte el resto de ocurrencias disponibles de la palabra entre las
+       letras restantes del intento (amarillo); lo que sobre queda gris.
+       Ej.: palabra CAA y intento AAA → [green,gray,gray] (solo 2 A hay).
+     - Paleta: verde #538d4e, amarillo #b59f3b, gris #3a3a3a.
+
+   LISTAS (decisión documentada):
+     - Tres listas embebidas, 4/5/6 letras, todas las palabras reales en
+       español que se escriben SIN tilde y SIN Ñ (ninguna necesita acento:
+       "fácil" no está, "casa" sí) y ninguna empieza por N, para que TODA
+       palabra de la lista pueda escribirse con el teclado físico.
+     - El teclado en pantalla sí incluye Ñ (distribución española estándar);
+       una palabra con Ñ no pertenece a ninguna lista, por eso validGuess la
+       rechaza ("no está en la lista").
+     - La tecla N del teclado físico inicia NUEVA PALABRA cuando la casilla
+       actual está vacía (antes de empezar, entre intentos y al terminar);
+       si ya hay letras escritas, N escribe la letra. Así todas las palabras
+       de la lista siguen siendo tecleables letra a letra.
+
+   DIFICULTAD: localStorage 'pal.diff' guarda la longitud (4|5|6).
+   ESTADÍSTICAS: localStorage 'pal.stats.<lon>' guarda
+     {p:partidas, w:ganadas, racha actual s, mejor racha b, d:[1..6]}.
+
+   API del motor (evaluable en Node):
+     WORDS={4:[],5:[],6:[]}
+     newGame(len)            -> {len, word, guesses:[], done, result, error}
+     evaluate(guess,word)    -> ['green'|'yellow'|'gray', ...] por posición
+     validGuess(g,len)       -> true si longitud y lista cuadran
+     guess(g,st)             -> estado NUEVO (nunca muta st); error indica
+                                el rechazo: '' | 'longitud' | 'lista' | 'fin'
+     state                   -> estado global (lo usa la interfaz)
+   ========================================================================= */
+
+var WORDS={
+4:['ALTO','AMOR','AZUL','ARMA','ALMA','ARTE','ALTA','ABRE','ALBA',
+   'BOCA','BODA','BOLA','BATA','BAJO','BESO','BIEN',
+   'CASA','CAMA','COLA','COPA','CARA','CINE','CITA','CIEN','COCO','COMO','CREO',
+   'DATO','DAMA','DEJO','DOCE','DURO','DIOS',
+   'ESTE','EDAD',
+   'FARO','FASE','FILA','FINO','FLOR',
+   'GATO','GANA','GIRA','GOMA','GOTA','GRIS','GIRO',
+   'HILO','HOJA','HORA','HIJO','HAYA','HUMO',
+   'ISLA','IDEA',
+   'JEFE','JOTA','JADE','JACA',
+   'LADO','LANA','LATA','LAVA','LEAL','LOBO','LOCO','LOMA','LUNA','LORO','LINO','LILA',
+   'MALO','MANO','MASA','MESA','META','MINA','MODA','MONO','MURO','MORA','MULO','MICO',
+   'OJOS','OLLA','OSOS','ONCE','OBRA','ORBE',
+   'PALO','PATA','POCO','PARA','PENA','PESO','PISO','POLO','PICA','PURO','PICO',
+   'RANA','RATO','RAMA','ROCA','ROJO','ROSA','RISA','RUTA','RICO','RIEL',
+   'SACO','SALA','SAPO','SILO','SEDE','SIEN','SINO','SOPA','SETA','SECO','SANO',
+   'TACO','TALA','TAZA','TELA','TIPO','TIRO','TOMA','TORO','TRES','TUNA',
+   'URBE','URGE','USAR',
+   'VACA','VASO','VELA','VINO','VIRA','VIVO',
+   'YATE','YODO',
+   'ZONA','ZUMO'],
+5:['ABRIR','AGUAS','AHORA','ALDEA','ALTAR','AMIGO','ANDAR','ARENA','AZOTE',
+   'BACHE','BAILE','BANDA','BARCO','BATIR','BEBER','BREVE','BURRO',
+   'CABLE','CALMA','CALOR','CALDO','CAMPO','CANOA','CANTO','CAPAZ','CARTA','CASTO','CAUSA','CERDO','CHICO','CIELO','CLARO','COLOR',
+   'DARDO','DELTA','DISCO','DONDE','DUDAR','DUQUE',
+   'ENERO','ERROR','EXTRA',
+   'FALDA','FALSO','FALTA','FATAL','FERIA','FICHA','FINAL','FORMA','FRUTA','FUEGO','FUMAR','FLOTA',
+   'GAFAS','GANSO','GLOBO','GORRA','GRANO','GRAVE','GRUPO','GUAPO','GENTE',
+   'HACER','HABER','HASTA','HOTEL',
+   'IGUAL',
+   'JUSTO',
+   'LARGO','LECHE','LETRA','LINDO','LIBRO','LLAVE','LUGAR','LUNES','LUCHA',
+   'MADRE','MAGIA','MARCO','MAREA','MENOS','MARZO','MIRAR','MUNDO','MUSLO','METER',
+   'PADRE','PALMA','PANAL','PAPEL','PATIO','PEDIR','PEINE','PIANO','PINTA','PLATA','PLATO','PODER','POLVO','PONER','POEMA','PRADO','PUNTO',
+   'QUESO','QUIEN',
+   'RADAR','RANGO','RELOJ','RITMO','ROLLO','RUEDA','RUIDO',
+   'SABER','SALTO','SANTO','SAUCE','SECAR','SERIO','SITIO','SORDO','SUELO',
+   'TABLA','TALLO','TANTO','TARDE','TARTA','TECHO','TEXTO','TIGRE','TOCAR','TRIGO','TURCO','TURNO','TOMAR',
+   'ULTRA',
+   'VALOR','VERDE','VERSO','VICIO','VIDEO','VISTO','VALLE',
+   'YOGUR',
+   'ZORRO'],
+6:['ACEITE','ABUELO','ABRIGO','AGOSTO','ACABAR','ALEGRE',
+   'BALLET','BARATO','BARRIO','BORRAR','BUSCAR',
+   'CALLAR','CAMBIO','CAMINO','CANSAR','CAPOTE','CARTEL','CASTOR','CHISTE','CONTRA','CORRER','CORREO','CRIMEN','CUESTA',
+   'DANZAR','DEBATE','DENTRO','DORMIR',
+   'EDITAR','ELEGIR','ENTRAR','ENREDO','EQUIPO',
+   'ESCALA','ESCOBA','ESPERA',
+   'FILTRO','FINGIR','FORZAR','FRESCO','FUERTE',
+   'GASTAR','GRITAR',
+   'HELADO','HAMBRE','HOMBRE','HIERBA','HUERTO',
+   'JIRAFA','JORNAL','JUNTAR',
+   'KIOSCO',
+   'LLENAR','LIMPIO','LUCHAR','LLOVER',
+   'MALETA','MANDAR','MONEDA','MUELLE',
+   'OFICIO','OLIVAR','ORILLA',
+   'PAGANO','PENSAR','PINTAR','PLANTA','PUERTA','QUITAR','QUERER',
+   'RASTRO',
+   'SALTAR','SEMANA','SENTAR','SOMBRA','SONIDO','SOPLAR','SUFRIR',
+   'TALLAR','TEATRO','TIEMPO','TOMATE','TORCER',
+   'VENCER','VERANO','VIENTO','VOLVER','VENDER',
+   'BAILAR','ACUDIR']
+};
+var MAX_TRIES=6;
+var RANK={gray:1,yellow:2,green:3};   /* precedencia en el teclado */
+
+function normalizeLen(len){
+  len=Math.floor(Number(len));
+  return (len===4||len===5||len===6)?len:5;
+}
+
+/* Feedback casilla por casilla. Primero anclas exactas; después reparto.
+   Si las longitudes difieren solo se comparan las primeras n posiciones
+   (n = longitud del intento); el resultado tiene siempre longitud guess. */
+function evaluate(guess,word){
+  guess=(guess===undefined||guess===null)?'':String(guess);
+  word=(word===undefined||word===null)?'':String(word);
+  var n=guess.length,i;
+  var res=[],used=[];
+  for(i=0;i<n;i++){ res.push('gray'); used.push(false); }
+  /* 1) anclas: coincidencia exacta -> verde */
+  for(i=0;i<n&&i<word.length;i++){
+    if(guess[i]===word[i]){ res[i]='green'; used[i]=true; }
+  }
+  /* 2) ocurrencias disponibles de la palabra (sin las ancladas) */
+  var counts={};
+  for(i=0;i<n&&i<word.length;i++){
+    if(!used[i]) counts[word[i]]=(counts[word[i]]||0)+1;
+  }
+  /* 3) reparto en orden: cada letra consume una ocurrencia o queda gris */
+  for(i=0;i<n;i++){
+    if(res[i]==='green') continue;
+    var ch=guess[i];
+    if(counts[ch]>0){ res[i]='yellow'; counts[ch]--; }
+  }
+  return res;
+}
+
+/* ¿g es una palabra de la lista de esa longitud? (longitud + pertenencia) */
+function validGuess(g,len){
+  if(typeof g!=='string') return false;
+  g=g.toUpperCase();
+  len=normalizeLen(len);
+  if(g.length!==len) return false;
+  var list=WORDS[len];
+  for(var i=0;i<list.length;i++) if(list[i]===g) return true;
+  return false;
+}
+
+/* Estado inicial de partida: palabra al azar de la lista elegida. */
+function newGame(len){
+  len=normalizeLen(len);
+  var list=WORDS[len];
+  var word=list[Math.floor(Math.random()*list.length)];
+  return {len:len,word:word,guesses:[],done:false,result:null,error:''};
+}
+
+/* Intento: devuelve SIEMPRE un estado nuevo (st intacta). Rechaza con
+   error cuando la longitud o la lista no cuadran, o si la partida ya
+   terminó; en caso válido añade el intento y cierra la partida si toca. */
+function guess(g,st){
+  if(!st) return null;
+  var next={
+    len:st.len,word:st.word,guesses:st.guesses.slice(),
+    done:st.done,result:st.result,error:''
+  };
+  if(next.done){ next.error='fin'; return next; }
+  g=(g===undefined||g===null)?'':String(g).toUpperCase();
+  if(g.length!==st.len){ next.error='longitud'; return next; }
+  if(!validGuess(g,st.len)){ next.error='lista'; return next; }
+  next.guesses.push(g);
+  if(g===st.word){ next.done=true; next.result='win'; }
+  else if(next.guesses.length>=MAX_TRIES){ next.done=true; next.result='lose'; }
+  return next;
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=newGame(5);
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage guardado dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var DIFF_NAMES={4:'4 letras · Fácil',5:'5 letras · Normal',6:'6 letras · Experto'};
+  var KB=[
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L','Ñ'],
+    ['ENTER','Z','X','C','V','B','N','M','BACK']
+  ];
+  var FLIP_MS=450, STEP_MS=250;
+
+  var len=5, cur='', kbRank={}, cellEls=[], rowEls=[];
+  var animating=false, gameId=0;
+  var endTimer=null, toastTimer=null;
+  var stats={p:0,w:0,s:0,b:0,d:[0,0,0,0,0,0]};
+
+  /* ---------- almacenamiento (siempre con guarda) ---------- */
+  function loadDiff(){
+    try{
+      if(typeof localStorage!=='undefined'){
+        var v=parseInt(localStorage.getItem('pal.diff')||'5',10);
+        if(v===4||v===5||v===6) return v;
+      }
+    }catch(e){}
+    return 5;
+  }
+  function saveDiff(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('pal.diff',String(len));
+    }catch(e){}
+  }
+  function loadStats(){
+    stats={p:0,w:0,s:0,b:0,d:[0,0,0,0,0,0]};
+    try{
+      if(typeof localStorage!=='undefined'){
+        var raw=localStorage.getItem('pal.stats.'+len);
+        if(raw){
+          var o=JSON.parse(raw);
+          if(o&&typeof o==='object'){
+            stats.p=+o.p||0; stats.w=+o.w||0; stats.s=+o.s||0; stats.b=+o.b||0;
+            if(Object.prototype.toString.call(o.d)==='[object Array]'&&o.d.length===6){
+              for(var i=0;i<6;i++) stats.d[i]=+o.d[i]||0;
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
+  function saveStats(){
+    try{
+      if(typeof localStorage!=='undefined'){
+        localStorage.setItem('pal.stats.'+len,JSON.stringify(stats));
+      }
+    }catch(e){}
+  }
+
+  /* ---------- util ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2200);
+  }
+
+  /* ---------- pintura ---------- */
+  function paintStats(){
+    $('#statP').textContent=String(stats.p);
+    $('#statW').textContent=String(stats.w);
+    $('#statS').textContent=String(stats.s);
+  }
+  function paintStatus(){
+    var txt,dot;
+    if(state.done&&state.result==='win'){ txt='¡Ganaste en '+state.guesses.length+' intentos!'; dot='g'; }
+    else if(state.done){ txt='Sin intentos · era '+state.word; dot='r'; }
+    else if(animating){ txt='Mirando intento…'; dot='y'; }
+    else { txt='Intento '+(state.guesses.length+1)+' de '+MAX_TRIES; dot='n'; }
+    $('#status').textContent=txt;
+    $('#stDot').className='dot '+dot;
+  }
+  function buildBoard(){
+    var b=$('#board');
+    b.innerHTML='';
+    cellEls=[]; rowEls=[];
+    b.style.setProperty('--cols',String(len));
+    for(var r=0;r<MAX_TRIES;r++){
+      var row=document.createElement('div');
+      row.className='brow';
+      var cells=[];
+      for(var c=0;c<len;c++){
+        var t=document.createElement('div');
+        t.className='tile';
+        row.appendChild(t);
+        cells.push(t);
+      }
+      b.appendChild(row);
+      rowEls.push(row);
+      cellEls.push(cells);
+    }
+  }
+  function buildKb(){
+    var k=$('#kb');
+    k.innerHTML='';
+    for(var r=0;r<KB.length;r++){
+      var row=document.createElement('div');
+      row.className='krow';
+      for(var c=0;c<KB[r].length;c++){
+        var name=KB[r][c];
+        var btn=document.createElement('button');
+        btn.type='button';
+        btn.className='key'+(name.length>1?' wide':'');
+        btn.setAttribute('data-k',name);
+        btn.textContent=(name==='BACK')?'⌫':name;
+        row.appendChild(btn);
+      }
+      k.appendChild(row);
+    }
+  }
+  function paintCurrent(){
+    if(state.guesses.length>=MAX_TRIES) return;
+    var row=cellEls[state.guesses.length];
+    if(!row) return;
+    for(var i=0;i<len;i++){
+      row[i].textContent=cur[i]||'';
+      if(cur[i]) row[i].classList.add('fill');
+      else row[i].classList.remove('fill');
+    }
+  }
+  /* Colores en el teclado con precedencia verde > amarillo > gris. */
+  function updateKey(ch,mark){
+    var rank=RANK[mark]||0;
+    if(!rank||kbRank[ch]>=rank) return;
+    kbRank[ch]=rank;
+    var el=$('#kb [data-k="'+ch+'"]');
+    if(!el) return;
+    el.classList.remove('k1','k2','k3');
+    el.classList.add('k'+rank);
+  }
+  function resetKeys(){
+    kbRank={};
+    var keys=document.querySelectorAll('#kb .key');
+    for(var i=0;i<keys.length;i++) keys[i].classList.remove('k1','k2','k3');
+  }
+
+  /* ---------- entrada ---------- */
+  function type(ch){
+    if(state.done||animating) return;
+    if(cur.length>=len) return;
+    cur+=ch;
+    paintCurrent();
+    paintStatus();
+  }
+  function backspace(){
+    if(state.done||animating||!cur.length) return;
+    cur=cur.slice(0,-1);
+    paintCurrent();
+    paintStatus();
+  }
+  function shake(){
+    if(state.guesses.length>=MAX_TRIES) return;
+    var row=rowEls[state.guesses.length];
+    if(!row) return;
+    row.classList.remove('bad');
+    void row.offsetWidth;
+    row.classList.add('bad');
+    setTimeout(function(){ row.classList.remove('bad'); },450);
+  }
+  function submit(){
+    if(state.done||animating) return;
+    if(cur.length<len){ toast('Faltan letras: '+len+' necesarias'); shake(); return; }
+    if(!validGuess(cur,len)){ toast('No está en la lista'); shake(); return; }
+
+    var marks=evaluate(cur,state.word);
+    var ri=state.guesses.length;
+    var id=gameId;
+    animating=true;
+    for(var i=0;i<len;i++){
+      var t=cellEls[ri][i];
+      t.textContent=cur[i];
+      t.classList.add('fill');
+      t.classList.add(marks[i]==='green'?'g':marks[i]==='yellow'?'y':'k');
+      t.style.animationDelay=(i*STEP_MS/1000)+'s';
+      t.classList.add('flip');
+      updateKey(cur[i],marks[i]);
+    }
+    state=guess(cur,state);
+    cur='';
+    var total=(len-1)*STEP_MS+FLIP_MS;
+    paintStatus();
+    if(state.done){
+      endTimer=setTimeout(function(){
+        if(id!==gameId) return;
+        animating=false;
+        finish();
+      },total+380);
+    }else{
+      setTimeout(function(){
+        if(id!==gameId) return;
+        animating=false;
+        paintStatus();
+      },total+80);
+    }
+  }
+
+  /* ---------- fin de partida + estadísticas ---------- */
+  function finish(){
+    var win=(state.result==='win');
+    stats.p++;
+    if(win){
+      stats.w++;
+      stats.s++;
+      if(stats.s>stats.b) stats.b=stats.s;
+      stats.d[state.guesses.length-1]++;
+    }else{
+      stats.s=0;
+    }
+    saveStats();
+    paintStats();
+    paintStatus();
+    var pct=stats.p?Math.round(stats.w*100/stats.p):0;
+    $('#winTitle').textContent=win?'¡Ganaste!':'Se acabaron los intentos';
+    $('#winWord').textContent=state.word;
+    $('#winStats').textContent='Partidas '+stats.p+' · Ganadas '+stats.w+' ('+pct+'%) · Racha '+
+      stats.s+' · Mejor '+stats.b;
+    paintDist();
+    $('#win').classList.add('show');
+    toast(win?'¡Correcto en '+state.guesses.length+'!':'La palabra era '+state.word);
+  }
+  function paintDist(){
+    var d=stats.d,max=1,i;
+    for(i=0;i<6;i++) if(d[i]>max) max=d[i];
+    var box=$('#winDist');
+    box.innerHTML='';
+    var hit=(state.result==='win')?state.guesses.length:0;
+    for(i=0;i<6;i++){
+      var row=document.createElement('div');
+      row.className='drow'+(hit===i+1?' hit':'');
+      var bar=document.createElement('div');
+      bar.className='bar';
+      var fill=document.createElement('i');
+      fill.style.width=Math.round(d[i]*100/max)+'%';
+      bar.appendChild(fill);
+      var num=document.createElement('span');
+      num.textContent=String(i+1);
+      var cnt=document.createElement('b');
+      cnt.textContent=String(d[i]);
+      row.appendChild(num); row.appendChild(bar); row.appendChild(cnt);
+      box.appendChild(row);
+    }
+  }
+
+  /* ---------- partida nueva ---------- */
+  function startNew(silent){
+    gameId++;
+    if(endTimer){ clearTimeout(endTimer); endTimer=null; }
+    animating=false;
+    cur='';
+    $('#win').classList.remove('show');
+    state=newGame(len);
+    buildBoard();
+    resetKeys();
+    paintStats();
+    paintStatus();
+    if(!silent) toast('Nueva palabra · '+DIFF_NAMES[len]);
+  }
+
+  /* ---------- eventos ---------- */
+  $('#btnNew').addEventListener('click',function(){ startNew(false); });
+  $('#btnAgain').addEventListener('click',function(){ startNew(false); });
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    if(v!==4&&v!==5&&v!==6) v=5;
+    len=v;
+    saveDiff();
+    loadStats();
+    startNew(true);
+    toast('Dificultad: '+DIFF_NAMES[len]);
+  });
+
+  /* Teclado en pantalla: letras,Ñ,Enter y ⌫ */
+  $('#kb').addEventListener('click',function(e){
+    var el=e.target&&e.target.closest?e.target.closest('[data-k]'):null;
+    if(!el) return;
+    var k=el.getAttribute('data-k');
+    if(el.blur) el.blur();           /* el foco no debe comer Enter/Espacio */
+    if(k==='ENTER') submit();
+    else if(k==='BACK') backspace();
+    else type(k);
+  });
+
+  /* Teclado físico: letras (con Ñ), Enter, Backspace y N.
+     N = nueva palabra con la casilla vacía; con letras escritas, N es letra. */
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    if(e.key==='Enter'){ e.preventDefault(); submit(); return; }
+    if(e.key==='Backspace'){ e.preventDefault(); backspace(); return; }
+    if(e.key==='n'||e.key==='N'){
+      e.preventDefault();
+      if(!cur.length) startNew(false);
+      else type('N');
+      return;
+    }
+    if(e.key&&e.key.length===1){
+      var ch=e.key.toUpperCase();
+      if(/^[A-ZÑ]$/.test(ch)){ e.preventDefault(); type(ch); }
+    }
+  });
+
+  /* ---------- arranque ---------- */
+  len=loadDiff();
+  $('#diffSel').value=String(len);
+  loadStats();
+  buildBoard();
+  buildKb();
+  state=newGame(len);
+  paintStats();
+  paintStatus();
+}
+</script>
+</body>
+</html>

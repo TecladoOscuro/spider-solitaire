@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Rompecabezas15</title>
+<style>
+html{background-color:#14471c}
+:root{--c:clamp(54px,min(17vw,17vh),98px);--gap:clamp(4px,1vw,8px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px;white-space:nowrap}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- tablero ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 12px;min-height:0}
+.board{
+  position:relative;
+  width:calc(4*var(--c) + 5*var(--gap));
+  height:calc(4*var(--c) + 5*var(--gap));
+  padding:var(--gap);
+  background:linear-gradient(180deg,#4a3620,#2b1e10);
+  border-radius:clamp(10px,1.6vw,18px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.2),inset 0 -3px 0 rgba(0,0,0,.35);
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.grid{
+  position:absolute;inset:0;padding:var(--gap);
+  display:grid;
+  grid-template-columns:repeat(4,var(--c));
+  grid-template-rows:repeat(4,var(--c));
+  gap:var(--gap);
+}
+.cell{
+  border-radius:13px;
+  background:rgba(0,0,0,.34);
+  box-shadow:inset 0 4px 9px rgba(0,0,0,.55),inset 0 -1px 0 rgba(255,255,255,.07);
+}
+.tile{
+  position:absolute;left:0;top:0;width:var(--c);height:var(--c);border-radius:13px;
+  display:grid;place-items:center;z-index:2;cursor:pointer;
+  background:linear-gradient(180deg,hsl(var(--h),96%,63%),hsl(var(--h),94%,47%));
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.55),inset 0 -4px 7px rgba(0,0,0,.28),0 3px 7px rgba(0,0,0,.4);
+  color:#fff;font-weight:700;font-size:calc(var(--c)*.4);line-height:1;
+  text-shadow:0 2px 3px rgba(70,25,0,.55);
+  transform:translate(calc(var(--gap) + var(--col)*(var(--c) + var(--gap))),calc(var(--gap) + var(--row)*(var(--c) + var(--gap))));
+  transition:transform .17s cubic-bezier(.25,.9,.3,1);
+  user-select:none;-webkit-user-select:none;
+}
+.tile:active{filter:brightness(1.08)}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 9px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .stat span{font-size:9px;letter-spacing:.3px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🧩</span><h1>Rompecabezas15</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Movimientos</span><b id="statM">0</b></div>
+    <div class="stat"><span>Tiempo</span><b id="statT">0:00</b></div>
+    <div class="stat"><span>Récord</span><b id="statB">—</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad del rompecabezas">
+      <option value="1">Fácil · 60 movimientos</option>
+      <option value="2">Medio · 200 movimientos</option>
+      <option value="3">Experto · 800 movimientos</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer un movimiento (tecla U)">Deshacer</button>
+  </div>
+</header>
+
+<main class="board-wrap">
+  <div class="board" id="board"></div>
+</main>
+
+<div class="hint-bar">Toca una ficha adyacente o desliza · Flechas mueven el hueco · N nueva · U deshacer</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle">¡Resuelto!</h2>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DEL ROMPECABEZAS 15 PURO — sin IIFE, sin 'use strict'.
+   Sin document / window / setTimeout / localStorage en el motor: todo es
+   JavaScript plano evaluable en Node.
+
+   DISEÑO DEL ESTADO (documentado):
+     - Tablero fijo de 4x4 = 16 casillas. El tablero es un array plano de
+       16 enteros en orden fila-major: 1..15 son las fichas y 0 es el
+       hueco. solved() = [1,2,...,15,0] (hueco abajo-derecha).
+     - legalMoves(t) devuelve POSICIONES (0..15) de las fichas adyacentes
+       al hueco: esas son las fichas que se pueden pulsar.
+     - slide(t,i) mueve la ficha de la posición i dentro del hueco y
+       devuelve un tablero NUEVO (nunca muta t), o null si i no es
+       adyacente al hueco.
+     - shuffle(nivel) parte de la solución resuelta y aplica N movimientos
+       legales aleatorios (60/200/800). Nunca se deshace el movimiento
+       inmediato anterior, así que el resultado es siempre resoluble y
+       distinto de la solución.
+     - Paridad (4x4): soluble si (inversiones + fila del hueco contada
+       desde arriba, 0..3) es IMPAR. Lo comprueban los tests en Node.
+     - state = {tiles, moves}: estado vivo de la partida.
+     - moveCount(): movimientos de la partida en curso.
+   ========================================================================= */
+
+var SIZE=4;
+var SHUFFLE_MOVES={1:60,2:200,3:800};
+
+/* Tablero resuelto: fichas 1..15 en orden y el hueco al final. */
+function solved(){
+  var t=[],i;
+  for(i=1;i<=SIZE*SIZE-1;i++) t.push(i);
+  t.push(0);
+  return t;
+}
+
+function rowOf(i){ return Math.floor(i/SIZE); }
+function colOf(i){ return i%SIZE; }
+
+/* ¿Dos casillas ortogonalmente adyacentes? */
+function adjacent(a,b){
+  if(!(a>=0&&a<SIZE*SIZE&&b>=0&&b<SIZE*SIZE)) return false;
+  return Math.abs(rowOf(a)-rowOf(b))+Math.abs(colOf(a)-colOf(b))===1;
+}
+
+/* Posición del hueco (valor 0). */
+function emptyPos(t){
+  return t?t.indexOf(0):-1;
+}
+
+/* Posiciones de las fichas movibles (adyacentes al hueco). */
+function legalMoves(t){
+  var e=emptyPos(t);
+  if(e<0) return [];
+  var r=rowOf(e),c=colOf(e),out=[];
+  if(r>0) out.push(e-SIZE);
+  if(r<SIZE-1) out.push(e+SIZE);
+  if(c>0) out.push(e-1);
+  if(c<SIZE-1) out.push(e+1);
+  return out;
+}
+
+/* Desliza la ficha de la posición i al hueco. Devuelve un tablero NUEVO
+   o null si i no está adyacente al hueco. No muta t jamás. */
+function slide(t,i){
+  if(!t||i<0||i>=SIZE*SIZE) return null;
+  var e=emptyPos(t);
+  if(e<0||i===e) return null;
+  if(!adjacent(e,i)) return null;
+  var n=t.slice();
+  n[e]=n[i];
+  n[i]=0;
+  return n;
+}
+
+function isSolved(t){
+  if(!t||t.length!==SIZE*SIZE) return false;
+  for(var i=0;i<SIZE*SIZE;i++){
+    if(t[i]!==(i<SIZE*SIZE-1?i+1:0)) return false;
+  }
+  return true;
+}
+
+/* Barajado siempre resoluble: N movimientos legales aleatorios desde la
+   solución, sin deshacer nunca el movimiento inmediato anterior. */
+function shuffle(level){
+  var n=SHUFFLE_MOVES[level];
+  if(!(n>0)) n=SHUFFLE_MOVES[2];
+  var t=solved();
+  var blocked=-1;               /* posición que ocuparía el "deshacer" */
+  for(var k=0;k<n;k++){
+    var moves=legalMoves(t),pool=[],j;
+    for(j=0;j<moves.length;j++) if(moves[j]!==blocked) pool.push(moves[j]);
+    if(!pool.length) pool=moves;
+    var pick=pool[Math.floor(Math.random()*pool.length)];
+    var e=emptyPos(t);
+    t=slide(t,pick);
+    blocked=e;                  /* no deshacer el inmediato anterior */
+  }
+  if(isSolved(t)){              /* jamás devolver la solución */
+    var mv=legalMoves(t);
+    t=slide(t,mv[Math.floor(Math.random()*mv.length)]);
+  }
+  return t;
+}
+
+/* Movimientos de la partida en curso. */
+function moveCount(){
+  return state.moves;
+}
+
+/* Estado global (lo usa la interfaz). */
+var state={tiles:shuffle(1),moves:0};
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage guardado dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var DIFF_NAMES={1:'Fácil · 60 movimientos',2:'Medio · 200 movimientos',3:'Experto · 800 movimientos'};
+  var diff=1;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('p15.diff')||'1',10);
+      if(stored===1||stored===2||stored===3) diff=stored;
+    }
+  }catch(e){}
+
+  /* Récord de tiempo por nivel: 'p15.best.N' (milisegundos) */
+  var best=0;
+  function loadBest(){
+    best=0;
+    try{
+      if(typeof localStorage!=='undefined'){
+        var v=parseInt(localStorage.getItem('p15.best.'+diff)||'0',10);
+        if(isFinite(v)&&v>0) best=v;
+      }
+    }catch(e){}
+  }
+  function saveBest(){
+    try{
+      if(typeof localStorage!=='undefined'){
+        localStorage.setItem('p15.best.'+diff,String(best));
+      }
+    }catch(e){}
+  }
+  loadBest();
+
+  var tileEls={};
+  var hist=[];
+  var won=false, frozen=null, startedAt=Date.now();
+  var toastTimer=null, endTimer=null, runId=0;
+
+  /* ---------- tiempo / util ---------- */
+  function elapsedMs(){
+    return frozen!==null?frozen:(Date.now()-startedAt);
+  }
+  function fmtTime(ms){
+    var t=Math.max(0,Math.floor(ms/1000));
+    var m=Math.floor(t/60), s=t%60;
+    return m+':'+(s<10?'0':'')+s;
+  }
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2200);
+  }
+
+  /* ---------- pintura ---------- */
+  function setPos(el,i){
+    el.style.setProperty('--row',String(rowOf(i)));
+    el.style.setProperty('--col',String(colOf(i)));
+  }
+  function paintStats(){
+    $('#statM').textContent=String(state.moves);
+    $('#statT').textContent=fmtTime(elapsedMs());
+    $('#statB').textContent=best>0?fmtTime(best):'—';
+  }
+  function render(){
+    var t=state.tiles,i;
+    for(i=0;i<SIZE*SIZE;i++){
+      var v=t[i];
+      if(v!==0) setPos(tileEls[v],i);
+    }
+    paintStats();
+  }
+  function buildBoard(){
+    var b=$('#board');
+    var g=document.createElement('div');
+    g.className='grid';
+    for(var i=0;i<SIZE*SIZE;i++){
+      var c=document.createElement('div');
+      c.className='cell';
+      g.appendChild(c);
+    }
+    b.appendChild(g);
+    for(var v=1;v<SIZE*SIZE;v++){
+      var d=document.createElement('div');
+      d.className='tile';
+      d.textContent=String(v);
+      d.dataset.v=String(v);
+      /* degradado cálido: amarillo (1) → naranja rojizo (15) */
+      d.style.setProperty('--h',String(46-(v-1)*1.9));
+      b.appendChild(d);
+      tileEls[v]=d;
+    }
+  }
+
+  /* ---------- partida ---------- */
+  function doSlide(i){
+    if(won) return;
+    var nt=slide(state.tiles,i);
+    if(!nt) return;
+    hist.push(state.tiles);
+    state.tiles=nt;
+    state.moves++;
+    render();
+    if(isSolved(state.tiles)) winGame();
+  }
+  function moveHole(dir){
+    if(won) return;
+    var e=emptyPos(state.tiles), r=rowOf(e), c=colOf(e), i=-1;
+    if(dir==='up'&&r>0) i=e-SIZE;
+    if(dir==='down'&&r<SIZE-1) i=e+SIZE;
+    if(dir==='left'&&c>0) i=e-1;
+    if(dir==='right'&&c<SIZE-1) i=e+1;
+    if(i>=0) doSlide(i);
+  }
+  function undo(){
+    if(won){ toast('Partida terminada · pulsa Nuevo'); return; }
+    if(!hist.length){ toast('Nada que deshacer'); return; }
+    state.tiles=hist.pop();
+    if(state.moves>0) state.moves--;
+    render();
+  }
+  function winGame(){
+    won=true;
+    frozen=elapsedMs();
+    var record=best===0||frozen<best;
+    if(record){ best=frozen; saveBest(); }
+    paintStats();
+    var id=++runId;
+    if(endTimer) clearTimeout(endTimer);
+    endTimer=setTimeout(function(){
+      if(id!==runId) return;
+      $('#winTitle').textContent='¡Resuelto!';
+      $('#winStats').textContent='Tiempo '+fmtTime(frozen)+
+        ' · Movimientos '+state.moves+' · Récord '+fmtTime(best);
+      $('#win').classList.add('show');
+    },450);
+    if(record) toast('¡Nuevo récord! '+fmtTime(best));
+  }
+  function newGame(silent){
+    runId++;
+    if(endTimer){ clearTimeout(endTimer); endTimer=null; }
+    $('#win').classList.remove('show');
+    hist=[];
+    won=false;
+    frozen=null;
+    startedAt=Date.now();
+    state.tiles=shuffle(diff);
+    state.moves=0;
+    render();
+    if(!silent) toast('Nueva partida · '+DIFF_NAMES[diff]);
+  }
+
+  /* ---------- entrada ---------- */
+  $('#btnNew').addEventListener('click',function(){ newGame(false); });
+  $('#btnAgain').addEventListener('click',function(){ newGame(false); });
+  $('#btnUndo').addEventListener('click',undo);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:1;
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('p15.diff',String(diff));
+    }catch(err){}
+    loadBest();
+    newGame(true);
+    toast('Dificultad: '+DIFF_NAMES[diff]);
+  });
+
+  /* Flechas mueven el hueco; N nueva; U deshacer */
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    var map={arrowup:'up',arrowdown:'down',arrowleft:'left',arrowright:'right'};
+    if(map[k]){ e.preventDefault(); moveHole(map[k]); return; }
+    if(k==='n'){ newGame(false); return; }
+    if(k==='u'){ undo(); }
+  });
+
+  /* Pulsar una ficha adyacente la desliza al hueco */
+  var lastSwipe=0;
+  var board=$('#board');
+  board.addEventListener('click',function(e){
+    if(Date.now()-lastSwipe<350) return;
+    var el=e.target&&e.target.closest?e.target.closest('.tile'):null;
+    if(!el) return;
+    var v=parseInt(el.dataset.v,10);
+    var i=state.tiles.indexOf(v);
+    if(i>=0) doSlide(i);
+  });
+
+  /* Deslizar mueve el hueco en la dirección del gesto */
+  var swipeFrom=null;
+  var SWIPE_MIN=24;
+  board.addEventListener('touchstart',function(e){
+    if(e.touches.length!==1){ swipeFrom=null; return; }
+    var t=e.touches[0];
+    swipeFrom={x:t.clientX,y:t.clientY};
+  },{passive:true});
+  board.addEventListener('touchend',function(e){
+    if(!swipeFrom) return;
+    var t=e.changedTouches[0];
+    var dx=t.clientX-swipeFrom.x, dy=t.clientY-swipeFrom.y;
+    swipeFrom=null;
+    if(Math.abs(dx)<SWIPE_MIN&&Math.abs(dy)<SWIPE_MIN) return;
+    lastSwipe=Date.now();
+    if(Math.abs(dx)>Math.abs(dy)) moveHole(dx>0?'right':'left');
+    else moveHole(dy>0?'down':'up');
+  },{passive:true});
+  board.addEventListener('touchcancel',function(){ swipeFrom=null; },{passive:true});
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  buildBoard();
+  newGame(true);
+  setInterval(function(){ paintStats(); },250);
+}
+</script>
+</body>
+</html>

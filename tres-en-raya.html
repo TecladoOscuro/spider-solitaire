@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Tres en Raya</title>
+<style>
+html{background-color:#14471c}
+:root{--s:clamp(64px,min(23vw,25vh),150px);--g:clamp(6px,1.2vw,12px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- turno ---------- */
+.statusbar{display:flex;justify-content:center;padding:10px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.x{background:#2196f3;color:#2196f3}
+.dot.o{background:#e53935;color:#e53935}
+.dot.draw{background:#90a4ae;color:#90a4ae}
+
+/* ---------- tablero ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;min-height:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:clamp(3px,.7vh,8px)}
+.board{
+  position:relative;display:grid;
+  grid-template-columns:repeat(3,var(--s));grid-template-rows:repeat(3,var(--s));
+  gap:var(--g);padding:var(--g);
+  background:linear-gradient(180deg,#455a64,#263238);
+  border-radius:clamp(10px,1.6vw,18px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.3);
+}
+.cell{
+  width:var(--s);height:var(--s);border-radius:clamp(8px,1.4vw,16px);
+  background:rgba(0,0,0,.3);
+  box-shadow:inset 0 3px 8px rgba(0,0,0,.5),inset 0 -1px 0 rgba(255,255,255,.05);
+  display:grid;place-items:center;position:relative;cursor:pointer;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  transition:background .12s;
+}
+.cell.empty:hover{background:rgba(255,255,255,.13)}
+.cell.won{animation:cellpulse .65s ease-in-out infinite alternate}
+@keyframes cellpulse{
+  from{box-shadow:inset 0 3px 8px rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.55)}
+  to{box-shadow:inset 0 3px 8px rgba(0,0,0,.5),0 0 0 6px rgba(255,255,255,.95)}
+}
+/* fantasma ✕ al pasar el cursor (sólo tu turno) */
+.cell.empty::before,.cell.empty::after{
+  content:"";position:absolute;left:50%;top:50%;width:52%;height:12%;border-radius:99px;
+  background:linear-gradient(180deg,#90caf9,#42a5f5);opacity:0;transition:opacity .12s;
+  transform:translate(-50%,-50%) rotate(45deg);pointer-events:none;
+}
+.cell.empty::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.board[data-turn="x"] .cell.empty:hover::before,
+.board[data-turn="x"] .cell.empty:hover::after{opacity:.3}
+/* marcas: ✕ azul, ○ rojo */
+.glyph{
+  position:relative;width:60%;height:60%;pointer-events:none;
+  animation:glyphpop .3s cubic-bezier(.3,1.5,.5,1) both;
+}
+.glyph.x::before,.glyph.x::after{
+  content:"";position:absolute;left:50%;top:50%;width:100%;height:17%;border-radius:99px;
+  background:linear-gradient(180deg,#64b5f6,#1e88e5);
+  box-shadow:0 2px 6px rgba(0,0,0,.45);
+  transform:translate(-50%,-50%) rotate(45deg);
+}
+.glyph.x::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.glyph.o{
+  width:76%;height:76%;border-radius:50%;
+  border:calc(var(--s) * .115) solid #ef5350;
+  background:transparent;
+  box-shadow:0 2px 6px rgba(0,0,0,.35),0 0 12px rgba(229,57,53,.4);
+}
+@keyframes glyphpop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+/* línea ganadora trazada */
+.strike{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;z-index:3;overflow:visible;
+}
+.strike line{
+  stroke:#fff;stroke-width:9;stroke-linecap:round;opacity:0;
+  stroke-dasharray:var(--len,400);stroke-dashoffset:var(--len,400);
+  filter:drop-shadow(0 0 7px rgba(255,255,255,.9));
+}
+.strike.show line{opacity:1;animation:strikedraw .55s .1s ease forwards}
+@keyframes strikedraw{
+  from{stroke-dashoffset:var(--len,400)}
+  to{stroke-dashoffset:0}
+}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+.winline{display:flex;gap:9px;justify-content:center;align-items:center;margin:4px 0 2px;min-height:30px}
+.winline[hidden]{display:none}
+.mini{
+  width:30px;height:30px;position:relative;display:block;
+  animation:minipulse .65s ease-in-out infinite alternate;
+}
+.mini.x::before,.mini.x::after{
+  content:"";position:absolute;left:50%;top:50%;width:80%;height:18%;border-radius:99px;
+  background:linear-gradient(180deg,#64b5f6,#1e88e5);
+  transform:translate(-50%,-50%) rotate(45deg);
+}
+.mini.x::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.mini.o{border:5px solid #ef5350;border-radius:50%;box-shadow:0 0 8px rgba(229,57,53,.5)}
+.tablas{
+  font-size:19px;font-weight:700;letter-spacing:.6px;
+  animation:minipulse .65s ease-in-out infinite alternate;
+}
+@keyframes minipulse{
+  from{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.75)}
+  to{transform:scale(1.14);box-shadow:0 0 0 6px rgba(255,255,255,.22)}
+}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">❌</span><h1>Tres en Raya</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Victorias</span><b id="statW">0</b></div>
+    <div class="stat"><span>Tablas</span><b id="statD">0</b></div>
+    <div class="stat"><span>Derrotas</span><b id="statL">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad de la IA">
+      <option value="1">Fácil</option>
+      <option value="2">Medio</option>
+      <option value="3">Difícil</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer tu jugada y la de la IA (tecla U)">Deshacer</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot x" id="turnDot"></i><span id="status">Tu turno</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="board" id="board" data-turn="x">
+      <svg class="strike" id="strike" aria-hidden="true"><line id="strikeSeg" x1="0" y1="0" x2="0" y2="0"></line></svg>
+    </div>
+  </div>
+</main>
+
+<div class="hint-bar">Toca una casilla para marcar tu ✕ azul · La IA juega ○ en rojo · Teclas: N nuevo · U deshacer</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <div class="winline" id="winLine" hidden></div>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE TRES EN RAYA PURO — sin IIFE, sin 'use strict'.
+   Sin referencias a document / window / setTimeout / localStorage en el
+   motor: todo es JavaScript plano evaluable en Node.
+
+   DISEÑO DEL ESTADO (documentado):
+     - Tablero de 9 casillas, índice 0..8 en lectura (fila por fila):
+         0 1 2
+         3 4 5
+         6 7 8
+     - board[i] es null | 'x' (tú, azul) | 'o' (IA, rojo).
+     - state = {board, turn, over, result, line}
+         turn   : 'x' | 'o'   → a quién le toca
+         over   : boolean
+         result : null | 'x' | 'o' | 'draw'
+         line   : array con los 3 índices de la línea ganadora, o null
+     - applyMove() NUNCA muta: devuelve un estado nuevo (copia de board).
+     - applyMove() devuelve null si la casilla está ocupada, si el índice
+       está fuera de 0..8, si el juego ya terminó o si st no existe.
+     - chooseMove(st, level) con level 1..3:
+         1 Fácil   aleatoria casi pura (90% jugada aleatoria)
+         2 Medio   30% jugada aleatoria (falla) · 30% entre jugadas
+                   óptimas · 40% jugada óptima fija  → falla ~30%
+         3 Difícil minimax completo con memo → INBATIBLE, juega perfecto
+   ========================================================================= */
+
+var LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+var MOVE_PREF=[4,0,2,6,8,1,3,5,7];   /* centro, esquinas, aristas */
+var TT_MEMO={};                      /* memo de minimax (posiciones puras) */
+
+/* ---------- estado ---------- */
+function initialState(){
+  var b=new Array(9);
+  for(var i=0;i<9;i++) b[i]=null;
+  return {board:b,turn:'x',over:false,result:null,line:null};
+}
+
+/* Línea ganadora de3 en cualquiera de las 8 direcciones, o null. */
+function winnerLine(board){
+  if(!board) return null;
+  for(var i=0;i<LINES.length;i++){
+    var L=LINES[i], v=board[L[0]];
+    if(v==='x'||v==='o'){
+      if(board[L[1]]===v&&board[L[2]]===v) return [L[0],L[1],L[2]];
+    }
+  }
+  return null;
+}
+
+/* Índices de casillas libres (vacías si el juego terminó). */
+function legalMoves(st){
+  var out=[];
+  if(!st||!st.board||st.over) return out;
+  for(var i=0;i<9;i++) if(st.board[i]===null) out.push(i);
+  return out;
+}
+
+/* Aplica la jugada devolviendo un estado NUEVO. null = jugada ilegal. */
+function applyMove(st,i){
+  if(!st||!st.board||st.over) return null;
+  if(typeof i!=='number'||i!==Math.floor(i)||i<0||i>8) return null;
+  if(st.board[i]!==null) return null;
+  var b=st.board.slice();
+  var mover=st.turn;
+  b[i]=mover;
+  var line=winnerLine(b);
+  var over=!!line;
+  var result=line?mover:null;
+  if(!over){
+    var full=true;
+    for(var k=0;k<9;k++){ if(b[k]===null){ full=false; break; } }
+    if(full){ over=true; result='draw'; }
+  }
+  return {board:b,turn:(mover==='x')?'o':'x',over:over,result:result,line:line};
+}
+
+/* ---------- minimax (perfecto) ---------- */
+/* Puntuación desde la perspectiva de `turn`: 1 gana, 0 empata, -1 pierde. */
+function scorePosition(board,turn,memo){
+  var key=turn+':'+board.join(',');
+  var hit=memo[key];
+  if(hit!==undefined) return hit;
+  var line=winnerLine(board);
+  var val;
+  if(line){
+    val=(board[line[0]]===turn)?1:-1;
+  }else{
+    var empty=-1;
+    for(var i=0;i<9;i++){ if(board[i]===null){ empty=i; break; } }
+    if(empty<0){
+      val=0;
+    }else{
+      var best=-2, opp=(turn==='x')?'o':'x';
+      for(var k=0;k<9;k++){
+        if(board[k]!==null) continue;
+        var nb=board.slice();
+        nb[k]=turn;
+        var v=-scorePosition(nb,opp,memo);
+        if(v>best) best=v;
+      }
+      val=best;
+    }
+  }
+  memo[key]=val;
+  return val;
+}
+
+/* Puntuación de cada jugada legal del estado. */
+function scoredMoves(st){
+  var moves=legalMoves(st), out=[];
+  for(var i=0;i<moves.length;i++){
+    var nx=applyMove(st,moves[i]);
+    var v;
+    if(nx.over) v=(nx.result==='draw')?0:((nx.result===st.turn)?1:-1);
+    else v=-scorePosition(nx.board,nx.turn,TT_MEMO);
+    out.push({i:moves[i],v:v});
+  }
+  return out;
+}
+
+/* Jugadas con la puntuación máxima. */
+function optimalMoves(st){
+  var sc=scoredMoves(st), maxv=-2, pool=[];
+  for(var i=0;i<sc.length;i++){
+    if(sc[i].v>maxv){ maxv=sc[i].v; pool=[sc[i].i]; }
+    else if(sc[i].v===maxv) pool.push(sc[i].i);
+  }
+  return pool;
+}
+
+/* Mejor jugada con desempate determinista: centro, esquinas, aristas. */
+function bestMoveOf(st){
+  var pool=optimalMoves(st);
+  if(!pool.length) return null;
+  for(var p=0;p<MOVE_PREF.length;p++){
+    if(pool.indexOf(MOVE_PREF[p])>=0) return MOVE_PREF[p];
+  }
+  return pool[0];
+}
+
+function randomOf(list){ return list[(Math.random()*list.length)|0]; }
+
+/* Elige jugada para el turno de `st`. level 1..3. null si no hay jugadas. */
+function chooseMove(st,level){
+  if(!(level>=1)) level=2;
+  if(level>3) level=3;
+  level=Math.floor(level);
+  var moves=legalMoves(st);
+  if(!moves.length) return null;
+  if(moves.length===1) return moves[0];
+  if(level===1){
+    /* Fácil: aleatoria casi pura. */
+    if(Math.random()<0.9) return randomOf(moves);
+    return bestMoveOf(st);
+  }
+  if(level===2){
+    /* Medio: 30% aleatoria · 30% entre óptimas · 40% óptima fija. */
+    var r=Math.random();
+    if(r<0.30) return randomOf(moves);
+    if(r<0.60) return randomOf(optimalMoves(st));
+    return bestMoveOf(st);
+  }
+  /* Difícil: minimax completo, INBATIBLE. */
+  return bestMoveOf(st);
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=initialState();
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage guardado dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('ttt.diff')||'2',10);
+      if(stored===1||stored===2||stored===3) diff=stored;
+    }
+  }catch(e){}
+
+  var stats={w:0,d:0,l:0};
+  try{
+    if(typeof localStorage!=='undefined'){
+      var rawStats=localStorage.getItem('ttt.stats');
+      if(rawStats){
+        var parsed=JSON.parse(rawStats);
+        if(parsed&&typeof parsed==='object'){
+          stats.w=parsed.w|0; stats.d=parsed.d|0; stats.l=parsed.l|0;
+        }
+      }
+    }
+  }catch(e){}
+
+  var DIFF_NAMES=['','Fácil','Medio','Difícil'];
+  var RESULT_TEXT={draw:'¡Empate!',x:'¡Has ganado!',o:'Gana la IA'};
+
+  var hist=[];            /* estados anteriores, para deshacer */
+  var aiThinking=false;
+  var aiToken=0;          /* invalida la IA en curso (nuevo/deshacer) */
+  var winTimer=null;
+  var toastTimer=null;
+  var cellEls=[];
+
+  /* ---------- util UI ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
+  }
+  function saveStats(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('ttt.stats',JSON.stringify(stats));
+    }catch(e){}
+  }
+  function paintStats(){
+    $('#statW').textContent=String(stats.w);
+    $('#statD').textContent=String(stats.d);
+    $('#statL').textContent=String(stats.l);
+  }
+  function setStatus(){
+    var txt,dot;
+    if(state.over){
+      txt=RESULT_TEXT[state.result]||'Terminada';
+      dot=state.result==='draw'?'draw':state.result;
+    }else if(aiThinking){
+      txt='IA piensa…'; dot='o';
+    }else{
+      txt='Tu turno'; dot='x';
+    }
+    $('#status').textContent=txt;
+    $('#turnDot').className='dot '+dot;
+  }
+
+  /* ---------- tablero ---------- */
+  function buildBoard(){
+    var b=$('#board');
+    var olds=b.querySelectorAll('.cell');
+    for(var i=0;i<olds.length;i++) b.removeChild(olds[i]);
+    cellEls=[];
+    for(var j=0;j<9;j++){
+      var d=document.createElement('div');
+      d.className='cell empty';
+      d.dataset.i=String(j);
+      d.dataset.v='';
+      b.appendChild(d);
+      cellEls[j]=d;
+    }
+  }
+
+  function render(){
+    var won=state.line;
+    for(var i=0;i<9;i++){
+      var el=cellEls[i];
+      if(!el) continue;
+      var v=state.board[i];
+      var key=v||'';
+      var isWon=!!(won&&won.indexOf(i)>=0);
+      var cls='cell '+(v?'filled':'empty')+(isWon?' won':'');
+      if(el.className!==cls) el.className=cls;
+      if(el.dataset.v!==key){
+        el.dataset.v=key;
+        el.innerHTML=v?'<span class="glyph '+v+'"></span>':'';
+      }
+    }
+    var canPlay=!state.over&&!aiThinking&&state.turn==='x';
+    $('#board').setAttribute('data-turn',canPlay?'x':'');
+    paintStats();
+    setStatus();
+  }
+
+  /* Trazo animado de la línea ganadora sobre el tablero. */
+  function drawStrike(){
+    var svg=$('#strike'), seg=$('#strikeSeg'), b=$('#board');
+    if(!state.line||state.line.length!==3){ svg.classList.remove('show'); return; }
+    var wr=b.getBoundingClientRect();
+    var ar=cellEls[state.line[0]].getBoundingClientRect();
+    var br=cellEls[state.line[2]].getBoundingClientRect();
+    var x1=ar.left+ar.width/2-wr.left, y1=ar.top+ar.height/2-wr.top;
+    var x2=br.left+br.width/2-wr.left, y2=br.top+br.height/2-wr.top;
+    var len=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+    seg.setAttribute('x1',x1.toFixed(2));
+    seg.setAttribute('y1',y1.toFixed(2));
+    seg.setAttribute('x2',x2.toFixed(2));
+    seg.setAttribute('y2',y2.toFixed(2));
+    seg.style.setProperty('--len',len.toFixed(2));
+    svg.classList.remove('show');
+    svg.getBoundingClientRect();   /* reflow: reinicia la animación */
+    svg.classList.add('show');
+  }
+
+  function renderWin(){
+    var show=!!state.over;
+    $('#win').classList.toggle('show',show);
+    if(!show) return;
+    $('#winTitle').textContent=RESULT_TEXT[state.result]||'Terminada';
+    $('#winStats').textContent='Victorias '+stats.w+' · Tablas '+stats.d+
+      ' · Derrotas '+stats.l+' · '+DIFF_NAMES[diff];
+    var strip=$('#winLine');
+    strip.innerHTML='';
+    if(state.line&&state.line.length===3){
+      for(var i=0;i<state.line.length;i++){
+        var m=document.createElement('span');
+        m.className='mini '+state.board[state.line[i]];
+        strip.appendChild(m);
+      }
+    }else{
+      var t=document.createElement('b');
+      t.className='tablas';
+      t.textContent='Tablas';
+      strip.appendChild(t);
+    }
+    strip.hidden=false;
+  }
+
+  /* ---------- partida ---------- */
+  function newGame(){
+    aiToken++;
+    aiThinking=false;
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    hist=[];
+    state=initialState();
+    $('#strike').classList.remove('show');
+    render();
+    renderWin();
+  }
+  function pushHist(){ hist.push(state); }   /* inmutable: basta la referencia */
+
+  function countStats(){
+    if(state.result==='x') stats.w++;
+    else if(state.result==='o') stats.l++;
+    else if(state.result==='draw') stats.d++;
+    saveStats();
+  }
+  function revertStats(){
+    if(state.result==='x'&&stats.w>0) stats.w--;
+    else if(state.result==='o'&&stats.l>0) stats.l--;
+    else if(state.result==='draw'&&stats.d>0) stats.d--;
+    saveStats();
+  }
+
+  function finish(){
+    aiThinking=false;
+    countStats();
+    render();
+    if(state.line) drawStrike();
+    if(winTimer) clearTimeout(winTimer);
+    winTimer=setTimeout(renderWin,900);     /* deja ver la línea trazándose */
+  }
+
+  function startAI(){
+    aiThinking=true;
+    render();
+    var token=aiToken;
+    setTimeout(function(){
+      if(token!==aiToken||state.over) return;
+      var mv=chooseMove(state,diff);
+      aiThinking=false;
+      if(mv===null||legalMoves(state).indexOf(mv)<0){ render(); return; }
+      var next=applyMove(state,mv);
+      if(!next){ render(); return; }
+      pushHist();
+      state=next;
+      render();
+      if(state.over) finish();
+    },60);
+  }
+
+  function playerMove(i){
+    if(!state||state.over||aiThinking) return;
+    if(state.turn!=='x') return;
+    if(legalMoves(state).indexOf(i)<0){ toast('Esa casilla ya está ocupada'); return; }
+    var next=applyMove(state,i);
+    if(!next){ setStatus(); return; }
+    pushHist();
+    state=next;
+    render();
+    if(state.over) finish(); else startAI();
+  }
+
+  function undo(){
+    if(aiThinking){ aiToken++; aiThinking=false; }
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    if(!hist.length){ toast('Nada que deshacer'); render(); renderWin(); return; }
+    if(state.over) revertStats();
+    /* deshace tu jugada + la de la IA (1 si la IA aún no ha respondido) */
+    var steps=(state.turn==='x')?2:1;
+    if(steps>hist.length) steps=hist.length;
+    for(var k=0;k<steps;k++) state=hist.pop();
+    $('#strike').classList.remove('show');
+    render();
+    renderWin();
+  }
+
+  /* ---------- cableado ---------- */
+  $('#board').addEventListener('click',function(e){
+    var el=e&&e.target&&e.target.closest?e.target.closest('[data-i]'):null;
+    if(!el) return;
+    playerMove(parseInt(el.dataset.i,10));
+  });
+  $('#btnNew').addEventListener('click',newGame);
+  $('#btnAgain').addEventListener('click',newGame);
+  $('#btnUndo').addEventListener('click',undo);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('ttt.diff',String(diff)); }
+    catch(err){}
+    toast('Dificultad: '+DIFF_NAMES[diff]);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='n') newGame();
+    else if(k==='u') undo();
+  });
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  buildBoard();
+  newGame();
+}
+</script>
+</body>
+</html>
