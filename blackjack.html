@@ -2,7 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juegos">
 <meta name="theme-color" content="#14471c">
 <title>Blackjack</title>
 <style>
@@ -198,6 +202,13 @@ select.btn{background:#263238;padding:7px 8px}
   .big{font-size:15px;padding:10px 15px}
   .val{font-size:17px;padding:2px 10px;min-width:44px}
   .histbar{font-size:12px;gap:6px}
+}
+/* app nativa apple: safe areas (notch/status bar/home indicator) */
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@supports(padding:env(safe-area-inset-top)){
+  body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+  .top{top:env(safe-area-inset-top)}
 }
 </style>
 </head>
@@ -843,7 +854,9 @@ function paintButtons(){
   $('#btnHit').disabled=!inPlay;
   $('#btnStand').disabled=!inPlay;
   $('#btnDouble').disabled=!(inPlay&&state.player.length===2&&!state.doubled&&state.chips>=state.bet);
-  $('#betLbl').textContent='Apuesta · mín '+state.minbet;
+  var _o=betOptions(state.minbet);
+  var _amt=betAll?state.chips:_o[betIdx];
+  $('#betLbl').textContent='Apuesta '+clampBet(state,_amt)+' · Fichas '+state.chips+(state.phase==='over'?' · última: '+(state.delta>0?'+':'')+state.delta:'');
 }
 
 function render(){
@@ -865,6 +878,7 @@ function render(){
 
 function showOverlay(){
   if(state.phase!=='over') return;
+  if(!state.broke) return;   /* sin modal por turno: solo bancarrota */
   var title=state.broke?'Bancarrota':(RESULT_TXT[state.result]||'Mano terminada');
   $('#winTitle').textContent=title;
   var sg=state.delta>0?'+':'';
@@ -879,8 +893,17 @@ function showOverlay(){
 function hideOverlay(){ $('#win').classList.remove('show'); }
 function overlayOpen(){ return $('#win').classList.contains('show'); }
 function queueOverlay(){
+  /* Resultado en la mesa (banner) y vuelta automatica a la apuesta:
+     el jugador sentado en la mesa decide cuándo repartir, sin modales. */
   if(ovTimer) clearTimeout(ovTimer);
-  ovTimer=setTimeout(function(){ ovTimer=null; showOverlay(); },700);
+  var delay=state.broke?600:(state.result==='bj'?900:1700);
+  ovTimer=setTimeout(function(){
+    ovTimer=null;
+    if(state.phase!=='over') return;
+    if(state.broke){ showOverlay(); return; }
+    var n=nextHand(state);
+    if(n){ state=n; resetCounts(); render(); }
+  },delay);
 }
 
 /* ---------- acciones ---------- */
