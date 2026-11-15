@@ -35,6 +35,17 @@ await p.click(`.cell[data-i="${hidden}"]`,{button:'right'});await p.waitForTimeo
 const fl=await p.evaluate(e=>{const s=eval(e);return {flags:s.flags,led:document.querySelector('#ledMines').textContent,cls:document.querySelector('.cell[data-i="'+s.cells.findIndex(x=>!x.revealed&&!x.flagged)+'"]')!==null};},stExpr);
 ok('clic derecho marca bandera (LED 009)',fl.flags===1&&fl.led==='009',fl);
 
+// 3b long-press: pone y QUITA bandera (toggle en ipad)
+const fBase=await p.evaluate(e=>{const s=eval(e);return s.flags;},stExpr);
+const hidden1=await p.evaluate(e=>{const s=eval(e);return s.cells.findIndex(c=>!c.revealed&&!c.flagged);},stExpr);
+const hb=await (await p.$(`.cell[data-i="${hidden1}"]`)).boundingBox();
+await p.mouse.move(hb.x+hb.width/2,hb.y+hb.height/2);
+await p.mouse.down(); await sleep(650); await p.mouse.up(); await sleep(250);
+const fOn=await p.evaluate(e=>{const s=eval(e);return s.flags;},stExpr);
+await p.mouse.down(); await sleep(650); await p.mouse.up(); await sleep(250);
+const fOff=await p.evaluate(e=>{const s=eval(e);return s.flags;},stExpr);
+ok('long-press pone y quita bandera (toggle)',fOn===fBase+1&&fOff===fBase,{fBase,fOn,fOff});
+
 // 4 modo tactil: toggle bandera con tap
 await p.click('#btnMode');await p.waitForTimeout(120);
 const modeOn=await p.evaluate(()=>({t:document.querySelector('#btnMode').textContent,cls:document.querySelector('#btnMode').className}));
