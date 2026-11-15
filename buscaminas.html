@@ -68,7 +68,7 @@ select.btn{background:#263238;padding:7px 8px}
 }
 .face:active{border-top-color:#7b7b7b;border-left-color:#7b7b7b;border-right-color:#fff;border-bottom-color:#fff}
 .gridwrap{
-  overflow:auto;max-width:100%;
+  overflow:auto;max-width:100%;width:100%;
   border-top:2px solid #7b7b7b;border-left:2px solid #7b7b7b;
   border-right:2px solid #fff;border-bottom:2px solid #fff;
 }
@@ -489,9 +489,15 @@ if (typeof document !== 'undefined') {
     var gwr=document.getElementById('gridWrap');
     var r=wrap?wrap.getBoundingClientRect():{width:window.innerWidth,top:100};
     var vh=window.innerHeight||768;
-    /* ancho EXACTO del hueco (clientWidth del contenedor, bordes incluidos
-       ya descontados) -> el grid nunca desborda y no aparece scroll interno */
-    var availW=Math.max(160,gwr?gwr.clientWidth:(r.width||window.innerWidth)-40);
+    /* ancho del hueco calculado desde el board-wrap (padding descontado):
+       .gridwrap es shrink-to-fit y su clientWidth era auto-referencial
+       (se atascaba en 32px en tablets). */
+    var pad=(parseFloat(getComputedStyle(wrap).paddingLeft)||0)+
+            (parseFloat(getComputedStyle(wrap).paddingRight)||0);
+    /* Cota exacta sobre el contenedor FIJO (board-wrap): chrome del marco
+       .frame (8+3 por lado = 22) + bordes del gridwrap (4) + holgura2.
+       Así floor((content-28)/cols)*cols siempre cabe sin scroll interno. */
+    var availW=Math.max(160,wrap.clientWidth-pad-28);
     var availH=Math.max(160,vh-Math.max(40,r.top)-38);
     var cs=Math.min(Math.floor(availW/S.w),Math.floor(availH/S.h));
     cs=Math.max(16,Math.min(56,cs));
