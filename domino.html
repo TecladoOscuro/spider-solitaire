@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<meta name="theme-color" content="#14471c">
+<title>Dominó</title>
+<style>
+html{background-color:#14471c}
+:root{--tw:clamp(42px,min(10.4vw,7.2vh),66px);--th:calc(var(--tw)*.48);--cw:clamp(30px,min(7.6vw,5.4vh),50px);--ch:calc(var(--cw)*.48);--gap:clamp(3px,.8vw,7px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- turno ---------- */
+.statusbar{display:flex;justify-content:center;padding:9px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.r{background:#e53935;color:#e53935}
+.dot.y{background:#fdd835;color:#fdd835}
+.dot.draw{background:#90a4ae;color:#90a4ae}
+
+/* ---------- mesa ---------- */
+.board-wrap{flex:1;display:flex;min-height:0;padding:8px 12px}
+.stage{display:flex;flex-direction:column;width:100%;min-height:0;gap:6px}
+.opp{
+  flex:none;display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:5px 10px;background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.12);border-radius:12px;
+}
+.opp .row{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:70%;overflow:hidden}
+.opp .lbl{font-size:12px;opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
+.back{
+  width:calc(var(--tw)*.44);height:calc(var(--tw)*.23);border-radius:3px;flex:none;
+  background:linear-gradient(135deg,#c62828,#7f0000);
+  border:1px solid rgba(0,0,0,.45);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.35);
+}
+.table{
+  flex:1;min-height:0;display:flex;gap:10px;align-items:stretch;justify-content:center;padding:10px;
+  background:linear-gradient(180deg,#4f93e6,#1d5fb2);
+  border-radius:clamp(8px,1.4vw,16px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.4),inset 0 -3px 0 rgba(0,0,0,.28);
+}
+.chain{
+  flex:1;min-width:0;min-height:0;display:flex;flex-wrap:wrap;gap:var(--gap);
+  justify-content:center;align-content:center;overflow:auto;padding:4px;
+}
+.emptychain{color:rgba(255,255,255,.78);font-size:13px;text-align:center}
+.stock{
+  flex:none;align-self:center;width:clamp(58px,15vw,92px);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;
+  background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.16);border-radius:12px;
+  padding:12px 5px;cursor:pointer;touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.stock b{font-size:17px;font-variant-numeric:tabular-nums}
+.stock span{font-size:9.5px;opacity:.75;text-transform:uppercase;letter-spacing:.6px}
+.stock.need{border-color:rgba(255,238,88,.85);animation:stockpulse .95s ease-in-out infinite alternate}
+@keyframes stockpulse{
+  from{box-shadow:0 0 0 0 rgba(255,238,88,.45)}
+  to{box-shadow:0 0 18px 4px rgba(255,238,88,.6)}
+}
+.stack{position:relative;width:54px;height:32px}
+.bk{
+  position:absolute;left:0;top:0;width:54px;height:32px;border-radius:4px;
+  background:linear-gradient(135deg,#c62828,#7f0000);border:1px solid rgba(0,0,0,.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
+}
+.bk.b1{left:8px;top:8px}
+.bk.b2{left:4px;top:4px}
+.bk.b3{left:0;top:0}
+
+/* ---------- fichas ---------- */
+.tile{position:relative;flex:none;width:var(--tw);height:var(--th)}
+.tile .face{
+  position:absolute;left:0;top:0;width:100%;height:100%;display:flex;
+  border-radius:5px;overflow:hidden;
+  background:linear-gradient(180deg,#fffdf6,#e6e1d3);
+  border:1px solid rgba(0,0,0,.42);
+  box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.9);
+}
+.half{position:relative;flex:1}
+.half+.half{border-left:1.5px solid rgba(25,25,25,.8)}
+.half i{
+  position:absolute;width:21%;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%);background:transparent;
+}
+.half i.on{
+  background:#17181a;
+  box-shadow:inset 0 .6px .6px rgba(255,255,255,.4),0 .5px .5px rgba(0,0,0,.3);
+}
+/* cadena: fichas en columna, extremos girados 90º */
+.chain .tile{width:var(--cw);height:var(--ch)}
+.chain .tile.cap{width:var(--ch);height:var(--cw)}
+.chain .tile.cap .face{width:var(--cw);height:var(--ch);left:50%;top:50%}
+.chain .tile.capL .face{transform:translate(-50%,-50%) rotate(90deg)}
+.chain .tile.capR .face{transform:translate(-50%,-50%) rotate(-90deg)}
+.tile.pop{animation:pop .34s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ---------- mano ---------- */
+.handwrap{
+  flex:none;display:flex;justify-content:center;overflow-x:auto;overflow-y:hidden;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);border-radius:12px;
+  padding:6px 8px;-webkit-overflow-scrolling:touch;
+}
+.handrow{display:flex;gap:var(--gap);margin:auto;padding:2px}
+.tile.hand{cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.tile.hand.bad{opacity:.4;filter:grayscale(.55)}
+.tile.hand.ok .face{box-shadow:0 2px 4px rgba(0,0,0,.4),0 0 9px rgba(255,255,255,.3)}
+.tile.sel .face{box-shadow:0 0 16px 5px rgba(255,238,88,.95)}
+.tile.hintp .face{animation:hinttile .55s ease-in-out infinite alternate}
+@keyframes hinttile{
+  from{box-shadow:0 0 6px 1px rgba(255,238,88,.55)}
+  to{box-shadow:0 0 18px 5px rgba(255,238,88,.95)}
+}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:92vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums;font-size:14px}
+.winline{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:4px 0 2px}
+.winline[hidden]{display:none}
+.mini{
+  display:flex;width:30px;height:15px;border-radius:3px;overflow:hidden;
+  background:linear-gradient(180deg,#fffdf6,#e6e1d3);border:1px solid rgba(0,0,0,.45);
+  animation:minipulse .65s ease-in-out infinite alternate;
+}
+.mini .half{padding:1px}
+.mini .half i{width:19%}
+@keyframes minipulse{
+  from{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.7)}
+  to{transform:scale(1.1);box-shadow:0 0 0 4px rgba(255,255,255,.35)}
+}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:7px 8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+  .table{padding:8px;gap:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+  .opp .row{max-width:60%}
+}
+/* app nativa apple: safe areas (notch/status bar/home indicator) */
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@supports(padding:env(safe-area-inset-top)){
+  body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+  .top{top:env(safe-area-inset-top)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🎲</span><h1>Dominó</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Victorias</span><b id="statW">0</b></div>
+    <div class="stat"><span>Tablas</span><b id="statD">0</b></div>
+    <div class="stat"><span>Derrotas</span><b id="statL">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad de la IA">
+      <option value="1">Fácil</option>
+      <option value="2">Medio</option>
+      <option value="3">Difícil</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer tu jugada y la de la IA (tecla U)">Deshacer</button>
+    <button class="btn" id="btnHint" title="Pista: ficha recomendada (tecla H)">Pista</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot r" id="turnDot"></i><span id="status">Tu turno</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="opp">
+      <span class="lbl" id="oppCount">IA: 7 fichas</span>
+      <div class="row" id="oppTiles"></div>
+    </div>
+    <div class="table">
+      <div class="chain" id="chain"></div>
+      <div class="stock" id="stock" title="Pozo: toca para robar">
+        <div class="stack"><div class="bk b3"></div><div class="bk b2"></div><div class="bk b1"></div></div>
+        <b id="stockCount">14</b>
+        <span id="stockLabel">Pozo</span>
+      </div>
+    </div>
+    <div class="handwrap" id="handWrap"><div class="handrow" id="myHand"></div></div>
+  </div>
+</main>
+
+<div class="hint-bar">Toca una ficha para jugarla · Toca el pozo para robar si no tienes jugada · La IA juega arriba · Teclas: N nuevo · U deshacer · H pista</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <div class="winline" id="winLine" hidden></div>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE DOMINÓ AMERICANO PURO — sin IIFE, sin 'use strict'.
+   Sin document / window / localStorage / setTimeout en el motor: JS plano
+   evaluable en Node. El RNG es inyectable (newState(rnd)) y se guarda en
+   st.rnd para que la IA "Fácil" también sea reproducible en tests.
+
+   REGLAS (dominó americano, 28 fichas = 7×8), DOCUMENTADAS:
+   · Reparto: 7 fichas por jugador, 14 al pozo (mezcla con el rnd dado).
+   · Apertura ("partida abierta", primera ficha libre): abre el que tenga el
+     doble MÁS ALTO (6-6 > 5-5 > … > 0-0). Si en las 14 fichas repartidas
+     no hay ningún doble, abre el que tenga la ficha más pesada (mayor suma
+     de pipas, empate resuelto a favor de quien la tenga primero). La primera
+     ficha se coloca en un tablero vacío: sirve en cualquier extremo y con
+     cualquier orientación.
+   · Después: encajar por IZQUIERDA o por DERECHA con el mismo número en el
+     extremo correspondiente (la ficha puede girarse).
+   · Sin jugada y con pozo: roba hasta poder jugar (máximo todo el mazo).
+     Si ya puede jugar, draw(st) no roba (devuelve el mismo estado).
+   · Sin jugada y sin pozo: pasa (passTurn). Dos pases seguidos = BLOQUEO.
+   · Gana quien se queda sin fichas. Bloqueo: gana quien tenga MENOS pipas;
+     recuento igual → EMPATE (tablas).
+   · PUNTOS (clásicos, se muestran al final; las stats cuentan victorias):
+       – falta (se queda sin fichas): puntos = pipas del rival ×2 si la
+         ficha FINAL jugada era doble;
+       – bloqueo: puntos = pipas rivales − pipas propias (0 si empate).
+   · status(st) → {over,result,resta,puntos,pips,…}: `resta` = pipas que
+     quedan al bando perdedor (0 si no terminó o hay empate).
+
+   API del motor:
+     newState(rnd)            → estado nuevo (reparto + quién abre)
+     canPlay(st,extremo,ficha)→ ¿puede el turno actual jugar `ficha` en
+                                'izq'/'der' (también 0/1, i/d, left/right)?
+     legalPlays(st)           → [{i,lado}] jugadas del turno actual
+     play(st,i,lado)          → estado nuevo (NUNCA muta) o null si ilegal
+     draw(st)                 → roba hasta poder / pozo vacío, o null si no
+                                hay pozo; si ya puede jugar devuelve st
+     passTurn(st)             → pasa (solo sin jugada y sin pozo) o null
+     status(st)               → {over,result,resta,…}
+     chooseMove(st,level)     → jugada legal o null (1 Fácil, 2 Medio,
+                                3 Difícil con time-box ≤900 ms)
+     var state                → estado global de la interfaz
+   ========================================================================= */
+
+/* ---------- fichas (28: a<=b, 0..6) ---------- */
+var TILES=[];
+function buildTiles(){var o=[],a,b;for(a=0;a<=6;a++)for(b=a;b<=6;b++)o.push([a,b]);return o;}
+TILES=buildTiles();
+var N_TILES=28;
+
+/* Posiciones de pipas en una mitad (3×3, en %). */
+var PIPPOS=[
+  [],
+  [[50,50]],
+  [[25,25],[75,75]],
+  [[25,25],[50,50],[75,75]],
+  [[25,25],[75,25],[25,75],[75,75]],
+  [[25,25],[75,25],[50,50],[25,75],[75,75]],
+  [[25,25],[75,25],[25,50],[75,50],[25,75],[75,75]]
+];
+
+var WIN=100000, INF=1e9;
+
+function tileId(a,b){ if(a>b){var t=a;a=b;b=t;} return 7*a-(a*(a-1))/2+(b-a); }
+function isDouble(i){ var t=TILES[i]; return t[0]===t[1]; }
+function pipCount(i){ var t=TILES[i]; return t[0]+t[1]; }
+function other(p){ return p==='r'?'y':'r'; }
+function tileName(i){ var t=TILES[i]; return t[0]+'-'+t[1]; }
+
+function handPips(st,who){
+  var h=st.hands[who],s=0;
+  for(var k=0;k<h.length;k++) s+=pipCount(h[k]);
+  return s;
+}
+function countMatch(hand,v){
+  var n=0;
+  for(var k=0;k<hand.length;k++){ var t=TILES[hand[k]]; if(t[0]===v||t[1]===v) n++; }
+  return n;
+}
+function normLado(x){
+  if(x===0||x==='0'||x==='izq'||x==='i'||x==='left'||x==='L') return 'izq';
+  if(x===1||x==='1'||x==='der'||x==='d'||x==='right'||x==='R') return 'der';
+  return null;
+}
+function fitsEnd(chain,i,lado){
+  if(!chain.length) return true;                     /* apertura libre */
+  var t=TILES[i], e=(lado==='izq')?chain[0].l:chain[chain.length-1].r;
+  return t[0]===e||t[1]===e;
+}
+function handCanPlay(chain,hand){
+  for(var k=0;k<hand.length;k++){
+    if(!chain.length) return true;
+    if(fitsEnd(chain,hand[k],'izq')||fitsEnd(chain,hand[k],'der')) return true;
+  }
+  return false;
+}
+function legalFor(chain,hand){
+  var out=[];
+  for(var k=0;k<hand.length;k++){
+    var i=hand[k];
+    if(fitsEnd(chain,i,'izq')) out.push({i:i,lado:'izq'});
+    if(fitsEnd(chain,i,'der')) out.push({i:i,lado:'der'});
+  }
+  return out;
+}
+
+/* ---------- estado ---------- */
+function shuffle(arr,rnd){
+  var a=arr.slice(),i,j,t;
+  for(i=a.length-1;i>0;i--){ j=Math.floor(rnd()*(i+1)); t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+
+/* Quién abre: mayor doble; si no hay dobles, ficha más pesada. */
+function openingPlayer(st){
+  var who=['r','y'], bestD=-1, dWho='r', bestW=-1, wWho='r';
+  for(var i=0;i<2;i++){
+    var p=who[i], h=st.hands[p];
+    for(var k=0;k<h.length;k++){
+      var t=TILES[h[k]], w;
+      if(t[0]===t[1]){ if(t[0]>bestD){ bestD=t[0]; dWho=p; } w=10+t[0]; }
+      else w=t[0]+t[1];
+      if(w>bestW){ bestW=w; wWho=p; }
+    }
+  }
+  if(bestD>=0) return dWho;
+  return wWho;
+}
+
+function newState(rnd){
+  rnd=(typeof rnd==='function')?rnd:Math.random;
+  var ids=[],k;
+  for(k=0;k<N_TILES;k++) ids.push(k);
+  var d=shuffle(ids,rnd);
+  var st={
+    hands:{r:d.slice(0,7),y:d.slice(7,14)}, stock:d.slice(14), chain:[],
+    turn:'r', passes:0, over:false, result:null, points:0, lastTile:null,
+    doubled:false, blocked:false, opened:false, starter:'r', drawn:0, rnd:rnd
+  };
+  st.starter=openingPlayer(st);
+  st.turn=st.starter;
+  return st;
+}
+
+function cloneBase(st){
+  return {
+    hands:{r:st.hands.r.slice(),y:st.hands.y.slice()},
+    stock:st.stock.slice(), chain:st.chain.slice(),
+    turn:st.turn, passes:st.passes|0, over:!!st.over,
+    result:(st.result===undefined?null:st.result), points:st.points|0,
+    lastTile:(st.lastTile===undefined?null:st.lastTile),
+    doubled:!!st.doubled, blocked:!!st.blocked, opened:!!st.opened,
+    starter:st.starter, drawn:st.drawn|0, rnd:st.rnd
+  };
+}
+
+function canPlay(st,extremo,ficha){
+  if(!st||st.over) return false;
+  var lado=normLado(extremo);
+  if(!lado) return false;
+  if(typeof ficha!=='number'||ficha<0||ficha>=TILES.length) return false;
+  var h=st.hands[st.turn];
+  if(!h||h.indexOf(ficha)<0) return false;          /* solo fichas propias */
+  return fitsEnd(st.chain,ficha,lado);
+}
+
+function legalPlays(st){
+  if(!st||st.over) return [];
+  return legalFor(st.chain,st.hands[st.turn]);
+}
+
+/* Coloca la ficha. Devuelve un estado NUEVO; nunca muta `st`. */
+function play(st,i,lado){
+  if(!st||st.over) return null;
+  var L=normLado(lado);
+  if(!L) return null;
+  if(!canPlay(st,L,i)) return null;
+  var mover=st.turn;
+  var hand=st.hands[mover].slice();
+  var pos=hand.indexOf(i);
+  if(pos<0) return null;
+  hand.splice(pos,1);
+
+  var t=TILES[i], l, r, e;
+  if(!st.chain.length){ l=t[0]; r=t[1]; }            /* apertura: libre */
+  else if(L==='izq'){
+    e=st.chain[0].l;                                 /* toca por la izquierda */
+    if(t[0]===e){ l=t[1]; r=e; } else { l=t[0]; r=e; }
+  } else {
+    e=st.chain[st.chain.length-1].r;                 /* toca por la derecha */
+    if(t[0]===e){ l=e; r=t[1]; } else { l=e; r=t[0]; }
+  }
+
+  var hands={r:st.hands.r.slice(),y:st.hands.y.slice()};
+  hands[mover]=hand;
+  var chain=st.chain.slice();
+  var entry={t:i,l:l,r:r};
+  if(!chain.length) chain.push(entry);
+  else if(L==='izq') chain.unshift(entry);
+  else chain.push(entry);
+
+  var out=cloneBase(st);
+  out.hands=hands; out.chain=chain;
+  out.turn=other(mover); out.passes=0;
+  out.lastTile=i; out.opened=true; out.drawn=0;
+  if(hand.length===0){
+    out.over=true;
+    out.result=mover;
+    out.doubled=isDouble(i);
+    out.points=handPips(out,other(mover))*(out.doubled?2:1);
+  }
+  return out;
+}
+
+/* Roba hasta poder jugar (máximo todo el pozo).
+   Devuelve null si no hay pozo; si ya puede jugar, devuelve `st` igual. */
+function draw(st){
+  if(!st||st.over) return null;
+  if(!st.stock.length) return null;
+  if(handCanPlay(st.chain,st.hands[st.turn])) return st;
+  var out=cloneBase(st);
+  var h=out.hands[out.turn], n=0;
+  while(out.stock.length && !handCanPlay(st.chain,h)){
+    h.push(out.stock.shift());
+    n++;
+  }
+  out.drawn=n;
+  out.passes=0;
+  return out;
+}
+
+/* Pasa: solo si no hay jugada y el pozo está vacío. Dos pases = bloqueo. */
+function passTurn(st){
+  if(!st||st.over) return null;
+  if(handCanPlay(st.chain,st.hands[st.turn])) return null;
+  if(st.stock.length) return null;
+  var mover=st.turn;
+  var out=cloneBase(st);
+  out.turn=other(mover);
+  out.passes=(st.passes|0)+1;
+  out.drawn=0;
+  if(out.passes>=2){
+    out.over=true;
+    out.blocked=true;
+    var a=handPips(out,'r'), b=handPips(out,'y');
+    out.result=(a<b)?'r':((b<a)?'y':'draw');
+    out.points=(out.result==='draw')?0:Math.abs(a-b);
+    out.doubled=false;
+  }
+  return out;
+}
+
+function status(st){
+  var over=!!st.over;
+  var result=over?(st.result===undefined?null:st.result):null;
+  var resta=0;
+  if(over&&result&&result!=='draw') resta=handPips(st,other(result));
+  return {
+    over:over, result:result, resta:resta,
+    puntos:over?(st.points|0):0,
+    pips:{r:handPips(st,'r'),y:handPips(st,'y')},
+    turn:st.turn, stock:st.stock.length, chain:st.chain.length,
+    passes:st.passes|0, blocked:!!st.blocked
+  };
+}
+
+/* ---------- IA ---------- */
+var AI_TIMEOUT={};
+
+/* Acción forzada cuando no hay jugadas: roba (mismo turno) o pasa. */
+function forcedNext(st){
+  if(handCanPlay(st.chain,st.hands[st.turn])) return null;
+  if(st.stock.length) return draw(st);
+  return passTurn(st);
+}
+
+function evalAI(st){
+  var me=st.turn, opp=other(me);
+  var s=(handPips(st,opp)-handPips(st,me))*2;
+  var mp=legalFor(st.chain,st.hands[me]).length;
+  var op=legalFor(st.chain,st.hands[opp]).length;
+  s+=(mp-op)*3;
+  if(st.chain.length){
+    var e1=st.chain[0].l, e2=st.chain[st.chain.length-1].r;
+    s+=(countMatch(st.hands[me],e1)+countMatch(st.hands[me],e2)
+       -countMatch(st.hands[opp],e1)-countMatch(st.hands[opp],e2))*4;
+  }
+  return s;
+}
+
+function negamaxAI(st,depth,alpha,beta,ctx){
+  if(st.over){
+    if(st.result==='draw') return 0;
+    return (st.result===st.turn)?WIN:-WIN;
+  }
+  if(depth<=0) return evalAI(st);
+  if(((ctx.nodes++)&63)===0 && Date.now()>=ctx.deadline) throw AI_TIMEOUT;
+  var plays=legalFor(st.chain,st.hands[st.turn]);
+  if(!plays.length){
+    var nx=forcedNext(st);
+    if(!nx) return evalAI(st);
+    if(nx.turn===st.turn) return negamaxAI(nx,depth-1,alpha,beta,ctx); /* roba */
+    return -negamaxAI(nx,depth-1,-beta,-alpha,ctx);                    /* pasa */
+  }
+  var best=-Infinity;
+  for(var k=0;k<plays.length;k++){
+    var nx2=play(st,plays[k].i,plays[k].lado);
+    if(!nx2) continue;
+    var v=-negamaxAI(nx2,depth-1,-beta,-alpha,ctx);
+    if(v>best) best=v;
+    if(best>alpha) alpha=best;
+    if(alpha>=beta) break;
+  }
+  return best;
+}
+
+function searchRoot(st,depth,ctx){
+  var plays=legalFor(st.chain,st.hands[st.turn]);
+  var best=null, bestV=-Infinity, alpha=-Infinity;
+  for(var k=0;k<plays.length;k++){
+    if(Date.now()>=ctx.deadline) throw AI_TIMEOUT;
+    ctx.nodes++;
+    var nx=play(st,plays[k].i,plays[k].lado);
+    if(!nx) continue;
+    var v=-negamaxAI(nx,depth-1,-INF,alpha,ctx);
+    if(v>bestV){ bestV=v; best=plays[k]; }
+    if(v>alpha) alpha=v;
+  }
+  return {move:best,score:bestV};
+}
+
+/* Medio: sacar fichas pesadas, guardar dobles, controlar el extremo nuevo
+   y no regalarlo; 30% de las veces elige al azar entre las legales. */
+function chooseMedium(st,plays){
+  var rnd=st.rnd||Math.random;
+  if(rnd()<0.3) return plays[Math.floor(rnd()*plays.length)];
+  var me=st.turn, opp=other(me);
+  var best=plays[0], bestS=-Infinity;
+  for(var k=0;k<plays.length;k++){
+    var m=plays[k], nx=play(st,m.i,m.lado);
+    if(!nx) continue;
+    var s=pipCount(m.i)*2;
+    if(isDouble(m.i)) s-=6;                       /* guarda dobles */
+    var e1=nx.chain[0].l, e2=nx.chain[nx.chain.length-1].r;
+    var newEnd=(m.lado==='izq')?e1:e2;
+    var oldEnd=(m.lado==='izq')?e2:e1;
+    s+=4*countMatch(nx.hands[me],newEnd);         /* control del extremo */
+    s+=2*countMatch(nx.hands[me],oldEnd);
+    s-=3*countMatch(nx.hands[opp],newEnd);        /* no regalar el extremo */
+    if(s>bestS){ bestS=s; best=m; }
+  }
+  return best;
+}
+
+/* Difícil: minimax alfa-beta con información completa (el motor conoce el
+   mazo), profundidad creciente y time-box de 900 ms. */
+function chooseHard(st,plays){
+  var ctx={deadline:Date.now()+900,nodes:0};
+  var best=plays[0];
+  for(var depth=1;depth<=8;depth++){
+    var res;
+    try{ res=searchRoot(st,depth,ctx); }
+    catch(e){ if(e!==AI_TIMEOUT) throw e; break; }
+    if(res&&res.move) best=res.move;
+    if(res&&res.score>=WIN) break;
+    if(Date.now()>=ctx.deadline) break;
+  }
+  return best;
+}
+
+function chooseMove(st,level){
+  if(!st||st.over) return null;
+  var plays=legalFor(st.chain,st.hands[st.turn]);
+  if(!plays.length) return null;
+  if(plays.length===1) return plays[0];
+  level=Math.floor(Number(level)||2);
+  if(level<1) level=1;
+  if(level>3) level=3;
+  if(level===1){
+    var rnd=st.rnd||Math.random;
+    return plays[Math.floor(rnd()*plays.length)];
+  }
+  if(level===2) return chooseMedium(st,plays);
+  return chooseHard(st,plays);
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=newState();
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('dm.diff')||'2',10);
+      if(stored===1||stored===2||stored===3) diff=stored;
+    }
+  }catch(e){}
+
+  var stats={w:0,d:0,l:0};
+  try{
+    if(typeof localStorage!=='undefined'){
+      var rawStats=localStorage.getItem('dm.stats');
+      if(rawStats){
+        var parsed=JSON.parse(rawStats);
+        if(parsed&&typeof parsed==='object'){
+          stats.w=parsed.w|0; stats.d=parsed.d|0; stats.l=parsed.l|0;
+        }
+      }
+    }
+  }catch(e){}
+
+  var DIFF_NAMES=['','Fácil','Medio','Difícil'];
+  var RESULT_TEXT={draw:'¡Empate!',r:'¡Has ganado!',y:'Gana la IA'};
+
+  var hist=[];            /* puntos de decisión del turno humano */
+  var fresh=true;         /* turno humano sin tocar (hay que guardarlo) */
+  var aiThinking=false, aiToken=0, busy=false;
+  var hintMove=null, hintTimer=null, winTimer=null, toastTimer=null, autoPassTimer=null;
+  var animTile=-1;
+
+  /* ---------- util UI ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
+  }
+  function saveStats(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('dm.stats',JSON.stringify(stats));
+    }catch(e){}
+  }
+  function paintStats(){
+    $('#statW').textContent=String(stats.w);
+    $('#statD').textContent=String(stats.d);
+    $('#statL').textContent=String(stats.l);
+  }
+  function countStats(){
+    if(state.result==='r') stats.w++;
+    else if(state.result==='y') stats.l++;
+    else if(state.result==='draw') stats.d++;
+    saveStats();
+  }
+  function revertStats(){
+    if(state.result==='r'&&stats.w>0) stats.w--;
+    else if(state.result==='y'&&stats.l>0) stats.l--;
+    else if(state.result==='draw'&&stats.d>0) stats.d--;
+    saveStats();
+  }
+
+  function setStatus(){
+    var txt,dot;
+    if(state.over){ txt=RESULT_TEXT[state.result]||'Terminada'; dot=state.result==='draw'?'draw':state.result; }
+    else if(aiThinking){ txt='IA piensa…'; dot='y'; }
+    else if(state.turn!=='r'){ txt='Turno de la IA'; dot='y'; }
+    else if(!legalPlays(state).length){ txt=state.stock.length?'Sin jugada: toca el pozo':'Sin jugada…'; dot='r'; }
+    else { txt='Tu turno'; dot='r'; }
+    $('#status').textContent=txt;
+    $('#turnDot').className='dot '+dot;
+  }
+
+  /* Guarda el inicio de cada turno humano (para deshacer). */
+  function noteTurn(){
+    if(state.over) return;
+    if(state.turn!=='r'){ fresh=true; return; }
+    if(!fresh) return;
+    fresh=false;
+    hist.push(state);
+  }
+  function commit(next){
+    if(!next) return false;
+    state=next;
+    noteTurn();
+    return true;
+  }
+
+  function maybeAutoPass(){
+    if(autoPassTimer||state.over||aiThinking||busy) return;
+    if(state.turn!=='r') return;
+    if(legalPlays(state).length) return;
+    if(state.stock.length) return;
+    autoPassTimer=setTimeout(function(){ autoPassTimer=null; humanPass(); },850);
+  }
+
+  /* ---------- pintura ---------- */
+  function pipsHTML(v){
+    var ps=PIPPOS[v]||[], s='';
+    for(var k=0;k<ps.length;k++) s+='<i class="on" style="left:'+ps[k][0]+'%;top:'+ps[k][1]+'%"></i>';
+    return s;
+  }
+  function halfHTML(v){ return '<div class="half">'+pipsHTML(v)+'</div>'; }
+
+  function renderOpp(){
+    var n=state.hands.y.length, h='';
+    for(var k=0;k<n;k++) h+='<div class="back"></div>';
+    $('#oppTiles').innerHTML=h;
+    $('#oppCount').textContent='IA: '+(n===1?'1 ficha':n+' fichas');
+  }
+  function renderChain(){
+    var el=$('#chain'), n=state.chain.length, h='';
+    for(var k=0;k<n;k++){
+      var c=state.chain[k], cls='';
+      if(n>1&&k===0) cls='cap capL';
+      else if(n>1&&k===n-1) cls='cap capR';
+      if(animTile>=0&&c.t===animTile) cls+=' pop';
+      h+='<div class="tile '+cls+'" data-c="'+k+'"><div class="face">'+
+         halfHTML(c.l)+halfHTML(c.r)+'</div></div>';
+    }
+    if(!n) h='<div class="emptychain">Toca una ficha para abrir la mesa</div>';
+    el.innerHTML=h;
+  }
+  function renderStock(){
+    var n=state.stock.length;
+    $('#stockCount').textContent=String(n);
+    $('#stockLabel').textContent=n>0?'Pozo':'Vacío';
+    var need=!state.over&&state.turn==='r'&&!aiThinking&&!legalPlays(state).length&&n>0;
+    $('#stock').classList.toggle('need',need);
+  }
+  function renderHand(){
+    var legal=legalPlays(state), ids=[], k;
+    for(k=0;k<legal.length;k++) if(ids.indexOf(legal[k].i)<0) ids.push(legal[k].i);
+    var hand=state.hands.r, h='';
+    for(k=0;k<hand.length;k++){
+      var i=hand[k], ok=ids.indexOf(i)>=0;
+      var cls='tile hand '+(ok?'ok':'bad');
+      if(hintMove&&hintMove.i===i) cls+=' hintp';
+      h+='<div class="'+cls+'" data-i="'+i+'" title="'+tileName(i)+'">'+
+         '<div class="face">'+halfHTML(TILES[i][0])+halfHTML(TILES[i][1])+'</div></div>';
+    }
+    $('#myHand').innerHTML=h;
+  }
+  function render(){
+    renderOpp(); renderChain(); renderStock(); renderHand();
+    paintStats(); setStatus(); maybeAutoPass();
+    animTile=-1;
+  }
+
+  function renderWin(){
+    var show=!!state.over;
+    $('#win').classList.toggle('show',show);
+    if(!show) return;
+    var s=status(state);
+    $('#winTitle').textContent=RESULT_TEXT[state.result]||'Terminada';
+    var txt;
+    if(state.result==='r'||state.result==='y'){
+      var loser=other(state.result);
+      txt='Puntos: '+state.points+' · Pipas de '+(loser==='y'?'la IA':'tu rival')+': '+
+          handPips(state,loser)+(state.doubled?' (×2 por ficha doble final)':'')+
+          (state.blocked?' (bloqueo)':'');
+    }else{
+      txt='Recuento: tú '+s.pips.r+' · IA '+s.pips.y+' pipas';
+    }
+    txt+=' · '+DIFF_NAMES[diff]+' · Victorias '+stats.w+' · Tablas '+stats.d+' · Derrotas '+stats.l;
+    $('#winStats').textContent=txt;
+    var showHand=(state.result==='draw')?state.hands.r.concat(state.hands.y):state.hands[other(state.result)];
+    var strip=$('#winLine');
+    strip.innerHTML='';
+    for(var k=0;k<showHand.length;k++){
+      var i=showHand[k];
+      strip.innerHTML+='<span class="mini">'+halfHTML(TILES[i][0])+halfHTML(TILES[i][1])+'</span>';
+    }
+    strip.hidden=(showHand.length===0);
+  }
+
+  /* ---------- partida ---------- */
+  function newGame(){
+    aiToken++; aiThinking=false; busy=false;
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    if(autoPassTimer){ clearTimeout(autoPassTimer); autoPassTimer=null; }
+    clearHint();
+    state=newState();
+    hist=[state];
+    fresh=(state.turn!=='r');
+    animTile=-1;
+    render();
+    renderWin();
+    if(state.turn==='y') startAI();   /* la IA puede abrir la partida */
+  }
+
+  function finish(){
+    aiThinking=false; busy=false;
+    countStats();
+    render();
+    if(winTimer) clearTimeout(winTimer);
+    winTimer=setTimeout(renderWin,750);
+  }
+
+  function startAI(){
+    if(state.over) return;
+    aiThinking=true;
+    setStatus();
+    var token=aiToken;
+    setTimeout(function(){ if(token!==aiToken) return; aiThinking=false; aiAct(); },420);
+  }
+
+  function aiPass(){
+    var p=passTurn(state);
+    if(!p){ aiThinking=false; setStatus(); return; }
+    commit(p);
+    render();
+    aiThinking=false;
+    if(state.over) finish(); else setStatus();
+  }
+
+  function aiAct(){
+    if(state.over){ finish(); return; }
+    var plays=legalPlays(state);
+    if(plays.length){
+      var m=chooseMove(state,diff);
+      if(!m){ aiPass(); return; }
+      var nx=play(state,m.i,m.lado);
+      if(!nx){ aiThinking=false; setStatus(); return; }
+      animTile=m.i;
+      commit(nx);
+      render();
+      aiThinking=false;
+      if(state.over) finish(); else setStatus();
+      return;
+    }
+    if(state.stock.length){
+      var d=draw(state);
+      if(!d){ aiPass(); return; }
+      commit(d);
+      render();
+      var token=aiToken;
+      setTimeout(function(){ if(token!==aiToken) return; aiAct(); },230);
+      return;
+    }
+    aiPass();
+  }
+
+  /* Elige extremo: si sirve en los dos, el que más jugadas te deja. */
+  function bestSide(st,i){
+    var l=canPlay(st,'izq',i), r=canPlay(st,'der',i);
+    if(!l&&!r) return null;
+    if(l&&!r) return {i:i,lado:'izq'};
+    if(r&&!l) return {i:i,lado:'der'};
+    var me=st.turn;
+    var a=play(st,i,'izq'), b=play(st,i,'der');
+    var sa=followScore(a,me), sb=followScore(b,me);
+    return sa>=sb?{i:i,lado:'izq'}:{i:i,lado:'der'};
+  }
+  function followScore(nx,who){
+    if(!nx||!nx.chain.length) return -1;
+    var e1=nx.chain[0].l, e2=nx.chain[nx.chain.length-1].r;
+    return countMatch(nx.hands[who],e1)+countMatch(nx.hands[who],e2);
+  }
+
+  function humanPlay(i){
+    if(state.over||busy) return;
+    if(aiThinking){ toast('Espera a la IA'); return; }
+    if(state.turn!=='r'){ toast('No te toca'); return; }
+    var m=bestSide(state,i);
+    if(!m){ toast('La ficha '+tileName(i)+' no encaja en ningún extremo'); return; }
+    clearHint();
+    var el=document.querySelector('#myHand [data-i="'+i+'"]');
+    if(el) el.classList.add('sel');
+    busy=true;
+    setTimeout(function(){
+      busy=false;
+      if(state.over) return;
+      var nx=play(state,m.i,m.lado);
+      if(!nx){ render(); return; }
+      animTile=m.i;
+      commit(nx);
+      render();
+      if(state.over) finish(); else startAI();
+    },150);
+  }
+
+  function humanDraw(){
+    if(state.over||busy) return;
+    if(aiThinking){ toast('Espera a la IA'); return; }
+    if(state.turn!=='r'){ toast('No te toca'); return; }
+    if(legalPlays(state).length){ toast('Tienes jugada: juega una ficha'); return; }
+    if(!state.stock.length){ humanPass(); return; }
+    var d=draw(state);
+    if(!d){ humanPass(); return; }
+    commit(d);
+    render();
+    var n=state.drawn|0;
+    toast(n?('Robaste '+n+(n===1?' ficha':' fichas')):'Sin jugadas en el pozo');
+  }
+
+  function humanPass(){
+    if(state.over||busy||aiThinking) return;
+    if(state.turn!=='r') return;
+    if(legalPlays(state).length||state.stock.length) return;
+    var p=passTurn(state);
+    if(!p){ setStatus(); return; }
+    commit(p);
+    render();
+    toast('Sin jugada: pasas');
+    if(state.over) finish(); else startAI();
+  }
+
+  function undo(){
+    if(aiThinking){ aiToken++; aiThinking=false; }
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    if(autoPassTimer){ clearTimeout(autoPassTimer); autoPassTimer=null; }
+    busy=false;
+    clearHint();
+    if(!hist.length){ toast('Nada que deshacer'); render(); renderWin(); return; }
+    if(hist[hist.length-1]===state) hist.pop();      /* turno sin tocar */
+    if(!hist.length){ toast('Nada que deshacer'); render(); renderWin(); return; }
+    var target=hist.pop();
+    if(state.over) revertStats();
+    state=target;
+    fresh=(state.turn!=='r');
+    animTile=-1;
+    render();
+    renderWin();
+    if(!state.over&&state.turn==='y') startAI();
+  }
+
+  function clearHint(){
+    if(hintTimer){ clearTimeout(hintTimer); hintTimer=null; }
+    hintMove=null;
+    var els=document.querySelectorAll('#myHand .hintp');
+    for(var k=0;k<els.length;k++) els[k].classList.remove('hintp');
+  }
+
+  function hintAction(){
+    if(state.over){ toast('Partida terminada: pulsa Nuevo'); return; }
+    if(aiThinking||busy||state.turn!=='r'){ toast('Espera a la IA'); return; }
+    clearHint();
+    if(!legalPlays(state).length){
+      toast(state.stock.length?'Sin jugada: toca el pozo':'Sin jugada: vas a pasar');
+      return;
+    }
+    var m=chooseMove(state,diff);
+    if(!m){ toast('Sin jugadas disponibles'); return; }
+    hintMove=m;
+    var el=document.querySelector('#myHand [data-i="'+m.i+'"]');
+    if(el) el.classList.add('hintp');
+    toast('Pista: '+tileName(m.i)+' por '+(m.lado==='izq'?'izquierda':'derecha'));
+    hintTimer=setTimeout(clearHint,3200);
+  }
+
+  /* ---------- cableado ---------- */
+  $('#myHand').addEventListener('click',function(e){
+    var el=e&&e.target&&e.target.closest?e.target.closest('[data-i]'):null;
+    if(!el) return;
+    humanPlay(parseInt(el.getAttribute('data-i'),10));
+  });
+  $('#stock').addEventListener('click',function(){ humanDraw(); });
+  $('#btnNew').addEventListener('click',newGame);
+  $('#btnAgain').addEventListener('click',newGame);
+  $('#btnUndo').addEventListener('click',undo);
+  $('#btnHint').addEventListener('click',hintAction);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('dm.diff',String(diff)); }
+    catch(err){}
+    toast('Dificultad: '+DIFF_NAMES[diff]);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='n') newGame();
+    else if(k==='u') undo();
+    else if(k==='h') hintAction();
+  });
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  newGame();
+}
+
+/* =========================================================================
+   TESTS EN NODE — solo se ejecutan fuera del navegador
+   (typeof document === 'undefined'). Extraer todos los <script> del HTML
+   con awk y lanzar `node fichero.js`.
+   ========================================================================= */
+if (typeof document === 'undefined') {
+  var __f=0, __n=0;
+  var __ok=function(name,cond,extra){
+    __n++;
+    if(cond) console.log('PASS '+name);
+    else{ __f++; console.log('FAIL '+name+' -> '+(extra===undefined?'':JSON.stringify(extra))); }
+  };
+  var __seed=function(s){
+    return function(){
+      s|=0; s=s+0x6D2B79F5|0;
+      var t=Math.imul(s^s>>>15,1|s);
+      t=t+Math.imul(t^t>>>7,61|t)^t;
+      return ((t^t>>>14)>>>0)/4294967296;
+    };
+  };
+  /* Construye un estado a mano: manos y pozo como pares [a,b],
+     cadena como lista de pares [a,b] con l=a, r=b (adyacente por diseño). */
+  var __mk=function(rh,yh,chain,stock,turn){
+    var mk=function(arr){
+      var o=[];
+      for(var k=0;k<arr.length;k++) o.push(tileId(arr[k][0],arr[k][1]));
+      return o;
+    };
+    var ch=[];
+    for(var k=0;k<(chain||[]).length;k++){
+      var p=chain[k];
+      ch.push({t:tileId(p[0],p[1]),l:p[0],r:p[1]});
+    }
+    return {
+      hands:{r:mk(rh),y:mk(yh)}, stock:mk(stock||[]), chain:ch,
+      turn:turn||'r', passes:0, over:false, result:null, points:0,
+      lastTile:null, doubled:false, blocked:false, opened:ch.length>0,
+      starter:'r', drawn:0, rnd:__seed(7)
+    };
+  };
+  var __snap=function(st){
+    return JSON.stringify({h:st.hands,s:st.stock,c:st.chain,t:st.turn,p:st.passes,o:st.over});
+  };
+  var __chainOK=function(st){
+    for(var k=1;k<st.chain.length;k++){
+      if(st.chain[k-1].r!==st.chain[k].l) return false;
+    }
+    for(var k2=0;k2<st.chain.length;k2++){
+      var e=st.chain[k2], t=TILES[e.t];
+      if(!t) return false;
+      if(!((t[0]===e.l&&t[1]===e.r)||(t[1]===e.l&&t[0]===e.r))) return false;
+    }
+    return true;
+  };
+  var __uniqueOK=function(st){
+    var all=st.hands.r.concat(st.hands.y).concat(st.stock), k;
+    for(k=0;k<st.chain.length;k++) all.push(st.chain[k].t);
+    if(all.length!==28) return false;
+    var seen={}, i;
+    for(k=0;k<all.length;k++){ i=all[k]; if(seen[i]) return false; seen[i]=1; }
+    return true;
+  };
+
+  /* --- 1. reparto --- */
+  var s0=newState(__seed(12345));
+  var all=s0.hands.r.concat(s0.hands.y).concat(s0.stock);
+  var exp=[], gi2;
+  for(gi2=0;gi2<28;gi2++) exp.push(gi2);
+  all=all.slice().sort(function(a,b){return a-b;});
+  __ok('28 fichas repartidas sin duplicados',all.length===28&&all.join(',')===exp.join(','),all);
+  __ok('reparto 7+7 con 14 al pozo',
+    s0.hands.r.length===7&&s0.hands.y.length===7&&s0.stock.length===14,
+    {r:s0.hands.r.length,y:s0.hands.y.length,stock:s0.stock.length});
+  __ok('quien abre = mayor doble (o más pesada)',
+    s0.starter===openingPlayer(s0),{starter:s0.starter,calc:openingPlayer(s0)});
+  var da=newState(__seed(42)), db=newState(__seed(42));
+  __ok('newState determinista con el mismo RNG',
+    JSON.stringify(da.hands)===JSON.stringify(db.hands)&&
+    JSON.stringify(da.stock)===JSON.stringify(db.stock),null);
+  __ok('newState sin RNG usa Math.random',
+    newState().hands.r.length===7,null);
+
+  /* --- 2. apertura --- */
+  __ok('abre el que tiene el doble más alto',
+    openingPlayer(__mk([[6,6],[0,1]],[[5,5],[2,3]],[],[],'r'))==='r',null);
+  __ok('abre el rival si él tiene el 6-6',
+    openingPlayer(__mk([[0,1]],[[6,6],[2,3]],[],[],'r'))==='y',null);
+  __ok('sin dobles abre la ficha más pesada',
+    openingPlayer(__mk([[3,6]],[[2,5]],[],[],'r'))==='r',null);
+  __ok('sin dobles, más pesada del rival abre',
+    openingPlayer(__mk([[3,6]],[[5,6]],[],[],'r'))==='y',null);
+
+  /* --- 3. jugadas legales en ambos extremos --- */
+  var s3=__mk([[3,6],[1,5]],[[0,0]],[[1,3]],[],'r');
+  var lp3=legalPlays(s3);
+  __ok('jugadas legales por izquierda y por derecha',
+    lp3.some(function(m){return m.i===tileId(1,5)&&m.lado==='izq';})&&
+    lp3.some(function(m){return m.i===tileId(3,6)&&m.lado==='der';}),lp3);
+  __ok('canPlay por ambos extremos y rechaza el que no encaja',
+    canPlay(s3,'izq',tileId(1,5))===true&&
+    canPlay(s3,'der',tileId(3,6))===true&&
+    canPlay(s3,'izq',tileId(3,6))===false,null);
+  __ok('solo fichas propias del turno',
+    (function(){
+      var s=__mk([[3,6]],[[0,0],[1,5]],[[1,3]],[],'y');
+      var lp=legalPlays(s);
+      return lp.length>0&&lp.every(function(m){return s.hands.y.indexOf(m.i)>=0;})&&
+        canPlay(s,'izq',tileId(3,6))===false;
+    })(),null);
+
+  /* --- 4. encaje de 6-3 en una cadena con extremo 3 --- */
+  var s4=__mk([[3,6],[0,1]],[[4,4]],[[2,3]],[],'r');
+  __ok('6-3 encaja por el 3 (derecha) y no por el 2',
+    canPlay(s4,'der',tileId(3,6))===true&&canPlay(s4,'izq',tileId(3,6))===false,null);
+  var p4=play(s4,tileId(3,6),'der');
+  __ok('la 6-3 queda con el 3 tocando y el 6 libre',
+    !!p4&&p4.chain.length===2&&p4.chain[1].l===3&&p4.chain[1].r===6&&
+    p4.hands.r.length===1&&!p4.over,{chain:p4&&p4.chain});
+  var p4b=play(s4,tileId(3,6),'izq');
+  __ok('play rechaza el extremo que no encaja',p4b===null,null);
+
+  /* --- 5. robo --- */
+  var s5=__mk([[0,1]],[[4,5]],[[5,5]],[[0,4],[4,5]],'r');
+  __ok('sin jugada legal no puede jugar',legalPlays(s5).length===0,legalPlays(s5));
+  var d5=draw(s5);
+  __ok('roba hasta poder jugar (2 fichas del pozo)',
+    !!d5&&d5.hands.r.length===3&&d5.stock.length===0&&legalPlays(d5).length>0,
+    d5&&{hand:d5.hands.r.length,stock:d5.stock.length});
+  var s5b=__mk([[5,6]],[[0,0]],[[5,5]],[[1,1]],'r');
+  __ok('no roba si ya tiene jugada',draw(s5b)===s5b,null);
+  __ok('no pasa con pozo disponible',passTurn(s5)===null,null);
+
+  /* --- 6. pasa con pozo vacío --- */
+  var s6=__mk([[0,1]],[[6,6]],[[2,3]],[],'r');
+  __ok('sin pozo no se roba',draw(s6)===null,null);
+  var p6=passTurn(s6);
+  __ok('pasa con el pozo vacío',
+    !!p6&&p6.turn==='y'&&p6.passes===1&&p6.over===false,
+    p6&&{turn:p6.turn,passes:p6.passes,over:p6.over});
+  __ok('no pasa si tiene jugada',passTurn(s3)===null,null);
+
+  /* --- 7. victoria por quedarse sin fichas --- */
+  var s7=__mk([[3,6]],[[5,6]],[[2,6]],[],'r');
+  var w7=play(s7,tileId(3,6),'der');
+  __ok('gana quien se queda sin fichas',
+    !!w7&&w7.over===true&&w7.result==='r'&&w7.points===11&&w7.doubled===false,
+    w7&&{over:w7.over,result:w7.result,points:w7.points});
+  var s7b=__mk([[6,6]],[[1,2]],[[3,6]],[],'r');
+  var w7b=play(s7b,tileId(6,6),'der');
+  __ok('doble final duplica los puntos',
+    !!w7b&&w7b.over===true&&w7b.result==='r'&&w7b.doubled===true&&w7b.points===6,
+    w7b&&{points:w7b.points,doubled:w7b.doubled});
+  var st7=status(w7);
+  __ok('status {over,result,resta} en victoria',
+    st7.over===true&&st7.result==='r'&&st7.resta===11,st7);
+
+  /* --- 8. bloqueo y recuento --- */
+  var s8=__mk([[0,0]],[[6,6]],[[1,2]],[],'r');
+  var b1=passTurn(s8), b2=b1?passTurn(b1):null;
+  __ok('bloqueo: gana el recuento menor',
+    !!b2&&b2.over===true&&b2.blocked===true&&b2.result==='r'&&b2.points===12,
+    b2&&{over:b2.over,result:b2.result,points:b2.points,passes:b2.passes});
+  var st8=status(b2);
+  __ok('status en bloqueo: resta = pipas del perdedor',
+    st8.over===true&&st8.result==='r'&&st8.resta===12&&st8.puntos===12,st8);
+  var s8b=__mk([[0,1]],[[0,1]],[[3,4]],[],'y');
+  var c1=passTurn(s8b), c2=c1?passTurn(c1):null;
+  __ok('bloqueo con recuento igual → empate',
+    !!c2&&c2.over===true&&c2.result==='draw'&&c2.points===0,
+    c2&&{result:c2.result,points:c2.points});
+  var st8b=status(c2);
+  __ok('status en empate: resta 0',
+    st8b.over===true&&st8b.result==='draw'&&st8b.resta===0,st8b);
+
+  /* --- 9. chooseMove en los 3 niveles --- */
+  var s9=__mk([[3,6],[1,5],[0,0]],[[2,2]],[[1,3]],[[4,4]],'r');
+  var lp9=legalPlays(s9);
+  var legalOK=true, mv9=null, lv9=0;
+  for(lv9=1;lv9<=3;lv9++){
+    mv9=chooseMove(s9,lv9);
+    if(!mv9){ legalOK=false; break; }
+    var found=lp9.some(function(m){return m.i===mv9.i&&m.lado===mv9.lado;});
+    if(!found){ legalOK=false; break; }
+  }
+  __ok('elige jugada legal en los 3 niveles',legalOK,
+    {level:lv9,move:mv9,legales:lp9});
+  var s9b=__mk([[0,1]],[[2,3]],[[5,6]],[[1,1]],'r');
+  __ok('sin jugadas devuelve null',
+    chooseMove(s9b,1)===null&&chooseMove(s9b,2)===null&&chooseMove(s9b,3)===null,null);
+
+  /* --- 10. partidas simuladas --- */
+  function __sim(seedVal,level){
+    var g=newState(__seed(seedVal)), steps=0, chainOK=true, uniqOK=true;
+    while(!g.over&&steps<300){
+      steps++;
+      var plays=legalPlays(g), next=null;
+      if(plays.length){
+        var m=chooseMove(g,level);
+        if(!m) return {err:'chooseMove null'};
+        next=play(g,m.i,m.lado);
+        if(!next) return {err:'jugada ilegal'};
+      }else if(g.stock.length){
+        next=draw(g);
+        if(!next) return {err:'no pudo robar'};
+      }else{
+        next=passTurn(g);
+        if(!next) return {err:'no pudo pasar'};
+      }
+      g=next;
+      if(!__chainOK(g)) chainOK=false;
+      if(!__uniqueOK(g)) uniqOK=false;
+    }
+    return {g:g,steps:steps,chainOK:chainOK,uniqOK:uniqOK};
+  }
+  var simOK=true, simInfo=null;
+  for(gi2=0;gi2<40;gi2++){
+    var r=__sim(1000+gi2,1);
+    if(r.err||!r.g||!r.g.over||!r.chainOK||!r.uniqOK||r.steps>=300){
+      simOK=false;
+      simInfo={partida:gi2,err:r.err,over:r.g&&r.g.over,chain:r.chainOK,
+        uniq:r.uniqOK,steps:r.steps};
+      break;
+    }
+    if(!r.g.blocked&&r.g.result!=='draw'&&r.g.hands[r.g.result].length!==0){
+      simOK=false; simInfo={partida:gi2,bad:'ganador con fichas en la mano'}; break;
+    }
+    var sst=status(r.g);
+    if(!sst.over||sst.result!==r.g.result){
+      simOK=false; simInfo={partida:gi2,bad:'status incoherente',sst:sst}; break;
+    }
+    if(r.g.blocked&&r.g.result!=='draw'&&
+       handPips(r.g,r.g.result)>handPips(r.g,other(r.g.result))){
+      simOK=false; simInfo={partida:gi2,bad:'bloqueo con más pipas ganando'}; break;
+    }
+  }
+  __ok('40 partidas completas coherentes (nivel 1)',simOK,simInfo);
+
+  /* niveles 2 y 3 en una partida (pocos plies: el 3 usa time-box de 900ms) */
+  var g3=newState(__seed(99)), plies=0, err3=null;
+  while(!g3.over&&plies<30&&!err3){
+    var pl=legalPlays(g3), nx3=null;
+    if(pl.length){
+      var lvl=(plies<2)?3:2;
+      var m3=chooseMove(g3,lvl);
+      if(!m3){ err3='chooseMove null'; break; }
+      nx3=play(g3,m3.i,m3.lado);
+      if(!nx3){ err3='jugada ilegal'; break; }
+    }else if(g3.stock.length){
+      nx3=draw(g3);
+      if(!nx3){ err3='no pudo robar'; break; }
+    }else{
+      nx3=passTurn(g3);
+      if(!nx3){ err3='no pudo pasar'; break; }
+    }
+    g3=nx3;
+    if(!__chainOK(g3)){ err3='cadena rota'; break; }
+    plies++;
+  }
+  __ok('simulación con niveles 2 y 3 no rompe',
+    !err3&&plies>0&&(!g3.over||g3.result!==undefined),
+    {err:err3,plies:plies,over:g3.over,result:g3.result});
+
+  /* --- 11. apply sin mutar --- */
+  var s11=__mk([[3,6],[1,5]],[[0,0]],[[1,3]],[[2,2]],'r');
+  var snap11=__snap(s11);
+  play(s11,tileId(3,6),'der');
+  draw(s11);
+  passTurn(s11);
+  __ok('play/draw/pass no mutan el estado',snap11===__snap(s11),
+    {antes:snap11,despues:__snap(s11)});
+  var s11b=__mk([[0,1]],[[4,5]],[[5,5]],[[0,4],[4,5]],'r');
+  var snap11b=__snap(s11b);
+  draw(s11b);
+  __ok('draw no muta el estado original',snap11b===__snap(s11b),
+    {antes:snap11b,despues:__snap(s11b)});
+
+  console.log(__f?('\nDOMINO: '+__f+' FAIL de '+__n):('\nDOMINO: ALL PASS ('+__n+' tests)'));
+  if(typeof process!=='undefined'&&process){ process.exitCode=__f?1:0; }
+}
+</script>
+</body>
+</html>

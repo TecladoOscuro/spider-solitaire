@@ -197,6 +197,20 @@ body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
     <span class="lv">FICHAS Y MÍNIMA CONFIGURABLES</span>
     <button class="info" data-g="blackjack" aria-label="Cómo jugar: Blackjack21">ⓘ</button>
   </a>
+  <a class="game" href="domino.html">
+    <span class="icon">⚁</span>
+    <h2>Dominó</h2>
+    <p>Contra la IA: encaja por los extremos y quédate sin fichas.</p>
+    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="domino" aria-label="Cómo jugar: Dominó">ⓘ</button>
+  </a>
+  <a class="game" href="sopa-de-letras.html">
+    <span class="icon">🔍</span>
+    <h2>Sopa de Letras</h2>
+    <p>Encuentra todas las palabras escondidas en8 direcciones.</p>
+    <span class="lv">10×10 · 12×12 · 15×15</span>
+    <button class="info" data-g="sopa" aria-label="Cómo jugar: Sopa de Letras">ⓘ</button>
+  </a>
 </main>
 
 <footer>Un archivo HTML por juego, sin dependencias.</footer>
@@ -229,7 +243,10 @@ var RULES={
   'palabra':{t:'Palabra',lv:'4 · 5 · 6 LETRAS',r:'Adivina la palabra oculta en6 intentos.\n\n• Verde = letra exacta · Amarillo = letra en otra posición · Gris = no está.\n• Se respeta la regla de duplicados de Wordle.\n• Teclado en pantalla con Ñ, o escribe con el teclado.\n• Estadísticas y distribución por longitud.\nTecla N: nueva partida.'},
   'damas-internacionales':{t:'Damas Internacionales',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'10×10,16 piezas por bando. Tú con rojas.\n\n• Los hombres capturan en las4 diagonales (también atrás).\n• La dama vuela por las diagonales y captura a distancia.\n• Captura obligatoria y siempre la de MÁS piezas.\n• Coronación al terminar en la fila meta.\nTeclas: U deshacer · H pista · N nuevo.'},
 
-  'blackjack':{t:'Blackjack 21',lv:'FÁCIL · NORMAL · EXPERTO',r:'Contra la banca: llega a21 sin pasarte. As vale1 o11.\n\n• Roba, Plantarse o Doblar (solo la primera jugada).\n• Blackjack natural (A+10) paga3:2. Empate = te devuelven.\n• Banca planta en16/17 según dificultad;1,2 o4 barajas.\n• Fichas iniciales (500-5000) y apuesta mínima (10-100) CONFIGURABLES en la cabecera.\nTeclas: ESPACIO robar · S plantar · N nueva.'}
+  'blackjack':{t:'Blackjack 21',lv:'FÁCIL · NORMAL · EXPERTO',r:'Contra la banca: llega a21 sin pasarte. As vale1 o11.\n\n• Roba, Plantarse o Doblar (solo la primera jugada).\n• Blackjack natural (A+10) paga3:2. Empate = te devuelven.\n• Banca planta en16/17 según dificultad;1,2 o4 barajas.\n• Fichas iniciales (500-5000) y apuesta mínima (10-100) CONFIGURABLES en la cabecera.\nTeclas: ESPACIO robar · S plantar · N nueva.'},
+
+  'domino':{t:'Dominó',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Fichas0-6 · gana el primero en quedarse sin ellas.\n\n• Abre el mayor doble; después encaja por izquierda o derecha con el mismo número.\n• Sin jugada: robas del pozo hasta poder; sin pozo, pasas.\n• Dos pases seguidos = bloqueo: gana quien tenga menos puntos en mano.\n• Victoria: pipas del rival (x2 si cerraste con doble).\nTeclas: U deshacer · H pista · N nuevo.'},
+  'sopa':{t:'Sopa de Letras',lv:'10×10 · 12×12 · 15×15',r:'Encuentra todas las palabras de la lista.\n\n• Arrastra de la primera a la última letra (solo líneas rectas, diagonales incluidas).\n• Alternativa táctil: toca la primera casilla y después la última.\n• Las encontradas se quedan coloreadas y tachadas.\n• Récord de tiempo por nivel.\nTecla N: nueva partida.'}
 };
 var ov=document.getElementById('infoOv');
 function openInfo(g){

@@ -22,6 +22,8 @@ Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin
 | Palabra | `palabra.html` | 4, 5, 6 letras |
 | Damas Internacionales | `damas-internacionales.html` | Fácil, Medio, Difícil (IA alfa-beta) |
 | Blackjack 21 | `blackjack.html` | Fácil, Normal, Experto · fichas y mínima configurables |
+| Dominó | `domino.html` | Fácil, Medio, Difícil (IA alfa-beta) |
+| Sopa de Letras | `sopa-de-letras.html` | 10×10 · 12×12 · 15×15 |
 
 El índice `index.html` es el menú de entrada.
 

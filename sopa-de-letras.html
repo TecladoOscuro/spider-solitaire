@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<meta name="theme-color" content="#14471c">
+<title>Sopa de letras</title>
+<style>
+html{background-color:#14471c}
+:root{--cw:40px;--gap:4px}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- estado ---------- */
+.statusbar{display:flex;justify-content:center;padding:8px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.g{background:#43a047;color:#43a047}
+.dot.r{background:#e53935;color:#e53935}
+.dot.y{background:#fdd835;color:#fdd835}
+.dot.n{background:#90a4ae;color:#90a4ae}
+
+/* ---------- tablero ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 12px;min-height:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.board{
+  display:grid;grid-template-columns:repeat(var(--n,10),var(--cw));grid-auto-rows:var(--cw);
+  gap:var(--gap);padding:var(--gap);
+  background:linear-gradient(180deg,#17512a,#0d3a1e);
+  border-radius:clamp(8px,1.4vw,16px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.22),inset 0 -3px 0 rgba(0,0,0,.35);
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.board.bad{animation:shake .42s}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-7px)}40%{transform:translateX(7px)}
+  60%{transform:translateX(-5px)}80%{transform:translateX(5px)}
+}
+.cell{
+  width:var(--cw);height:var(--cw);display:grid;place-items:center;
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);border-radius:4px;
+  font-size:calc(var(--cw)*.56);font-weight:700;color:#eaf5ea;
+  cursor:pointer;transition:background .1s linear;
+}
+.cell.sel{background:rgba(253,216,53,.9);color:#152b16;border-color:rgba(0,0,0,.25)}
+.cell.anchor{box-shadow:inset 0 0 0 2px #fff}
+.cell.hit{background:var(--hc);color:#0d2113;border-color:rgba(0,0,0,.3);animation:pop .32s ease}
+@keyframes pop{0%{transform:scale(.82)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+/* ---------- lista de palabras ---------- */
+.words{
+  display:flex;flex-direction:column;gap:6px;width:min(100%,640px);
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;padding:8px 10px;
+}
+.words h3{
+  margin:0 0 4px;font-size:11px;line-height:16px;opacity:.72;
+  text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;
+}
+.words ul{
+  list-style:none;margin:0;padding:0;display:grid;
+  grid-template-columns:repeat(var(--wc,4),minmax(0,1fr));
+  gap:4px 8px;grid-auto-rows:20px;
+}
+.witem{position:relative;height:20px;display:flex;align-items:center;font-size:13px;font-weight:650;letter-spacing:1.4px;overflow:hidden}
+.witem::after{
+  content:"";position:absolute;left:0;top:calc(50% - 1px);width:0;height:2.5px;
+  border-radius:2px;background:var(--hc,#ef5350);transition:width .4s ease;
+}
+.witem.on{opacity:.55}
+.witem.on::after{width:100%}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:24px 30px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);
+  max-width:90vw;max-height:92vh;overflow:auto;
+}
+.winbox h2{margin:0 0 6px;font-size:26px}
+.winbox p{margin:10px 0 14px;opacity:.85;font-variant-numeric:tabular-nums;font-size:14px}
+#winBest{color:#9ccc65;font-weight:650;opacity:1}
+
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+  .witem{font-size:12.5px;letter-spacing:1px}
+}
+/* app nativa apple: safe areas (notch/status bar/home indicator) */
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@supports(padding:env(safe-area-inset-top)){
+  body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+  .top{top:env(safe-area-inset-top)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🔎</span><h1>Sopa de letras</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Palabras</span><b id="statW">0/8</b></div>
+    <div class="stat"><span>Tiempo</span><b id="statT">0:00</b></div>
+    <div class="stat"><span>Récord</span><b id="statB">—</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Nivel de dificultad">
+      <option value="0">Fácil · 10×10</option>
+      <option value="1">Medio · 12×12</option>
+      <option value="2">Experto · 15×15</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nueva partida (tecla N)">Nuevo</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot n" id="stDot"></i><span id="status">Preparando…</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="board" id="board"></div>
+    <div class="words" id="words">
+      <h3>Palabras · <span id="wcount">8</span></h3>
+      <ul id="wordList"></ul>
+    </div>
+  </div>
+</main>
+
+<div class="hint-bar">Arrastra de la primera a la última letra · O toca la primera casilla y después la última · N nueva partida</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle">¡Ganaste!</h2>
+    <p id="winStats"></p>
+    <p id="winBest"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   SOPA DE LETRAS — motor puro (sin IIFE, sin 'use strict', sin document
+   ni localStorage fuera del bloque de interfaz). Evaluable en Node.
+
+   DISEÑO (decisiones documentadas):
+     - Rejilla cuadrada size×size con celdas `null` hasta rellenar. Se
+       colocan PRIMERO las palabras (celdas aún liberas) y DESPUÉS se
+       rellena el resto con letras A-Z al azar: así "las letras del resto"
+       no pueden pisar una palabra.
+     - Colocación SIN solapes: place() solo escribe en celdas vacías o con
+       EXACTAMENTE la misma letra (nunca destruye datos); newGame() además
+       enumera todas las líneas libres y elige una al azar. Si una palabra
+       no cabe (no ocurre con 8-12 palabras de ≤6 letras en 10×10+), se
+       reconstruye el tablero entero (hasta 12 intentos) y, como último
+       recurso documentado, forceBuild() pisa celdas ajenas.
+     - fillEmpty() evita que el relleno aleatorio complete OTRA ocurrencia
+       de una palabra oculta: al escribir una celda bloquea la letra que
+       cerraría cualquier ocurrencia que TERMINE ahí. Si aun así una
+       palabra tuviera 2 ocurrencias (p. ej. dos palabras pegadas que
+       componen una tercera), newGame reconstruye. Invariante verificado
+       por tests: countWord(grid,palabra) === 1 para TODAS.
+     - Las 8 direcciones: → ← ↓ ↑ ↘ ↙ ↗ ↖ (ambos sentidos incluidos).
+     - Selección: arrastre (pointer events, sólo líneas rectas de paso 1)
+       o toque-primer-celda + toque-última-celda. Una palabra vale en
+       cualquier sentido (compara normal y invertida).
+     - Almacenamiento: 'sl.diff' = nivel 0|1|2, 'sl.best.N' = récord en
+       milisegundos por nivel. Todo con guarda localStorage.
+
+   API del motor (evaluable en Node):
+     LEVELS            -> [{name,size,words}×3]  Fácil 10×10/8, Medio
+                          12×12/10, Experto 15×15/12
+     DIRS, DIRNAMES    -> 8 direcciones [dr,dc] y sus nombres
+     POOL, WORDS       -> listas embebidas (sin tildes ni Ñ)
+     levelInfo(l)      -> {level,name,size,words} normalizado (0 si inválido)
+     makeGrid(size)    -> matriz size×size de null
+     cellsFor(r,c,L,d[,size]) -> celdas de una línea o null si sale
+     lineCells(a,b)    -> celdas rectas entre [r,c] y [r,c] o null
+     directionOf(cells)-> índice 0..7 de la dirección o -1
+     validSelection(c) -> true si es línea recta consecutiva en las 8 dirs
+     place(grid,w,cells)-> escribe la palabra; false sin mutar si choca
+     spelled(grid,c)    -> letras en las celdas o null (fuera de límites)
+     checkSelection(st,cells) -> {found,word|null}; marca found si coincide
+                                 y NO vuelve a marcar una ya encontrada
+     isWon(st)         -> true si están todas
+     countWord(grid,w) -> ocurrencias distintas en las 8 direcciones
+     newGame(level,rnd)-> {level,size,grid,words:[{word,cells,dir}],found,moves}
+     state             -> estado global (lo usa la interfaz)
+   ========================================================================= */
+
+var WORDS={
+4:['ALTO','AMOR','AZUL','ARMA','ALMA','ARTE','ALTA','ABRE','ALBA',
+   'BOCA','BODA','BOLA','BATA','BAJO','BESO','BIEN',
+   'CASA','CAMA','COLA','COPA','CARA','CINE','CITA','CIEN','COCO','COMO','CREO',
+   'DATO','DAMA','DEJO','DOCE','DURO','DIOS',
+   'ESTE','EDAD',
+   'FARO','FASE','FILA','FINO','FLOR',
+   'GATO','GANA','GIRA','GOMA','GOTA','GRIS','GIRO',
+   'HILO','HOJA','HORA','HIJO','HAYA','HUMO',
+   'ISLA','IDEA',
+   'JEFE','JOTA','JADE','JACA',
+   'LADO','LANA','LATA','LAVA','LEAL','LOBO','LOCO','LOMA','LUNA','LORO','LINO','LILA',
+   'MALO','MANO','MASA','MESA','META','MINA','MODA','MONO','MURO','MORA','MULO','MICO',
+   'OJOS','OLLA','OSOS','ONCE','OBRA','ORBE',
+   'PALO','PATA','POCO','PARA','PENA','PESO','PISO','POLO','PICA','PURO','PICO',
+   'RANA','RATO','RAMA','ROCA','ROJO','ROSA','RISA','RUTA','RICO','RIEL',
+   'SACO','SALA','SAPO','SILO','SEDE','SIEN','SINO','SOPA','SETA','SECO','SANO',
+   'TACO','TALA','TAZA','TELA','TIPO','TIRO','TOMA','TORO','TRES','TUNA',
+   'URBE','URGE','USAR',
+   'VACA','VASO','VELA','VINO','VIRA','VIVO',
+   'YATE','YODO',
+   'ZONA','ZUMO'],
+5:['ABRIR','AGUAS','AHORA','ALDEA','ALTAR','AMIGO','ANDAR','ARENA','AZOTE',
+   'BACHE','BAILE','BANDA','BARCO','BATIR','BEBER','BREVE','BURRO',
+   'CABLE','CALMA','CALOR','CALDO','CAMPO','CANOA','CANTO','CAPAZ','CARTA','CASTO','CAUSA','CERDO','CHICO','CIELO','CLARO','COLOR',
+   'DARDO','DELTA','DISCO','DONDE','DUDAR','DUQUE',
+   'ENERO','ERROR','EXTRA',
+   'FALDA','FALSO','FALTA','FATAL','FERIA','FICHA','FINAL','FORMA','FRUTA','FUEGO','FUMAR','FLOTA',
+   'GAFAS','GANSO','GLOBO','GORRA','GRANO','GRAVE','GRUPO','GUAPO','GENTE',
+   'HACER','HABER','HASTA','HOTEL',
+   'IGUAL',
+   'JUSTO',
+   'LARGO','LECHE','LETRA','LINDO','LIBRO','LLAVE','LUGAR','LUNES','LUCHA',
+   'MADRE','MAGIA','MARCO','MAREA','MENOS','MARZO','MIRAR','MUNDO','MUSLO','METER',
+   'PADRE','PALMA','PANAL','PAPEL','PATIO','PEDIR','PEINE','PIANO','PINTA','PLATA','PLATO','PODER','POLVO','PONER','POEMA','PRADO','PUNTO',
+   'QUESO','QUIEN',
+   'RADAR','RANGO','RELOJ','RITMO','ROLLO','RUEDA','RUIDO',
+   'SABER','SALTO','SANTO','SAUCE','SECAR','SERIO','SITIO','SORDO','SUELO',
+   'TABLA','TALLO','TANTO','TARDE','TARTA','TECHO','TEXTO','TIGRE','TOCAR','TRIGO','TURCO','TURNO','TOMAR',
+   'ULTRA',
+   'VALOR','VERDE','VERSO','VICIO','VIDEO','VISTO','VALLE',
+   'YOGUR',
+   'ZORRO'],
+6:['ACEITE','ABUELO','ABRIGO','AGOSTO','ACABAR','ALEGRE',
+   'BALLET','BARATO','BARRIO','BORRAR','BUSCAR',
+   'CALLAR','CAMBIO','CAMINO','CANSAR','CAPOTE','CARTEL','CASTOR','CHISTE','CONTRA','CORRER','CORREO','CRIMEN','CUESTA',
+   'DANZAR','DEBATE','DENTRO','DORMIR',
+   'EDITAR','ELEGIR','ENTRAR','ENREDO','EQUIPO',
+   'ESCALA','ESCOBA','ESPERA',
+   'FILTRO','FINGIR','FORZAR','FRESCO','FUERTE',
+   'GASTAR','GRITAR',
+   'HELADO','HAMBRE','HOMBRE','HIERBA','HUERTO',
+   'JIRAFA','JORNAL','JUNTAR',
+   'KIOSCO',
+   'LLENAR','LIMPIO','LUCHAR','LLOVER',
+   'MALETA','MANDAR','MONEDA','MUELLE',
+   'OFICIO','OLIVAR','ORILLA',
+   'PAGANO','PENSAR','PINTAR','PLANTA','PUERTA','QUITAR','QUERER',
+   'RASTRO',
+   'SALTAR','SEMANA','SENTAR','SOMBRA','SONIDO','SOPLAR','SUFRIR',
+   'TALLAR','TEATRO','TIEMPO','TOMATE','TORCER',
+   'VENCER','VERANO','VIENTO','VOLVER','VENDER',
+   'BAILAR','ACUDIR']
+};
+var POOL=WORDS[4].concat(WORDS[5],WORDS[6]);
+
+var LEVELS=[
+  {name:'Fácil · 10×10',size:10,words:8},
+  {name:'Medio · 12×12',size:12,words:10},
+  {name:'Experto · 15×15',size:15,words:12}
+];
+
+/* las 8 direcciones rectas, ambos sentidos incluidos */
+var DIRS=[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]];
+var DIRNAMES=['right','left','down','up','down-right','down-left','up-right','up-left'];
+
+var LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function levelInfo(level){
+  var n=Math.floor(Number(level));
+  if(n!==0&&n!==1&&n!==2) n=0;
+  return {level:n,name:LEVELS[n].name,size:LEVELS[n].size,words:LEVELS[n].words};
+}
+
+function makeGrid(size){
+  var g=[],r,c,row;
+  for(r=0;r<size;r++){
+    row=[];
+    for(c=0;c<size;c++) row.push(null);
+    g.push(row);
+  }
+  return g;
+}
+
+/* celdas de la línea que empieza en (r,c), avanza `len` en `dir`.
+   Devuelve null si sale de la rejilla (si se pasa `size`, arriba y abajo). */
+function cellsFor(r,c,len,dir,size){
+  var d=DIRS[dir];
+  if(!d||len<1) return null;
+  var sr=d[0],sc=d[1],out=[],i,last;
+  for(i=0;i<len;i++) out.push([r+sr*i,c+sc*i]);
+  last=out[len-1];
+  if(last[0]<0||last[1]<0) return null;
+  if(size!==undefined&&(last[0]>=size||last[1]>=size)) return null;
+  return out;
+}
+
+/* celdas rectas de a a b (incluidas), paso 1; null si no es recta */
+function lineCells(a,b){
+  if(!a||!b) return null;
+  var dr=b[0]-a[0],dc=b[1]-a[1];
+  if(dr===0&&dc===0) return [[a[0],a[1]]];
+  if(!(dr===0||dc===0||Math.abs(dr)===Math.abs(dc))) return null;
+  if(Math.abs(dr)>1&&Math.abs(dc)>1&&Math.abs(dr)!==Math.abs(dc)) return null;
+  var sr=(dr>0)-(dr<0),sc=(dc>0)-(dc<0);
+  var n=Math.max(Math.abs(dr),Math.abs(dc)),out=[],i;
+  for(i=0;i<=n;i++) out.push([a[0]+sr*i,a[1]+sc*i]);
+  return out;
+}
+
+/* índice 0..7 si las celdas forman una de las 8 líneas rectas consecutivas */
+function directionOf(cells){
+  if(!cells||cells.length<2) return -1;
+  var dr=cells[1][0]-cells[0][0],dc=cells[1][1]-cells[0][1],i,k;
+  if(dr===0&&dc===0) return -1;
+  if(Math.abs(dr)>1||Math.abs(dc)>1) return -1;
+  if(!(dr===0||dc===0||Math.abs(dr)===Math.abs(dc))) return -1;
+  for(i=0;i<DIRS.length;i++){
+    if(DIRS[i][0]!==dr||DIRS[i][1]!==dc) continue;
+    for(k=1;k<cells.length;k++){
+      if(cells[k][0]-cells[k-1][0]!==dr||cells[k][1]-cells[k-1][1]!==dc) return -1;
+    }
+    return i;
+  }
+  return -1;
+}
+
+function validSelection(cells){
+  return directionOf(cells)>=0;
+}
+
+function revStr(s){
+  return s.split('').reverse().join('');
+}
+
+/* letras en las celdas, o null si alguna está fuera de la rejilla o vacía */
+function spelled(grid,cells){
+  if(!grid||!cells||!cells.length) return null;
+  var n=grid.length,s='',i,r,c,ch;
+  for(i=0;i<cells.length;i++){
+    r=cells[i][0]; c=cells[i][1];
+    if(r<0||c<0||r>=n||c>=n) return null;
+    ch=grid[r][c];
+    if(ch===null||ch===undefined) return null;
+    s+=ch;
+  }
+  return s;
+}
+
+/* Escribe `word` en `cells`. Devuelve false SIN MUTAR si: longitudes
+   distintas, no es línea recta, hay celdas fuera de límites o alguna celda
+   ocupa una LETRA DISTINTA (nunca pisa datos). Una celda con la misma letra
+   se acepta: no cambia nada. Una celda única (len 1) siempre es válida. */
+function place(grid,word,cells){
+  if(!grid||typeof word!=='string'||!cells) return false;
+  if(cells.length!==word.length||word.length<1) return false;
+  if(cells.length>1&&directionOf(cells)<0) return false;
+  var n=grid.length,i,r,c,cur;
+  for(i=0;i<cells.length;i++){
+    r=cells[i][0]; c=cells[i][1];
+    if(r<0||c<0||r>=n||c>=n) return false;
+    cur=grid[r][c];
+    if(cur!==null&&cur!==undefined&&cur!==word[i]) return false;
+  }
+  for(i=0;i<cells.length;i++) grid[cells[i][0]][cells[i][1]]=word[i];
+  return true;
+}
+
+/* Selección del jugador. Marca la palabra como encontrada si coincide
+   (en cualquier sentido) y NO vuelve a buscar/marcar una ya encontrada. */
+function checkSelection(st,cells){
+  var miss={found:false,word:null};
+  if(!st||!st.grid||!st.words||!st.found||!cells) return miss;
+  if(!validSelection(cells)) return miss;
+  var s=spelled(st.grid,cells);
+  if(s===null) return miss;
+  var i,w;
+  for(i=0;i<st.words.length;i++){
+    w=st.words[i].word;
+    if(s===w||s===revStr(w)){
+      if(st.found.indexOf(w)>=0) return miss;   /* ya encontrada: no re-busca */
+      st.found.push(w);
+      return {found:true,word:w};
+    }
+  }
+  return miss;
+}
+
+function isWon(st){
+  if(!st||!st.words||!st.found) return false;
+  return st.found.length===st.words.length&&st.words.length>0;
+}
+
+/* ocurrencias DISTINTAS de `word` en las 8 direcciones (los dos sentidos
+   de un palíndromo son la MISMA celda: se deduplican por conjunto) */
+function countWord(grid,word){
+  if(!grid||typeof word!=='string') return 0;
+  var n=grid.length,L=word.length,seen={},count=0,r,c,d,i,er,ec,match,key;
+  if(L<1||L>n) return 0;
+  for(r=0;r<n;r++) for(c=0;c<n;c++) for(d=0;d<DIRS.length;d++){
+    var sr=DIRS[d][0],sc=DIRS[d][1];
+    er=r+sr*(L-1); ec=c+sc*(L-1);
+    if(er<0||ec<0||er>=n||ec>=n) continue;
+    match=true;
+    for(i=0;i<L;i++){
+      if(grid[r+sr*i][c+sc*i]!==word[i]){ match=false; break; }
+    }
+    if(!match) continue;
+    key='';
+    for(i=0;i<L;i++) key+=(r+sr*i)*n+(c+sc*i)+',';
+    if(!seen[key]){ seen[key]=1; count++; }
+  }
+  return count;
+}
+
+/* Rellena las celdas null con letras A-Z al azar, sin completar ninguna
+   ocurrencia accidental de las palabras ocultas (bloquea la letra que
+   cerraría una línea que TERMINE en la celda actual). */
+function fillEmpty(grid,hidden,rnd){
+  var n=grid.length,r,c,w,d,i,k;
+  for(r=0;r<n;r++) for(c=0;c<n;c++){
+    if(grid[r][c]!==null) continue;
+    var blocked={};
+    for(w=0;w<hidden.length;w++){
+      var word=hidden[w],L=word.length;
+      for(d=0;d<DIRS.length;d++){
+        var sr=DIRS[d][0],sc=DIRS[d][1],okAll=true,rr,cc,cur;
+        for(i=0;i<L-1;i++){
+          rr=r-sr*(L-1-i); cc=c-sc*(L-1-i);
+          if(rr<0||cc<0||rr>=n||cc>=n){ okAll=false; break; }
+          cur=grid[rr][cc];
+          if(cur===null||cur===undefined){ okAll=false; break; }
+          if(cur!==word[i]){ okAll=false; break; }
+        }
+        if(okAll) blocked[word.charAt(L-1)]=true;
+      }
+    }
+    var free='';
+    for(k=0;k<26;k++){
+      var ch=LETTERS.charAt(k);
+      if(!blocked[ch]) free+=ch;
+    }
+    if(!free) free=LETTERS;
+    grid[r][c]=free.charAt(Math.floor(rnd()*free.length));
+  }
+}
+
+/* elige `n` palabras distintas sin pares que sean reversas entre sí
+   (dos palabras reversas serían ambiguas al seleccionarlas) */
+function pickWords(n,rnd){
+  var pool=POOL.slice(),out=[],i,j,w,rev,dup,t;
+  for(i=pool.length-1;i>0;i--){
+    j=Math.floor(rnd()*(i+1));
+    t=pool[i]; pool[i]=pool[j]; pool[j]=t;
+  }
+  for(i=0;i<pool.length&&out.length<n;i++){
+    w=pool[i]; rev=revStr(w); dup=false;
+    for(j=0;j<out.length;j++){
+      if(out[j]===w||out[j]===rev){ dup=true; break; }
+    }
+    if(!dup) out.push(w);
+  }
+  return out;
+}
+
+/* todas las líneas de la rejilla aún LIBRES para `word` */
+function candidates(grid,word){
+  var n=grid.length,L=word.length,out=[],r,c,d,i,cells,free;
+  for(r=0;r<n;r++) for(c=0;c<n;c++) for(d=0;d<DIRS.length;d++){
+    cells=cellsFor(r,c,L,d,n);
+    if(!cells) continue;
+    free=true;
+    for(i=0;i<cells.length;i++){
+      if(grid[cells[i][0]][cells[i][1]]!==null){ free=false; break; }
+    }
+    if(free) out.push(cells);
+  }
+  return out;
+}
+
+/* ÚLTIMO RECURSO documentado: escribe las palabras ignorando ocupación
+   (pisa celdas). Sólo se usa si 12 reconstrucciones han fallado. */
+function forceBuild(info,words,rnd){
+  var size=info.size,grid=makeGrid(size),placed=[],i,k;
+  for(i=0;i<words.length;i++){
+    var L=words[i].length,cells=null,tries=0;
+    while(!cells&&tries<5000){
+      tries++;
+      cells=cellsFor(Math.floor(rnd()*size),Math.floor(rnd()*size),L,Math.floor(rnd()*DIRS.length),size);
+    }
+    if(!cells) cells=cellsFor(0,0,L,0,size);
+    for(k=0;k<L;k++) grid[cells[k][0]][cells[k][1]]=words[i].charAt(k);
+    placed.push({word:words[i],cells:cells,dir:directionOf(cells)});
+  }
+  fillEmpty(grid,words,rnd);
+  return {level:info.level,size:size,grid:grid,words:placed,found:[],moves:0};
+}
+
+/* Partida nueva. `rnd` opcional inyectable (por defecto Math.random). */
+function newGame(level,rnd){
+  var info=levelInfo(level);
+  if(typeof rnd!=='function') rnd=Math.random;
+  var size=info.size,count=info.words,attempt,i,j;
+  var last=null;
+  for(attempt=0;attempt<12;attempt++){
+    var words=pickWords(count,rnd);
+    /* intento tardío: palabras largas primero, encaja mejor */
+    if(attempt>=6) words.sort(function(a,b){ return b.length-a.length; });
+    var grid=makeGrid(size),placed=[],bad=false;
+    for(i=0;i<words.length;i++){
+      var cand=candidates(grid,words[i]);
+      if(!cand.length){ bad=true; break; }
+      var cells=cand[Math.floor(rnd()*cand.length)];
+      if(!place(grid,words[i],cells)){ bad=true; break; }
+      placed.push({word:words[i],cells:cells,dir:directionOf(cells)});
+    }
+    if(bad) continue;
+    fillEmpty(grid,words,rnd);
+    var st={level:info.level,size:size,grid:grid,words:placed,found:[],moves:0};
+    last=st;
+    var exact=true;
+    for(i=0;i<placed.length;i++){
+      if(countWord(grid,placed[i].word)!==1){ exact=false; break; }
+    }
+    if(exact) return st;
+  }
+  if(last) return last;
+  return forceBuild(info,pickWords(count,rnd),rnd);
+}
+
+var state=newGame(0);
+
+/* =========================================================================
+   INTERFAZ — sólo en navegador. localStorage siempre con guarda.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var PALETTE=['#fdd835','#4fc3f7','#ab47bc','#ff7043','#26c6da','#d4e157',
+               '#ec407a','#8d6e63','#78909c','#aed581','#ffb74d','#4dd0e1'];
+
+  var level=0, cellEls=[], wordEls={}, moves=0;
+  var tStart=0, finalMs=null, tick=null;
+  var sel=null, pending=null, toastTimer=null;
+
+  /* ---------- almacenamiento (siempre con guarda) ---------- */
+  function loadDiff(){
+    try{
+      if(typeof localStorage!=='undefined'){
+        var v=parseInt(localStorage.getItem('sl.diff')||'0',10);
+        if(v===0||v===1||v===2) return v;
+      }
+    }catch(e){}
+    return 0;
+  }
+  function saveDiff(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('sl.diff',String(level));
+    }catch(e){}
+  }
+  function bestKey(){ return 'sl.best.'+level; }
+  function loadBest(){
+    try{
+      if(typeof localStorage!=='undefined'){
+        var v=parseInt(localStorage.getItem(bestKey())||'0',10);
+        if(v>0) return v;
+      }
+    }catch(e){}
+    return null;
+  }
+  function saveBest(ms){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem(bestKey(),String(ms));
+    }catch(e){}
+  }
+
+  /* ---------- util ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2200);
+  }
+  function fmt(ms){
+    if(ms===null||ms===undefined||!isFinite(ms)) return '—';
+    var s=Math.floor(ms/1000),m=Math.floor(s/60);
+    s=s%60;
+    return m+':'+(s<10?'0':'')+s;
+  }
+  function elapsed(){ return finalMs!==null?finalMs:Date.now()-tStart; }
+
+  /* ---------- medida del hueco: SOLO el contenedor FIJO (.board-wrap) ----------
+     El panel de palabras y el tablero son shrink-to-fit, así que su tamaño
+     NO se mide: la reserva del panel sale de las constantes del CSS
+     (label 16+4, gap interno 6, padding 8+8, borde 2, fila 20, hueco 4,
+     hueco del stage 10) y el chrome del tablero de (size+1)*gap+8. */
+  function fit(){
+    if(!state) return;
+    var wrap=document.querySelector('.board-wrap');
+    if(!wrap||!wrap.clientWidth) return;
+    var size=state.size;
+    var cs=window.getComputedStyle(wrap);
+    var padX=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
+    var padY=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);
+    var vw=wrap.clientWidth-padX;
+    var vh=wrap.clientHeight-padY;
+    var cols=(window.innerWidth<760)?2:4;
+    var rows=Math.ceil(state.words.length/cols);
+    var reserveY=26+18+rows*20+(rows-1)*4+10;
+    var chosen=null,g,cwG,chrome,cwW,cwH,want;
+    for(g=2;g<=5;g++){
+      chrome=(size+1)*g+8;
+      cwW=Math.floor((vw-chrome)/size);
+      cwH=Math.floor((vh-reserveY-chrome)/size);
+      cwG=Math.max(16,Math.min(56,Math.min(cwW,cwH)));
+      want=Math.max(2,Math.min(5,Math.floor(cwG/8)));
+      if(want===g&&(!chosen||cwG>chosen.cw)) chosen={cw:cwG,gap:g};
+    }
+    if(!chosen){
+      chrome=(size+1)*2+8;
+      chosen={cw:Math.max(16,Math.min(56,Math.min(Math.floor((vw-chrome)/size),Math.floor((vh-reserveY-chrome)/size)))),gap:2};
+    }
+    var root=document.documentElement;
+    root.style.setProperty('--cw',chosen.cw+'px');
+    root.style.setProperty('--gap',chosen.gap+'px');
+    var b=document.getElementById('board');
+    if(b) b.style.setProperty('--n',String(size));
+    var w=document.getElementById('words');
+    if(w) w.style.setProperty('--wc',String(cols));
+  }
+
+  /* ---------- pintura ---------- */
+  function paintStats(){
+    $('#statW').textContent=state.found.length+'/'+state.words.length;
+    var b=loadBest();
+    $('#statB').textContent=b?fmt(b):'—';
+  }
+  function paintTime(){
+    $('#statT').textContent=fmt(elapsed());
+  }
+  function paintStatus(){
+    var left=state.words.length-state.found.length,txt,dot;
+    if(finalMs!==null){ txt='¡Completado en '+fmt(finalMs)+'!'; dot='g'; }
+    else if(left===0){ txt='¡Todas encontradas!'; dot='g'; }
+    else { txt=left===1?'1 palabra por encontrar':left+' palabras por encontrar'; dot='n'; }
+    $('#status').textContent=txt;
+    $('#stDot').className='dot '+dot;
+  }
+  function buildBoard(){
+    var b=$('#board');
+    b.innerHTML='';
+    cellEls=[];
+    var frag=document.createDocumentFragment();
+    for(var r=0;r<state.size;r++){
+      var row=[];
+      for(var c=0;c<state.size;c++){
+        var d=document.createElement('div');
+        d.className='cell';
+        d.setAttribute('data-r',String(r));
+        d.setAttribute('data-c',String(c));
+        d.textContent=state.grid[r][c];
+        frag.appendChild(d);
+        row.push(d);
+      }
+      cellEls.push(row);
+    }
+    b.appendChild(frag);
+    b.style.setProperty('--n',String(state.size));
+  }
+  function buildList(){
+    var ul=$('#wordList');
+    ul.innerHTML='';
+    wordEls={};
+    var frag=document.createDocumentFragment();
+    for(var i=0;i<state.words.length;i++){
+      var w=state.words[i].word;
+      var li=document.createElement('li');
+      li.className='witem';
+      li.setAttribute('data-w',w);
+      li.style.setProperty('--hc',PALETTE[i%PALETTE.length]);
+      li.textContent=w;
+      frag.appendChild(li);
+      wordEls[w]=li;
+    }
+    ul.appendChild(frag);
+    $('#wcount').textContent=String(state.words.length);
+  }
+  function paintSel(){
+    var r,c,el;
+    for(r=0;r<state.size;r++) for(c=0;c<state.size;c++){
+      el=cellEls[r][c];
+      el.classList.remove('sel');
+      el.classList.remove('anchor');
+    }
+    if(pending&&cellEls[pending[0]]&&cellEls[pending[0]][pending[1]]){
+      cellEls[pending[0]][pending[1]].classList.add('anchor');
+    }
+    if(sel) for(var i=0;i<sel.cells.length;i++){
+      r=sel.cells[i][0]; c=sel.cells[i][1];
+      if(cellEls[r]&&cellEls[r][c]){
+        cellEls[r][c].classList.add('sel');
+        if(i===0) cellEls[r][c].classList.add('anchor');
+      }
+    }
+  }
+  function markFound(word,cells){
+    var idx=-1,i;
+    for(i=0;i<state.words.length;i++) if(state.words[i].word===word){ idx=i; break; }
+    var col=PALETTE[(idx<0?0:idx)%PALETTE.length];
+    for(i=0;i<cells.length;i++){
+      var el=cellEls[cells[i][0]][cells[i][1]];
+      if(!el) continue;
+      el.style.setProperty('--hc',col);
+      el.classList.add('hit');
+    }
+    if(wordEls[word]) wordEls[word].classList.add('on');
+  }
+  function shakeBoard(){
+    var b=$('#board');
+    b.classList.remove('bad');
+    void b.offsetWidth;
+    b.classList.add('bad');
+    setTimeout(function(){ b.classList.remove('bad'); },450);
+  }
+
+  /* ---------- tiempo ---------- */
+  function startTimer(){
+    if(tick) clearInterval(tick);
+    finalMs=null;
+    tStart=Date.now();
+    paintTime();
+    tick=setInterval(paintTime,250);
+  }
+  function stopTimer(){
+    if(tick) clearInterval(tick);
+    tick=null;
+    if(finalMs===null) finalMs=Date.now()-tStart;
+    paintTime();
+  }
+
+  /* ---------- selección ---------- */
+  function cellFromPoint(x,y){
+    var el=document.elementFromPoint(x,y);
+    if(!el) return null;
+    if(el.classList&&!el.classList.contains('cell')){
+      el=el.closest?el.closest('.cell'):null;
+    }
+    if(!el||!el.getAttribute) return null;
+    var r=parseInt(el.getAttribute('data-r'),10);
+    var c=parseInt(el.getAttribute('data-c'),10);
+    if(isNaN(r)||isNaN(c)) return null;
+    return [r,c];
+  }
+  function cellFromEvent(e){
+    var el=e.target;
+    if(!el) return null;
+    if(el.classList&&!el.classList.contains('cell')){
+      el=el.closest?el.closest('.cell'):null;
+    }
+    if(!el||!el.getAttribute) return null;
+    var r=parseInt(el.getAttribute('data-r'),10);
+    var c=parseInt(el.getAttribute('data-c'),10);
+    if(isNaN(r)||isNaN(c)) return null;
+    return [r,c];
+  }
+  function sameCell(a,b){ return a&&b&&a[0]===b[0]&&a[1]===b[1]; }
+
+  function alreadyFoundSpelling(cells){
+    var s=spelled(state.grid,cells);
+    if(s===null) return null;
+    for(var i=0;i<state.words.length;i++){
+      var w=state.words[i].word;
+      if(state.found.indexOf(w)<0) continue;
+      if(s===w||s===revStr(w)) return w;
+    }
+    return null;
+  }
+
+  function submitSelection(cells){
+    if(finalMs!==null) return;
+    moves++;
+    var res=checkSelection(state,cells);
+    if(res.found){
+      markFound(res.word,cells);
+      paintStats();
+      toast('¡Encontrada: '+res.word+'!');
+      if(isWon(state)) win();
+      else paintStatus();
+      return;
+    }
+    var again=alreadyFoundSpelling(cells);
+    if(again) toast('Ya la tenías: '+again);
+    else if(cells.length<2) return;
+    else { toast('Esas letras no forman una palabra'); shakeBoard(); }
+    paintStatus();
+  }
+
+  function onDown(e){
+    if(finalMs!==null||!e.isPrimary) return;
+    var cell=cellFromEvent(e);
+    if(!cell) return;
+    sel={id:e.pointerId,anchor:cell,cells:[cell],last:cell,moved:false};
+    try{ $('#board').setPointerCapture(e.pointerId); }catch(err){}
+    paintSel();
+    e.preventDefault();
+  }
+  function onMove(e){
+    if(!sel||e.pointerId!==sel.id) return;
+    var cell=cellFromPoint(e.clientX,e.clientY);
+    if(!cell) return;
+    if(sameCell(cell,sel.last)) return;
+    sel.last=cell;
+    sel.moved=true;
+    var path=lineCells(sel.anchor,cell);
+    if(path){ sel.cells=path; paintSel(); }
+  }
+  function onUp(e){
+    if(!sel||e.pointerId!==sel.id) return;
+    try{ $('#board').releasePointerCapture(e.pointerId); }catch(err){}
+    var cells=sel.cells,moved=sel.moved;
+    sel=null;
+    if(cells.length>1){
+      pending=null;
+      paintSel();
+      submitSelection(cells);
+      return;
+    }
+    if(moved){                          /* arrastre sin línea recta */
+      pending=null;
+      paintSel();
+      toast('Selecciona en línea recta');
+      shakeBoard();
+      return;
+    }
+    /* toque: primero-primer-celda, después-última-celda */
+    var t=cells[0];
+    if(pending&&sameCell(pending,t)){
+      pending=null;                       /* toque sobre la misma: cancela */
+    }else if(pending){
+      var path=lineCells(pending,t);
+      pending=null;
+      paintSel();
+      if(path&&path.length>1) submitSelection(path);
+      else { toast('Selecciona en línea recta'); shakeBoard(); }
+      return;
+    }else{
+      pending=t;
+    }
+    paintSel();
+  }
+  function onCancel(e){
+    if(sel&&e.pointerId===sel.id){ sel=null; paintSel(); }
+  }
+
+  /* ---------- victoria ---------- */
+  function win(){
+    stopTimer();
+    var ms=finalMs;
+    var b=loadBest();
+    var isNew=(b===null||ms<b);
+    if(isNew) saveBest(ms);
+    paintStats();
+    paintStatus();
+    $('#winTitle').textContent='¡Ganaste!';
+    $('#winStats').textContent='Tiempo '+fmt(ms)+' · Movimientos '+moves+' · '+LEVELS[level].name;
+    $('#winBest').textContent=isNew?'¡Nuevo récord!':'Récord: '+fmt(b);
+    $('#win').classList.add('show');
+    toast(isNew?'¡Nuevo récord!':'¡'+state.words.length+' palabras encontradas!');
+  }
+
+  /* ---------- partida nueva ---------- */
+  function startNew(silent){
+    $('#win').classList.remove('show');
+    state=newGame(level);
+    moves=0;
+    sel=null;
+    pending=null;
+    buildBoard();
+    buildList();
+    paintStats();
+    startTimer();
+    paintStatus();
+    fit();
+    paintSel();
+    if(!silent) toast('Nueva partida · '+LEVELS[level].name);
+  }
+
+  /* ---------- eventos ---------- */
+  $('#btnNew').addEventListener('click',function(){ startNew(false); });
+  $('#btnAgain').addEventListener('click',function(){ startNew(false); });
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    if(v!==0&&v!==1&&v!==2) v=0;
+    level=v;
+    saveDiff();
+    startNew(true);
+    toast('Nivel: '+LEVELS[level].name);
+  });
+
+  var board=$('#board');
+  board.addEventListener('pointerdown',onDown);
+  board.addEventListener('pointermove',onMove);
+  board.addEventListener('pointerup',onUp);
+  board.addEventListener('pointercancel',onCancel);
+
+  document.addEventListener('keydown',function(e){
+    var tag=e.target&&e.target.tagName;
+    if(tag==='SELECT'||tag==='INPUT'||tag==='TEXTAREA') return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    if(e.key==='n'||e.key==='N'){ e.preventDefault(); startNew(false); }
+  });
+
+  window.addEventListener('resize',fit);
+  window.addEventListener('orientationchange',function(){ setTimeout(fit,140); });
+  window.addEventListener('load',fit);
+
+  /* ---------- arranque ---------- */
+  level=loadDiff();
+  $('#diffSel').value=String(level);
+  startNew(true);
+}
+</script>
+
+<script>
+/* =========================================================================
+   TESTS EN NODE — bloque final, sin IIFE ni 'use strict'.
+
+   Extracción y ejecución:
+     awk '/<script>/{f=1;next}/<\/script>/{f=0}f' sopa-de-letras.html > /tmp/sopa.js
+     node --check /tmp/sopa.js
+     node /tmp/sopa.js
+   (en navegador typeof process === undefined y esto no hace nada)
+   ========================================================================= */
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  var T=0,F=0;
+  function ok(name,cond,extra){
+    T++;
+    if(cond) console.log('PASS '+name);
+    else { F++; console.log('FAIL '+name+' -> '+(extra===undefined?'':JSON.stringify(extra))); }
+  }
+  function rng(seed){
+    var a=seed>>>0;
+    return function(){
+      a=a+0x6D2B79F5|0;
+      var t=Math.imul(a^a>>>15,1|a);
+      t=t+Math.imul(t^t>>>7,61|t)^t;
+      return ((t^t>>>14)>>>0)/4294967296;
+    };
+  }
+  function deep(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+  function inPool(w){
+    for(var i=0;i<POOL.length;i++) if(POOL[i]===w) return true;
+    return false;
+  }
+  function allLetters(g){
+    for(var r=0;r<g.length;r++){
+      if(g[r].length!==g.length) return false;
+      for(var c=0;c<g[r].length;c++) if(!/^[A-Z]$/.test(g[r][c])) return false;
+    }
+    return true;
+  }
+  function disjointCells(st){
+    var seen={};
+    for(var i=0;i<st.words.length;i++)
+      for(var k=0;k<st.words[i].cells.length;k++){
+        var key=st.words[i].cells[k][0]*1000+st.words[i].cells[k][1];
+        if(seen[key]) return false;
+        seen[key]=1;
+      }
+    return true;
+  }
+  function spellsOK(st){
+    for(var i=0;i<st.words.length;i++){
+      var w=st.words[i];
+      if(!validSelection(w.cells)) return false;
+      if(directionOf(w.cells)<0) return false;
+      if(w.dir!==directionOf(w.cells)) return false;
+      if(spelled(st.grid,w.cells)!==w.word) return false;
+      if(countWord(st.grid,w.word)!==1) return false;
+      if(!inPool(w.word)) return false;
+    }
+    return true;
+  }
+  function noReversePairs(st){
+    for(var i=0;i<st.words.length;i++)
+      for(var j=i+1;j<st.words.length;j++){
+        var a=st.words[i].word,b=st.words[j].word;
+        if(a===b) return false;
+        if(a!==b&&a===revStr(b)) return false;
+      }
+    return true;
+  }
+
+  function uniqDirs(){
+    var s={},i;
+    for(i=0;i<DIRS.length;i++) s[DIRS[i][0]+','+DIRS[i][1]]=1;
+    return Object.keys(s).length;
+  }
+
+  /* ---- 1. estado global ---- */
+  ok('var state global', typeof state==='object'&&state!==null&&state.grid&&
+     Array.isArray(state.words)&&Array.isArray(state.found), typeof state);
+
+  /* ---- 2. niveles: tamaño, nº de palabras, letras ---- */
+  var SIZES=[10,12,15],NWORDS=[8,10,12];
+  for(var lv=0;lv<3;lv++){
+    var st=newGame(lv,rng(lv+1));
+    ok('nivel '+lv+' ('+LEVELS[lv].name+') tamaño '+SIZES[lv],
+       st.size===SIZES[lv]&&st.grid.length===SIZES[lv], st.size);
+    ok('nivel '+lv+' rejilla cuadrada '+SIZES[lv]+'x'+SIZES[lv],
+       st.grid.length===SIZES[lv]&&st.grid[SIZES[lv]-1].length===SIZES[lv], st.grid.length);
+    ok('nivel '+lv+' letras del resto aleatorias A-Z', allLetters(st.grid));
+    ok('nivel '+lv+' exactamente '+NWORDS[lv]+' palabras',
+       st.words.length===NWORDS[lv], st.words.length);
+    ok('nivel '+lv+' found=[] y moves=0', st.found.length===0&&st.moves===0, st);
+  }
+
+  /* ---- 3. las 8 direcciones (fixtures forzadas) ---- */
+  ok('DIRS: 8 direcciones distintas', DIRS.length===8&&uniqDirs()===8, DIRS);
+  for(var d=0;d<8;d++){
+    var g=makeGrid(10);
+    var cells=cellsFor(4,4,5,d,10);
+    var word='GAFAS';
+    var placed=cells!==null&&place(g,word,cells)===true;
+    ok('place + directionOf en dir "'+DIRNAMES[d]+'"',
+       placed&&directionOf(cells)===d&&spelled(g,cells)===word&&countWord(g,word)===1,
+       {dir:DIRNAMES[d],cells:cells,dirIdx:directionOf(cells)});
+  }
+
+  /* ---- 4. place: nunca pisa letras distintas ---- */
+  var g1=makeGrid(8);
+  var row0=[[0,0],[0,1],[0,2],[0,3]];
+  ok('place: horizontal básica', place(g1,'ROSA',row0)===true&&spelled(g1,row0)==='ROSA');
+  var before=JSON.stringify(g1);
+  ok('place: rechaza letra distinta sin mutar (no pisa)',
+     place(g1,'SOLA',[[0,1],[0,2],[0,3],[0,4]])===false&&JSON.stringify(g1)===before, g1[0]);
+  ok('place: celdas discontinuas rechazadas',
+     place(g1,'SOLA',[[1,0],[1,2],[1,3],[1,4]])===false&&JSON.stringify(g1)===before);
+  ok('place: fuera de límites rechazada',
+     place(g1,'GATO',[[7,6],[7,7],[7,8],[7,9]])===false&&JSON.stringify(g1)===before);
+  ok('place: diagonal no recta (paso mixto) rechazada',
+     place(g1,'CASA',[[2,0],[3,1],[4,2],[5,4]])===false&&JSON.stringify(g1)===before);
+  ok('place: letra idéntica permitida y no cambia nada (documentado)',
+     place(g1,'R',[[0,0]])===true&&JSON.stringify(g1)===before, g1[0]);
+  ok('place: al revés conserva las letras (mismo contenido)',
+     place(g1,'ASOR',[[0,3],[0,2],[0,1],[0,0]])===true&&JSON.stringify(g1)===before, g1[0]);
+  ok('place: cuenta de celdas debe igualar la palabra',
+     place(g1,'ROSA',[[4,0],[4,1]])===false&&JSON.stringify(g1)===before);
+
+  /* ---- 5. validSelection / directionOf / lineCells ---- */
+  ok('valid: horizontal', validSelection([[0,0],[0,1],[0,2]])&&directionOf([[0,0],[0,1],[0,2]])===0);
+  ok('valid: horizontal al revés vale', validSelection([[0,2],[0,1],[0,0]])&&directionOf([[0,2],[0,1],[0,0]])===1);
+  ok('valid: vertical', validSelection([[3,0],[4,0]])&&directionOf([[3,0],[4,0]])===2);
+  ok('valid: vertical al revés', validSelection([[4,0],[3,0]])&&directionOf([[4,0],[3,0]])===3);
+  ok('valid: diagonal ↘', validSelection([[1,1],[2,2],[3,3]])&&directionOf([[1,1],[2,2],[3,3]])===4);
+  ok('valid: diagonal ↙', validSelection([[3,5],[4,4],[5,3]])&&directionOf([[3,5],[4,4],[5,3]])===5);
+  ok('valid: diagonal ↗', validSelection([[3,3],[2,4],[1,5]])&&directionOf([[3,3],[2,4],[1,5]])===6);
+  ok('valid: diagonal ↖', validSelection([[5,5],[4,4]])&&directionOf([[5,5],[4,4]])===7);
+  ok('invalid: diagonal no recta (caballo)', validSelection([[0,0],[1,2]])===false&&directionOf([[0,0],[1,2]])===-1);
+  ok('invalid: celda discontinua', validSelection([[0,0],[0,2]])===false);
+  ok('invalid: paso 2 en diagonal', validSelection([[0,0],[2,2]])===false);
+  ok('invalid: forma de L', validSelection([[0,0],[0,1],[1,1]])===false);
+  ok('invalid: celda única', validSelection([[0,0]])===false);
+  ok('invalid: vacío', validSelection([])===false);
+  ok('invalid: null/undefined', validSelection(null)===false&&validSelection(undefined)===false);
+  ok('lineCells: horizontal', deep(lineCells([1,1],[1,4]),[[1,1],[1,2],[1,3],[1,4]]));
+  ok('lineCells: diagonal ↖', deep(lineCells([4,4],[2,2]),[[4,4],[3,3],[2,2]]));
+  ok('lineCells: no recta -> null', lineCells([0,0],[1,2])===null);
+  ok('lineCells: misma celda', deep(lineCells([3,3],[3,3]),[[3,3]]));
+
+  /* ---- 6. checkSelection ---- */
+  var s= newGame(1,rng(77));
+  var w0=s.words[0],w1=s.words[1];
+  var r1=checkSelection(s,w0.cells);
+  ok('checkSelection encuentra la palabra', r1.found===true&&r1.word===w0.word&&s.found.length===1, r1);
+  var r2=checkSelection(s,w0.cells);
+  ok('checkSelection no re-busca ya encontradas',
+     r2.found===false&&r2.word===null&&s.found.length===1, r2);
+  var r3=checkSelection(s,w1.cells.slice().reverse());
+  ok('checkSelection al revés también vale', r3.found===true&&r3.word===w1.word&&s.found.length===2, r3);
+  var r4=checkSelection(s,w1.cells.slice().reverse());
+  ok('checkSelection al revés repetida: no re-busca', r4.found===false&&s.found.length===2, r4);
+  ok('checkSelection rechaza línea no recta', checkSelection(s,[[0,0],[1,2]]).found===false&&s.found.length===2);
+  ok('checkSelection rechaza celdas discontinuas',
+     checkSelection(s,[w0.cells[0],w0.cells[2]]).found===false&&s.found.length===2);
+  ok('checkSelection rechaza fuera de límites (bounds)',
+     checkSelection(s,[[-1,0],[0,1]]).found===false&&s.found.length===2);
+  ok('checkSelection: 2 celdas nunca forman palabra (≥4 letras)',
+     checkSelection(s,[[0,0],[0,1]]).found===false&&s.found.length===2);
+  ok('checkSelection devuelve siempre {found,word}',
+     Object.keys(r1).sort().join(',')==='found,word', Object.keys(r1));
+
+  /* ---- 7. isWon ---- */
+  var sw=newGame(2,rng(303));
+  ok('isWon false al inicio', isWon(sw)===false, sw.found);
+  checkSelection(sw,sw.words[0].cells);
+  ok('isWon false con una sola encontrada',
+     isWon(sw)===false&&sw.found.length===1, sw.found);
+  for(var i=0;i<sw.words.length;i++) checkSelection(sw,sw.words[i].cells);
+  ok('isWon true con todas ('+sw.words.length+')',
+     isWon(sw)===true&&sw.found.length===sw.words.length, sw.found);
+
+  /* ---- 8. exactitud de la colocación + sin solapes: barrido de semillas ---- */
+  for(lv=0;lv<3;lv++){
+    for(var sd=1;sd<=6;sd++){
+      var s3=newGame(lv,rng(sd*31+lv));
+      ok('partida seed '+sd+' nivel '+lv+': palabras EXACTAS en celdas consecutivas (1 ocurrencia)',
+         s3.size===SIZES[lv]&&s3.words.length===NWORDS[lv]&&spellsOK(s3), s3.words);
+      ok('partida seed '+sd+' nivel '+lv+': sin solapes entre palabras y sin pares reversos',
+         disjointCells(s3)&&noReversePairs(s3)&&allLetters(s3.grid), null);
+    }
+  }
+
+  /* ---- 9. RNG inyectable / determinismo ---- */
+  var a1=newGame(0,rng(9)),a2=newGame(0,rng(9));
+  ok('RNG inyectable: mismo seed => mismo tablero y mismas palabras',
+     deep(a1.grid,a2.grid)&&deep(a1.words,a2.words));
+  var a3=newGame(0);
+  ok('newGame sin rnd funciona (Math.random)', a3.size===10&&a3.words.length===8&&spellsOK(a3));
+
+  /* ---- 10. normalización de nivel ---- */
+  ok('levelInfo normaliza rango',
+     levelInfo(0).size===10&&levelInfo(1).size===12&&levelInfo(2).size===15&&
+     levelInfo(99).size===10&&levelInfo('1').size===12&&levelInfo(-3).size===10&&
+     levelInfo(undefined).size===10, levelInfo(99));
+  ok('newGame(5) y newGame() caen a Fácil 10x10/8',
+     newGame(5,rng(1)).words.length===8&&newGame(undefined,rng(1)).size===10, null);
+
+  /* ---- 11. partidas simuladas: los 3 niveles hasta ganar ---- */
+  for(lv=0;lv<3;lv++){
+    var sim=newGame(lv,rng(900+lv));
+    var foundAll=true,tries=0;
+    for(var k=0;k<sim.words.length;k++){
+      var cells=(k%2===1)?sim.words[k].cells.slice().reverse():sim.words[k].cells;
+      var res=checkSelection(sim,cells);
+      tries++;
+      if(!res.found||res.word!==sim.words[k].word) foundAll=false;
+    }
+    ok('simulación nivel '+lv+' ('+LEVELS[lv].name+'): gana con '+tries+' selecciones',
+       foundAll&&isWon(sim)===true&&tries===NWORDS[lv]&&sim.found.length===NWORDS[lv],
+       {found:sim.found,tries:tries});
+  }
+
+  /* ---- 12. PARTIDA MALINTENCIONADA: misma selección dos veces no gana sola ---- */
+  var sm=newGame(0,rng(4242));
+  checkSelection(sm,sm.words[0].cells);
+  checkSelection(sm,sm.words[0].cells);
+  checkSelection(sm,sm.words[0].cells.slice().reverse());
+  ok('selección repetida cuenta 1 sola vez',
+     sm.found.length===1&&isWon(sm)===false, sm.found);
+
+  console.log('TESTS: '+T+' · FALLOS: '+F);
+  if(F) process.exit(1);
+}
+</script>
+</body>
+</html>
