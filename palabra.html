@@ -246,7 +246,7 @@ body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
      evaluate(guess,word)    -> ['green'|'yellow'|'gray', ...] por posición
      validGuess(g,len)       -> true si longitud y lista cuadran
      guess(g,st)             -> estado NUEVO (nunca muta st); error indica
-                                el rechazo: '' | 'longitud' | 'lista' | 'fin'
+                                el rechazo: '' | 'longitud' | 'lista' (caracteres raros) | 'fin'
      state                   -> estado global (lo usa la interfaz)
    ========================================================================= */
 
@@ -351,13 +351,11 @@ function evaluate(guess,word){
 
 /* ¿g es una palabra de la lista de esa longitud? (longitud + pertenencia) */
 function validGuess(g,len){
-  if(typeof g!=='string') return false;
-  g=g.toUpperCase();
-  len=normalizeLen(len);
-  if(g.length!==len) return false;
-  var list=WORDS[len];
-  for(var i=0;i<list.length;i++) if(list[i]===g) return true;
-  return false;
+  /* Acepta CUALQUIER palabra de la longitud correcta formada por letras
+     (A-Z y Ñ): la respuesta sale de la lista, los intentos del jugador
+     no se limitan a un diccionario pequeño. */
+  if(typeof g!=='string'||g.length!==len) return false;
+  return /^[A-ZÑ]+$/.test(g.toUpperCase());
 }
 
 /* Estado inicial de partida: palabra al azar de la lista elegida. */
