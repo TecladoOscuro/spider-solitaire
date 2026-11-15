@@ -211,6 +211,20 @@ body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
     <span class="lv">10×10 · 12×12 · 15×15</span>
     <button class="info" data-g="sopa" aria-label="Cómo jugar: Sopa de Letras">ⓘ</button>
   </a>
+  <a class="game" href="freecell.html">
+    <span class="icon">♣</span>
+    <h2>FreeCell</h2>
+    <p>Solitario con4 celdas libres:8 de las99% de partidas son resolubles.</p>
+    <span class="lv">FÁCIL · NORMAL · EXPERTO (2 CELDAS)</span>
+    <button class="info" data-g="freecell" aria-label="Cómo jugar: FreeCell">ⓘ</button>
+  </a>
+  <a class="game" href="go9.html">
+    <span class="icon">⚫</span>
+    <h2>Go 9×9</h2>
+    <p>Mini Go: captura, ko, territorio y komi5.5 contra la IA.</p>
+    <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
+    <button class="info" data-g="go" aria-label="Cómo jugar: Go 9×9">ⓘ</button>
+  </a>
 </main>
 
 <footer>Un archivo HTML por juego, sin dependencias.</footer>
@@ -246,7 +260,10 @@ var RULES={
   'blackjack':{t:'Blackjack 21',lv:'FÁCIL · NORMAL · EXPERTO',r:'Contra la banca: llega a21 sin pasarte. As vale1 o11.\n\n• Roba, Plantarse o Doblar (solo la primera jugada).\n• Blackjack natural (A+10) paga3:2. Empate = te devuelven.\n• Banca planta en16/17 según dificultad;1,2 o4 barajas.\n• Fichas iniciales (500-5000) y apuesta mínima (10-100) CONFIGURABLES en la cabecera.\nTeclas: ESPACIO robar · S plantar · N nueva.'},
 
   'domino':{t:'Dominó',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Fichas0-6 · gana el primero en quedarse sin ellas.\n\n• Abre el mayor doble; después encaja por izquierda o derecha con el mismo número.\n• Sin jugada: robas del pozo hasta poder; sin pozo, pasas.\n• Dos pases seguidos = bloqueo: gana quien tenga menos puntos en mano.\n• Victoria: pipas del rival (x2 si cerraste con doble).\nTeclas: U deshacer · H pista · N nuevo.'},
-  'sopa':{t:'Sopa de Letras',lv:'10×10 · 12×12 · 15×15',r:'Encuentra todas las palabras de la lista.\n\n• Arrastra de la primera a la última letra (solo líneas rectas, diagonales incluidas).\n• Alternativa táctil: toca la primera casilla y después la última.\n• Las encontradas se quedan coloreadas y tachadas.\n• Récord de tiempo por nivel.\nTecla N: nueva partida.'}
+  'sopa':{t:'Sopa de Letras',lv:'10×10 · 12×12 · 15×15',r:'Encuentra todas las palabras de la lista.\n\n• Arrastra de la primera a la última letra (solo líneas rectas, diagonales incluidas).\n• Alternativa táctil: toca la primera casilla y después la última.\n• Las encontradas se quedan coloreadas y tachadas.\n• Récord de tiempo por nivel.\nTecla N: nueva partida.'},
+
+  'freecell':{t:'FreeCell',lv:'FÁCIL · NORMAL · EXPERTO (2 CELDAS)',r:'Objetivo: llevar las4 montañas de la A al Rey.\n\n• Entre columnas: descendente de color alterno. A columna vacía puede ir cualquier carta.\n• Las4 celdas libres guardan1 carta cada una (Fácil6, Experto2).\n• Doble toque: manda la carta a su montaña si es legal.\n• Secuencias válidas se arrastran enteras.\nTeclas: U deshacer · H pista · N nuevo.'},
+  'go':{t:'Go 9×9',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas NEGRAS y empiezas.\n\n• Coloca piedras en las intersecciones; captura al rodear cadenas enemigas (sin suicidio, ko simple).\n• Dos PASAS seguidos terminan la partida: gana territorio + capturas (komi5.5 compensa a blancas).\n• Toca una piedra para ver su cadena y libertades.\nTeclas: P pasar · U deshacer · H pista · N nuevo.'}
 };
 var ov=document.getElementById('infoOv');
 function openInfo(g){

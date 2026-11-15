@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<meta name="theme-color" content="#14471c">
+<title>Go 9×9</title>
+<style>
+html{background-color:#14471c}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px;color:#ffca28}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:64px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+.status{
+  width:max-content;margin:11px auto 0;padding:6px 18px;border-radius:999px;
+  background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.15);
+  font-size:14px;font-weight:650;letter-spacing:.3px;font-variant-numeric:tabular-nums;
+}
+
+/* ---------- tablero de Go 9x9 (intersecciones) ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:14px;min-height:0}
+.board{
+  display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);
+  width:min(94vw,560px);
+  width:min(94vw,560px,max(260px,calc(100dvh - 250px)));
+  aspect-ratio:1;
+  background:linear-gradient(145deg,#f0cd8e,#e4b86f 45%,#d7a75f);
+  border:12px solid #5d3a1a;border-radius:10px;overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.2), inset 0 0 46px rgba(110,64,20,.42);
+}
+.pt{position:relative;cursor:default;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.ln{position:absolute;inset:0;pointer-events:none}
+.ln::before{content:"";position:absolute;left:0;right:0;top:50%;height:1.6px;margin-top:-.8px;background:#4a2f14;opacity:.9}
+.ln::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:1.6px;margin-left:-.8px;background:#4a2f14;opacity:.9}
+/* las líneas paradas en las intersecciones de borde (no sobresalen) */
+.pt.e-l .ln::before{left:50%}
+.pt.e-r .ln::before{right:50%}
+.pt.e-t .ln::after{top:50%}
+.pt.e-b .ln::after{bottom:50%}
+/* puntos hoshi de 9x9: 3-3 y tengen */
+.pt.hoshi{background-image:radial-gradient(circle at 50% 50%,#4a2f14 0 3.4px,rgba(0,0,0,0) 3.6px)}
+
+.pt.legal{cursor:pointer}
+.pt.legal::after{
+  content:"";position:absolute;left:50%;top:50%;width:16%;height:16%;
+  transform:translate(-50%,-50%);border-radius:50%;
+  background:rgba(0,0,0,.26);pointer-events:none;z-index:2;
+  transition:width .12s ease,height .12s ease,background .12s ease;
+}
+.pt.legal:hover::after{
+  width:86%;height:86%;
+  background:radial-gradient(circle at 33% 27%,rgba(105,105,105,.72),rgba(10,10,10,.74) 52%,rgba(0,0,0,.8));
+  box-shadow:0 3px 8px rgba(0,0,0,.35);
+}
+.pt.chosen::after{
+  content:"";position:absolute;left:50%;top:50%;width:97%;height:97%;
+  transform:translate(-50%,-50%);border-radius:50%;
+  box-shadow:inset 0 0 0 2px rgba(255,213,79,.95);pointer-events:none;z-index:3;
+}
+.pt.hint{box-shadow:inset 0 0 0 3px rgba(64,196,255,.75);animation:hintglow .7s ease-in-out infinite alternate}
+.pt.legal.hint::after{
+  width:88%;height:88%;background:rgba(255,235,59,.5);
+  box-shadow:0 0 14px rgba(255,235,59,.95);animation:hintpulse .7s ease-in-out infinite alternate;
+}
+@keyframes hintglow{
+  from{box-shadow:inset 0 0 0 3px rgba(64,196,255,.75)}
+  to{box-shadow:inset 0 0 0 4px #ffee58}
+}
+@keyframes hintpulse{from{opacity:.5}to{opacity:1}}
+/* cadenas (piedras) y libertades resaltadas al tocar una piedra */
+.pt.lib::before{
+  content:"";position:absolute;left:50%;top:50%;width:36%;height:36%;
+  transform:translate(-50%,-50%);border-radius:50%;
+  background:rgba(46,204,113,.85);box-shadow:0 0 7px rgba(46,204,113,.8);
+  z-index:2;pointer-events:none;
+}
+.board.chaining .pt.legal::after{opacity:0}
+.pt.chain .stone{box-shadow:0 0 0 2.5px #40c4ff,0 3px 7px rgba(0,0,0,.45)}
+.pt.bad{animation:badflash .55s ease}
+@keyframes badflash{
+  0%{background:rgba(255,23,68,.72);box-shadow:inset 0 0 0 3px #ff1744}
+  100%{background:transparent;box-shadow:none}
+}
+
+.stone{
+  position:absolute;left:50%;top:50%;width:90%;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%);z-index:2;pointer-events:none;
+  box-shadow:0 3px 7px rgba(0,0,0,.45);
+  user-select:none;-webkit-user-select:none;
+}
+.stone.b{background:radial-gradient(circle at 33% 27%,#7d7d7d,#232323 52%,#000)}
+.stone.w{background:radial-gradient(circle at 33% 27%,#ffffff,#f4f4f4 48%,#c9c9c9)}
+.stone.placing{animation:stoneIn .24s cubic-bezier(.2,.9,.3,1.2)}
+.stone.dying{animation:stoneOut .4s ease forwards;z-index:4}
+@keyframes stoneIn{
+  from{transform:translate(-50%,-50%) scale(.08);opacity:.35}
+  to{transform:translate(-50%,-50%) scale(1);opacity:1}
+}
+@keyframes stoneOut{
+  to{transform:translate(-50%,-50%) scale(.12);opacity:0;filter:blur(1.5px)}
+}
+
+/* ---------- toast / overlay ---------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:28px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:6px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+.winbox p.count{font-size:17px;font-weight:650;opacity:1}
+.hint-bar{padding:6px 14px 16px;font-size:12px;opacity:.6;text-align:center}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:54px;padding:3px 8px}
+  .status{margin-top:8px;font-size:13px;padding:5px 14px}
+  .board-wrap{padding:10px 8px 6px}
+  .board{border-width:7px;width:min(96vw,560px,max(210px,calc(100dvh - 300px)))}
+  .hint-bar{padding:4px 10px 12px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:48px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{padding:6px 9px;font-size:12.5px}
+}
+/* app nativa apple: safe areas (notch/status bar/home indicator) */
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@supports(padding:env(safe-area-inset-top)){
+  body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+  .top{top:env(safe-area-inset-top)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">◉</span><h1>Go 9×9</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Negras</span><b id="stB">0</b></div>
+    <div class="stat"><span>Blancas</span><b id="stW">0</b></div>
+    <div class="stat"><span>Capturas</span><b id="stCap" title="Capturas de negras - capturas de blancas">0-0</b></div>
+    <div class="stat"><span>Récord</span><b id="stWLD" title="Victorias - Derrotas - Empates">0-0-0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad">
+      <option value="1">Fácil</option>
+      <option value="2">Medio</option>
+      <option value="3">Difícil</option>
+    </select>
+    <button class="btn" id="btnPass" title="Pasar turno: dos pases seguidos terminan la partida">Pasar</button>
+    <button class="btn" id="btnNew" title="Nueva partida">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer tu jugada y la respuesta de la IA">Deshacer</button>
+    <button class="btn" id="btnHint" title="Resalta la jugada recomendada">Pista</button>
+  </div>
+</header>
+
+<div class="status" id="status">Tu turno</div>
+
+<main class="board-wrap">
+  <div class="board" id="board"></div>
+</main>
+
+<div class="hint-bar">Negras (tú) empiezan · Toca una intersección con punto para jugar · Toca una piedra para ver su cadena y sus libertades · Dos pases seguidos terminan: gana territorio + capturas (komi 5.5 para blancas) · Teclas: N nuevo · U deshacer · H pista · P pasar</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle">¡Has ganado!</h2>
+    <p class="count" id="winCount"></p>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   MOTOR DE GO 9x9 (mini-go) — funciones puras, sin dependencias.
+
+   Diseño documentado:
+   - Tablero 9x9. `cells` es un array de 81 intersecciones en orden fila-major:
+     índice = r*9+c con r=0 la fila SUPERIOR y c=0 la columna izquierda.
+     Valores: null (vacía) | 'b' (negras, tú) | 'w' (blancas, la IA).
+   - Las piedras se colocan en las INTERSECCIONES y no se mueven jamás.
+     El negro empieza. `turn` indica quién juega.
+   - Cadenas y libertades: group() une las piedras del mismo color en vertical
+     y horizontal (ortogonal) y devuelve las intersecciones vacías vecinas
+     (libertades). Una cadena sin libertades es capturada y desaparece.
+   - Legalidad, `legal(st,i,color)`:
+       1) la intersección debe estar vacía;
+       2) se simula la jugada y se retiran las cadenas rivales sin libertades
+          (eso es `wouldCapture`);
+       3) la cadena propia resultante debe quedar con >=1 libertad: no se
+          permite el SUICIDIO, salvo que la jugada capture (las piedras
+          retiradas abren libertades, así que nunca sería suicidio real);
+       4) KO SIMPLE: si la jugada capturó exactamente UNA piedra rival y la
+          cadena propia queda con 1 sola piedra y 1 sola libertad, esa
+          libertad es el "punto de ko" (koPointFloyd). El bando rival no
+          puede recapturar ahí en el pliegue siguiente: recrear la posición
+          anterior queda prohibido. El punto se recalcula en cada jugada y se
+          conserva al pasar.
+   - `play(st,i)` SIEMPRE devuelve un estado NUEVO (deep copy): nunca muta.
+     Si la jugada es ilegal devuelve una copia intacta.
+   - `pass(st)` incrementa `pases`; DOS pases consecutivos (pases===2) terminan
+     la partida y se recuenta.
+   - `score(st)` — regla japonesa simplificada, "kasumi simple" (niebla: no se
+     juzgan piedras muertas): solo cuentan las piedras VIVAS por su cielo
+     (territorio = intersecciones vacías tocadas por un solo bando; las que
+     tocan a ambos son neutras), más las capturas de cada bando, más komi 5.5
+     para blancas. Fórmula:  negras = territorio_n + capturas_n
+                            blancas = territorio_b + capturas_b + 5.5
+   - Niveles de la IA (chooseMove): 1 Fácil = jugada aleatoria legal con ligero
+     sesgo a libertades; 2 Medio = heurística libertades+capturas+forma con
+     time-box 300ms; 3 Difícil = minimax alfa-beta con avalúo de cadenas
+     débiles y territorio, time-box <=800ms (profundidad baja, aceptable en 9x9).
+   - RNG inyectable: chooseMove(st,level,rng) acepta un generador opcional.
+   ========================================================================== */
+
+var N=9, CELLS=81, KOMI=5.5;
+var ENGINE_TIMEOUT={};
+
+/* Vecinos ortogonales de cada intersección (precalculado). */
+var NB=[];
+for(var _bi=0;_bi<CELLS;_bi++){
+  var _r=_bi/N|0, _c=_bi%N, _nb=[];
+  if(_r>0) _nb.push(_bi-N);
+  if(_r<N-1) _nb.push(_bi+N);
+  if(_c>0) _nb.push(_bi-1);
+  if(_c<N-1) _nb.push(_bi+1);
+  NB.push(_nb);
+}
+
+function otherSide(s){ return s==='b'?'w':'b'; }
+
+function engineNow(){
+  if(typeof performance!=='undefined'&&performance&&typeof performance.now==='function'){
+    return performance.now();
+  }
+  return Date.now();
+}
+
+function inRange(i){ return typeof i==='number'&&i>=0&&i<CELLS&&(i|0)===i; }
+
+/* Copia defensiva: nadie debe poder tocar el array real de vecinos. */
+function neighbors(i){ return inRange(i)?NB[i].slice():[]; }
+
+/* ---------------- estado ---------------- */
+function initialState(){
+  var cells=new Array(CELLS);
+  for(var i=0;i<CELLS;i++) cells[i]=null;
+  return {cells:cells,turn:'b',over:false,result:null,pases:0,
+          captures:{b:0,w:0},koPoint:-1,koColor:null,moves:0,lastMove:-1};
+}
+
+function copyState(st){
+  return {cells:st.cells.slice(),turn:st.turn,over:!!st.over,result:st.result,
+          pases:st.pases|0,captures:{b:st.captures.b,w:st.captures.w},
+          koPoint:st.koPoint,koColor:st.koColor||null,
+          moves:st.moves|0,lastMove:(st.lastMove===undefined?-1:st.lastMove)};
+}
+
+/* ---------------- cadenas y libertades ---------------- */
+/* Cadena de `color` que pasa por i, sobre un array de celdas cualquiera.
+   Devuelve {liberties:[...], stones:[...]} ordenados de forma estable. */
+function groupOn(cells,i,color){
+  var stones=[], libs=[], seen=new Array(CELLS), seenLib=new Array(CELLS);
+  if(!inRange(i)||cells[i]!==color) return {liberties:libs,stones:stones};
+  var stack=[i]; seen[i]=1;
+  while(stack.length){
+    var p=stack.pop(); stones.push(p);
+    var ns=NB[p];
+    for(var k=0;k<ns.length;k++){
+      var q=ns[k], v=cells[q];
+      if(v===color){
+        if(!seen[q]){ seen[q]=1; stack.push(q); }
+      }else if(v===null){
+        if(!seenLib[q]){ seenLib[q]=1; libs.push(q); }
+      }
+    }
+  }
+  stones.sort(function(a,b){return a-b;});
+  libs.sort(function(a,b){return a-b;});
+  return {liberties:libs,stones:stones};
+}
+
+/* Cadena que pasa por la intersección i del estado (vacía → vacío). */
+function group(st,i){
+  var color=(st&&st.cells)?st.cells[i]:null;
+  if(color!=='b'&&color!=='w') return {liberties:[],stones:[]};
+  return groupOn(st.cells,i,color);
+}
+
+/* Simula jugar `color` en i: coloca la piedra y retira las cadenas rivales
+   sin libertades. Devuelve {cells, captured} o null si i no está vacía.
+   Solo lee st.cells: sirve también con un objeto {cells:...} temporal. */
+function simulate(st,i,color){
+  if(!st||!st.cells||!inRange(i)||st.cells[i]!==null) return null;
+  var cells=st.cells.slice();
+  cells[i]=color;
+  var opp=otherSide(color), captured=[], done=new Array(CELLS);
+  var ns=NB[i];
+  for(var k=0;k<ns.length;k++){
+    var q=ns[k];
+    if(done[q]||cells[q]!==opp) continue;
+    var g=groupOn(cells,q,opp);
+    if(g.liberties.length===0){
+      for(var j=0;j<g.stones.length;j++){
+        done[g.stones[j]]=1;
+        captured.push(g.stones[j]);
+        cells[g.stones[j]]=null;
+      }
+    }
+  }
+  return {cells:cells,captured:captured};
+}
+
+/* ¿Jugar en i con `color` capturaría piedras rivales? */
+function wouldCapture(st,i,color){
+  if(color!=='b'&&color!=='w') color=st.turn;
+  var s=simulate(st,i,color);
+  return !!s&&s.captured.length>0;
+}
+
+/* Piedras que quedarían capturadas al jugar i (para animar la captura). */
+function capturesAt(st,i,color){
+  if(color!=='b'&&color!=='w') color=st.turn;
+  var s=simulate(st,i,color);
+  return s?s.captured.slice():[];
+}
+
+/* KO SIMPLE — "koPointFloyd": captura de UNA piedra cuya cadena propia queda
+   con 1 piedra y 1 libertad. Esa libertad es el punto de ko: el bando rival
+   no puede recapturar ahí en el pliegue siguiente (la posición anterior no se
+   recrea). Devuelve {point, color} o {point:-1,color:null}. */
+function koPointFloyd(ns,i,color,captured){
+  if(captured.length!==1) return {point:-1,color:null};
+  var g=groupOn(ns.cells,i,color);
+  if(g.stones.length!==1||g.liberties.length!==1) return {point:-1,color:null};
+  return {point:g.liberties[0],color:otherSide(color)};
+}
+
+/* Motivo por el que jugar en i con `color` sería ilegal, o null si es legal. */
+function illegalReason(st,i,color){
+  if(!st) return 'Estado inválido';
+  if(st.over) return 'Partida terminada';
+  if(color!=='b'&&color!=='w') color=st.turn;
+  if(!inRange(i)) return 'Punto fuera del tablero';
+  if(st.cells[i]!==null) return 'Esa intersección ya está ocupada';
+  if(i===st.koPoint&&color===st.koColor) return 'Ko: recaptura prohibida (no se recrea la posición anterior)';
+  var s=simulate(st,i,color);
+  if(!s) return 'Esa intersección ya está ocupada';
+  if(groupOn(s.cells,i,color).liberties.length===0) return 'Suicidio ilegal: la cadena quedaría sin libertades';
+  return null;
+}
+
+function legal(st,i,color){
+  return illegalReason(st,i,color)===null;
+}
+
+/* ---------------- aplicar jugada (estado NUEVO, sin mutar) ---------------- */
+function play(st,i){
+  if(!legal(st,i,st.turn)) return copyState(st);   /* ilegal: copia intacta */
+  var color=st.turn;
+  var s=simulate(st,i,color);
+  var ns={cells:s.cells,turn:otherSide(color),over:false,result:null,pases:0,
+          captures:{b:st.captures.b,w:st.captures.w},
+          koPoint:-1,koColor:null,moves:(st.moves|0)+1,lastMove:i};
+  if(s.captured.length) ns.captures[color]+=s.captured.length;
+  var ko=koPointFloyd(ns,i,color,s.captured);
+  ns.koPoint=ko.point;
+  ns.koColor=ko.color;
+  return ns;
+}
+
+/* Pasar turno. Dos pases seguidos (pases>=2) terminan la partida. */
+function pass(st){
+  if(!st||st.over) return copyState(st);
+  var ns=copyState(st);
+  ns.pases=(st.pases|0)+1;
+  ns.turn=otherSide(st.turn);
+  ns.lastMove=-1;
+  /* el punto de ko se conserva: sigue prohibido recrear la posición */
+  if(ns.pases>=2){
+    ns.over=true;
+    ns.result=score(ns).winner;
+  }
+  return ns;
+}
+
+/* {over, result, pases} */
+function status(st){
+  if(!st) return {over:false,result:null,pases:0};
+  return {over:!!st.over,result:st.over?st.result:null,pases:st.pases|0};
+}
+
+/* ---------------- puntuación (kasumi simple) ---------------- */
+function score(st){
+  var cells=st.cells, seenE=new Array(CELLS);
+  var terr={b:0,w:0}, neutral=0;
+  for(var i=0;i<CELLS;i++){
+    if(seenE[i]||cells[i]!==null) continue;
+    var stack=[i], reg=0, cb=false, cw=false;
+    seenE[i]=1;
+    while(stack.length){
+      var p=stack.pop(); reg++;
+      var ns=NB[p];
+      for(var k=0;k<ns.length;k++){
+        var q=ns[k], v=cells[q];
+        if(v===null){
+          if(!seenE[q]){ seenE[q]=1; stack.push(q); }
+        }else if(v==='b'){ cb=true; }
+        else if(v==='w'){ cw=true; }
+      }
+    }
+    if(cb&&!cw) terr.b+=reg;
+    else if(cw&&!cb) terr.w+=reg;
+    else neutral+=reg;
+  }
+  var stones={b:0,w:0};
+  for(var j=0;j<CELLS;j++){
+    if(cells[j]==='b') stones.b++;
+    else if(cells[j]==='w') stones.w++;
+  }
+  var capB=st.captures?st.captures.b:0, capW=st.captures?st.captures.w:0;
+  var b=terr.b+capB;
+  var w=terr.w+capW+KOMI;
+  return {territory:terr,neutral:neutral,captures:{b:capB,w:capW},stones:stones,
+          komi:KOMI,b:b,w:w,diff:b-w,
+          winner:(b>w?'b':(w>b?'w':'draw'))};
+}
+
+function countStones(st){
+  var n={b:0,w:0};
+  for(var i=0;i<CELLS;i++){
+    if(st.cells[i]==='b') n.b++;
+    else if(st.cells[i]==='w') n.w++;
+  }
+  return n;
+}
+
+function legalMoves(st){
+  if(!st||st.over) return [];
+  var out=[];
+  for(var i=0;i<CELLS;i++){
+    if(legal(st,i,st.turn)) out.push(i);
+  }
+  return out;
+}
+
+/* Intersecciones vacías restantes. */
+function emptyCount(st){
+  var n=0;
+  for(var i=0;i<CELLS;i++) if(st.cells[i]===null) n++;
+  return n;
+}
+
+/* POSICIÓN ASENTADA: quedan pocas intersecciones libres (<=12) y no existe
+   ninguna jugada que capture. Entonces no hay nada que ganar jugando: pasar
+   es lo correcto y ambos bandos pasan para terminar y contar. */
+var SETTLED_EMPTY=12;
+function settled(st){
+  if(!st||st.over) return false;
+  if(emptyCount(st)>SETTLED_EMPTY) return false;
+  var moves=legalMoves(st);
+  for(var k=0;k<moves.length;k++){
+    if(capturesAt(st,moves[k],st.turn).length) return false;
+  }
+  return true;
+}
+
+/* ---------------- evaluación y búsqueda ---------------- */
+function centerBonus(i){
+  var r=i/N|0, c=i%N;
+  return 4-(Math.abs(r-4)+Math.abs(c-4));
+}
+
+function moveInfo(st,i,color){
+  var s=simulate(st,i,color);
+  if(!s) return null;
+  var g=groupOn(s.cells,i,color);
+  return {caps:s.captured.length,libs:g.liberties.length,stones:g.stones.length,cells:s.cells};
+}
+
+function adjacentOwn(st,i,color){
+  var ns=NB[i], n=0;
+  for(var k=0;k<ns.length;k++) if(st.cells[ns[k]]===color) n++;
+  return n;
+}
+
+/* Cadenas de `color` con <=1 libertad tras la jugada (cadenas débiles). */
+function weakCount(cells,color){
+  var seen=new Array(CELLS), n=0;
+  for(var i=0;i<CELLS;i++){
+    if(seen[i]||cells[i]!==color) continue;
+    var g=groupOn(cells,i,color);
+    for(var k=0;k<g.stones.length;k++) seen[g.stones[k]]=1;
+    if(g.liberties.length<=1) n++;
+  }
+  return n;
+}
+
+/* Máximo número de piedras que `color` podría capturar en el tablero dado
+   (amenaza rival inmediata; se ignoran las jugadas suicidas). */
+function threatMax(cells,color){
+  var best=0;
+  for(var j=0;j<CELLS;j++){
+    if(cells[j]!==null) continue;
+    var s=simulate({cells:cells},j,color);
+    if(!s||!s.captured.length) continue;
+    if(groupOn(s.cells,j,color).liberties.length===0) continue;
+    if(s.captured.length>best) best=s.captured.length;
+  }
+  return best;
+}
+
+/* Avalúo desde la perspectiva del bando que mueve (st.turn):
+   capturas, libertades, cadenas débiles (atari) y territorio por cielo. */
+function evaluate(st){
+  var cells=st.cells, me=st.turn, opp=otherSide(me), v=0, i, k;
+  v+=10*(st.captures[me]-st.captures[opp]);
+  if(me==='w') v-=20; else v+=20;          /* komi 5.5 ponderado para blancas */
+  var seen=new Array(CELLS);
+  for(i=0;i<CELLS;i++){
+    var col=cells[i];
+    if(col===null||seen[i]) continue;
+    var g=groupOn(cells,i,col);
+    for(k=0;k<g.stones.length;k++) seen[g.stones[k]]=1;
+    var L=g.liberties.length, S=g.stones.length;
+    var val=Math.min(L,6)*2+S;
+    if(L===1) val-=16+S*2;                 /* cadena débil: en atari */
+    if(L===0) val-=80;                     /* no debería ocurrir */
+    v+=(col===me)?val:-val;
+  }
+  var eseen=new Array(CELLS);
+  for(i=0;i<CELLS;i++){
+    if(eseen[i]||cells[i]!==null) continue;
+    var stack=[i], reg=0, cb=false, cw=false;
+    eseen[i]=1;
+    while(stack.length){
+      var p=stack.pop(); reg++;
+      var ns=NB[p];
+      for(k=0;k<ns.length;k++){
+        var q=ns[k], vc=cells[q];
+        if(vc===null){
+          if(!eseen[q]){ eseen[q]=1; stack.push(q); }
+        }else if(vc==='b'){ cb=true; }
+        else { cw=true; }
+      }
+    }
+    if(cb!==cw) v+=(((cb?'b':'w')===me)?reg:-reg);
+  }
+  return v;
+}
+
+function terminalValue(st){
+  var sc=score(st);
+  var d=(st.turn==='b')?(sc.b-sc.w):(sc.w-sc.b);
+  return d*100000;
+}
+
+function orderMoves(st,moves){
+  var keys=new Array(moves.length), i;
+  for(i=0;i<moves.length;i++){
+    var m=moveInfo(st,moves[i],st.turn);
+    keys[i]=m?(m.caps*100+m.libs*5+centerBonus(moves[i])):0;
+  }
+  var idx=[];
+  for(i=0;i<moves.length;i++) idx.push(i);
+  idx.sort(function(a,b){ return keys[b]-keys[a]; });
+  var out=[];
+  for(i=0;i<idx.length;i++) out.push(moves[idx[i]]);
+  return out;
+}
+
+function negamax(st,depth,alpha,beta,ctx){
+  ctx.nodes++;
+  if((ctx.nodes&63)===0&&engineNow()>=ctx.deadline) throw ENGINE_TIMEOUT;
+  if(st.over) return terminalValue(st);
+  if(depth<=0) return evaluate(st);
+  var moves=legalMoves(st);
+  if(!moves.length){
+    /* sin jugadas: pasar (consume profundidad, termina en pases>=2) */
+    return -negamax(pass(st),depth-1,-beta,-alpha,ctx);
+  }
+  moves=orderMoves(st,moves);
+  var best=-Infinity;
+  for(var i=0;i<moves.length;i++){
+    var v=-negamax(play(st,moves[i]),depth-1,-beta,-alpha,ctx);
+    if(v>best) best=v;
+    if(best>alpha) alpha=best;
+    if(alpha>=beta) break;
+  }
+  return best;
+}
+
+function searchRoot(st,depth,ctx){
+  var moves=orderMoves(st,legalMoves(st));
+  var scores=new Array(moves.length), alpha=-Infinity;
+  for(var i=0;i<moves.length;i++){
+    if(engineNow()>=ctx.deadline) throw ENGINE_TIMEOUT;
+    var v=-negamax(play(st,moves[i]),depth-1,-Infinity,-alpha,ctx);
+    scores[i]=v;
+    if(v>alpha) alpha=v;
+  }
+  return {moves:moves,scores:scores};
+}
+
+/* Nivel 1 Fácil: aleatoria con ligero sesgo a libertades (y capturas). */
+function chooseEasy(st,moves,rng){
+  var best=-Infinity, pick=moves[0];
+  for(var i=0;i<moves.length;i++){
+    var m=moveInfo(st,moves[i],st.turn);
+    if(!m) continue;
+    var v=m.libs+m.caps*3+(rng?rng():0)*3;
+    if(v>best){ best=v; pick=moves[i]; }
+  }
+  return pick;
+}
+
+/* Nivel 2 Medio: heurística libertades + capturas + forma, time-box 300ms. */
+function chooseMedium(st,moves,rng){
+  var deadline=engineNow()+300;
+  var me=st.turn, opp=otherSide(me);
+  var best=-Infinity, pick=moves[0];
+  for(var i=0;i<moves.length;i++){
+    var idx=moves[i];
+    var m=moveInfo(st,idx,me);
+    if(!m) continue;
+    var v=m.caps*10+m.libs*2.5+centerBonus(idx)+adjacentOwn(st,idx,me)*2;
+    if(m.libs===1) v-=16;                                  /* propia en atari */
+    v+=weakCount(m.cells,opp)*7;                           /* cadenas débiles rivales */
+    if(engineNow()<deadline) v-=threatMax(m.cells,opp)*9;  /* mejor respuesta rival */
+    v+=(rng?rng():0)*2;                                    /* desempate suave */
+    if(v>best){ best=v; pick=idx; }
+  }
+  return pick;
+}
+
+/* Nivel 3 Difícil: minimax alfa-beta con profundidad iterativa, time-box 800ms. */
+function chooseHard(st,moves){
+  var ctx={deadline:engineNow()+800,nodes:0};
+  var ordered=orderMoves(st,moves), done=null;
+  for(var depth=1;depth<=5;depth++){
+    if(engineNow()>=ctx.deadline) break;
+    var res;
+    try{
+      res=searchRoot(st,depth,ctx);
+    }catch(e){
+      if(e!==ENGINE_TIMEOUT) throw e;
+      break;
+    }
+    if(res&&res.moves.length) done=res;
+  }
+  if(!done) return ordered[0];        /* ninguna profundidad completada */
+  var bi=0, bv=-Infinity;
+  for(var i=0;i<done.moves.length;i++){
+    if(done.scores[i]>bv){ bv=done.scores[i]; bi=i; }
+  }
+  return done.moves[bi];
+}
+
+/* Jugada de la IA. level: 1 Fácil, 2 Medio, 3 Difícil. rng inyectable.
+   Devuelve la intersección, o null si no hay jugadas legales (hay que pasar). */
+function chooseMove(st,level,rng){
+  rng=rng||Math.random;
+  if(!st||st.over) return null;
+  var moves=legalMoves(st);
+  if(!moves.length) return null;
+  if(settled(st)) return null;      /* posición asentada: hay que pasar */
+  if(moves.length===1) return moves[0];
+  if(level!==2&&level!==3) level=1;
+  if(level===1) return chooseEasy(st,moves,rng);
+  if(level===2) return chooseMedium(st,moves,rng);
+  return chooseHard(st,moves);
+}
+
+var state=initialState();
+
+/* ================= INTERFAZ ================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var storedDiff=parseInt(localStorage.getItem('go9.diff')||'2',10);
+      if(storedDiff===1||storedDiff===2||storedDiff===3) diff=storedDiff;
+    }
+  }catch(e){}
+
+  var DIFF_NAMES={1:'Fácil',2:'Medio',3:'Difícil'};
+  var LETTERS='ABCDEFGHJ';          /* en Go la columna I se salta */
+  var HOSHI={20:1,24:1,40:1,56:1,60:1};
+
+  var cellEls=[];
+  var undoStack=[];
+  var busy=false;
+  var busyTimers=[];
+  var aiTimer=null;
+  var hintIdx=-1, hintTimer=null;
+  var toastTimer=null;
+  var chainRoot=-1, chainIdx=[], libIdx=[], chainTimer=null;
+  var movesCount=0;
+  var recorded=false;
+  var rec={w:0,l:0,d:0};
+
+  /* ---------- util UI ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2400);
+  }
+  function loadRec(){
+    try{
+      if(typeof localStorage==='undefined') return {w:0,l:0,d:0};
+      var raw=localStorage.getItem('go9.stats');
+      if(!raw) return {w:0,l:0,d:0};
+      var o=JSON.parse(raw);
+      return {w:(o&&o.w)|0,l:(o&&o.l)|0,d:(o&&o.d)|0};
+    }catch(e){ return {w:0,l:0,d:0}; }
+  }
+  function saveRec(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('go9.stats',JSON.stringify(rec));
+    }catch(e){}
+  }
+  function fmtRec(r){ return r.w+'-'+r.l+'-'+r.d; }
+  function recordResult(){
+    if(recorded) return;
+    recorded=true;
+    if(state.result==='b') rec.w++;
+    else if(state.result==='w') rec.l++;
+    else rec.d++;
+    saveRec();
+  }
+  function label(i){
+    var r=i/N|0, c=i%N;
+    return LETTERS.charAt(c)+(N-r);
+  }
+  function statusText(){
+    if(state.over){
+      var sc=score(state);
+      var who=state.result==='b'?'Ganan negras':(state.result==='w'?'Ganan blancas':'Empate');
+      return 'Fin · '+who+' · Negras '+sc.b+' — Blancas '+sc.w;
+    }
+    if(busy) return 'Colocando…';
+    if(aiTimer||state.turn==='w') return 'IA pensando… (nivel '+DIFF_NAMES[diff]+')';
+    if(settled(state)) return 'Posición asentada: pasa el turno';
+    if(legalMoves(state).length===0) return 'Sin jugadas legales: pasa el turno';
+    return 'Tu turno · negras · plies '+state.moves;
+  }
+  function clearHint(){
+    if(hintTimer) clearTimeout(hintTimer);
+    hintTimer=null;
+    hintIdx=-1;
+  }
+  function clearAnim(){
+    for(var k=0;k<busyTimers.length;k++) clearTimeout(busyTimers[k]);
+    busyTimers=[];
+    busy=false;
+  }
+  function clearChain(){
+    if(chainTimer){ clearTimeout(chainTimer); chainTimer=null; }
+    for(var k=0;k<chainIdx.length;k++){
+      var el=cellEls[chainIdx[k]];
+      if(el) el.classList.remove('chain');
+    }
+    for(var k2=0;k2<libIdx.length;k2++){
+      var el2=cellEls[libIdx[k2]];
+      if(el2) el2.classList.remove('lib');
+    }
+    chainIdx=[]; libIdx=[]; chainRoot=-1;
+    $('#board').classList.remove('chaining');
+  }
+  /* Muestra la cadena de la piedra en i y sus libertades. */
+  function showChain(i){
+    if(chainRoot===i) return;
+    clearChain();
+    if(state.cells[i]===null) return;
+    var g=group(state,i);
+    chainRoot=i; chainIdx=g.stones; libIdx=g.liberties;
+    for(var k=0;k<chainIdx.length;k++) cellEls[chainIdx[k]].classList.add('chain');
+    for(var k2=0;k2<libIdx.length;k2++) cellEls[libIdx[k2]].classList.add('lib');
+    $('#board').classList.add('chaining');
+    if(chainTimer) clearTimeout(chainTimer);
+    chainTimer=setTimeout(clearChain,2400);
+  }
+  function flashBad(i){
+    var el=cellEls[i];
+    if(!el) return;
+    el.classList.remove('bad');
+    void el.offsetWidth;
+    el.classList.add('bad');
+    setTimeout(function(){ el.classList.remove('bad'); },600);
+  }
+
+  /* ---------- render ---------- */
+  function buildBoard(){
+    var b=$('#board');
+    b.innerHTML='';
+    cellEls=[];
+    var frag=document.createDocumentFragment();
+    for(var i=0;i<CELLS;i++){
+      var r=i/N|0, c=i%N;
+      var pt=document.createElement('div');
+      pt.className='pt';
+      pt.dataset.i=String(i);
+      if(r===0) pt.classList.add('e-t');
+      if(r===N-1) pt.classList.add('e-b');
+      if(c===0) pt.classList.add('e-l');
+      if(c===N-1) pt.classList.add('e-r');
+      if(HOSHI[i]) pt.classList.add('hoshi');
+      var ln=document.createElement('i');
+      ln.className='ln';
+      pt.appendChild(ln);
+      frag.appendChild(pt);
+      cellEls.push(pt);
+    }
+    b.appendChild(frag);
+  }
+  function render(){
+    if(state.over) recordResult();
+    var legalList=(!state.over&&state.turn==='b'&&!busy)?legalMoves(state):[];
+    for(var i=0;i<CELLS;i++){
+      var pt=cellEls[i], v=state.cells[i];
+      var stone=pt.querySelector('.stone');
+      if(v===null){
+        if(stone) pt.removeChild(stone);
+      }else if(!stone){
+        stone=document.createElement('div');
+        stone.className='stone '+v;
+        pt.appendChild(stone);
+      }else{
+        var want='stone '+v;
+        if(stone.className!==want) stone.className=want;
+      }
+      pt.classList.toggle('legal', legalList.indexOf(i)>=0);
+      pt.classList.toggle('chosen', i===state.lastMove);
+      pt.classList.toggle('hint', i===hintIdx);
+    }
+    var cnt=countStones(state);
+    $('#stB').textContent=String(cnt.b);
+    $('#stW').textContent=String(cnt.w);
+    $('#stCap').textContent=state.captures.b+'-'+state.captures.w;
+    $('#stWLD').textContent=fmtRec(rec);
+    $('#status').textContent=statusText();
+    var win=$('#win');
+    if(state.over){
+      var sc=score(state);
+      win.classList.add('show');
+      $('#winTitle').textContent=state.result==='b'?'¡Has ganado!':(state.result==='w'?'Has perdido':'Empate');
+      $('#winCount').textContent='Negras '+sc.b+' — Blancas '+sc.w;
+      $('#winStats').textContent='Territorio '+sc.territory.b+'-'+sc.territory.w+
+        ' · Capturas '+sc.captures.b+'-'+sc.captures.w+' · Komi '+sc.komi+
+        ' · Piedras '+cnt.b+'-'+cnt.w+' · Récord '+fmtRec(rec)+' · '+DIFF_NAMES[diff];
+    }else{
+      win.classList.remove('show');
+    }
+  }
+
+  /* ---------- flujo ---------- */
+  function scheduleAI(){
+    if(busy||state.over||state.turn!=='w') return;
+    if(aiTimer) return;
+    aiTimer=setTimeout(function(){
+      aiTimer=null;
+      if(busy||state.over||state.turn!=='w'){ render(); return; }
+      var m=chooseMove(state,diff);
+      if(m===null){ aiPass(); return; }
+      playMove(m);
+    },340);
+    render();
+  }
+  function afterMove(){
+    render();
+    scheduleAI();
+  }
+  function aiPass(){
+    state=pass(state);
+    toast('IA pasa');
+    if(state.over){ render(); return; }
+    render();
+    scheduleAI();
+  }
+  /* Juega i: aplica el estado, coloca la piedra con animación y hace
+     desaparecer las piedras capturadas (las que ya no están en el estado). */
+  function playMove(i){
+    if(busy||state.over) return;
+    var mover=state.turn;
+    if(!legal(state,i,mover)) return;
+    var caps=capturesAt(state,i,mover);
+    state=play(state,i);
+    movesCount++;
+    busy=true;
+    if(aiTimer){ clearTimeout(aiTimer); aiTimer=null; }
+    clearHint();
+    clearChain();
+    for(var k=0;k<CELLS;k++) cellEls[k].classList.remove('legal','hint','chosen');
+    render();
+    var st=cellEls[i].querySelector('.stone');
+    if(st) st.classList.add('placing');
+    var victim=mover==='b'?'w':'b';
+    for(var c=0;c<caps.length;c++){
+      var el=document.createElement('div');
+      el.className='stone '+victim+' dying';
+      cellEls[caps[c]].appendChild(el);
+    }
+    if(caps.length) toast('¡Captura! '+(caps.length===1?'1 piedra':caps.length+' piedras'));
+    $('#status').textContent=statusText();
+    var total=caps.length?560:320;
+    busyTimers.push(setTimeout(function(){
+      busyTimers=[];
+      busy=false;
+      afterMove();
+    },total));
+  }
+  function handlePass(){
+    if(busy) return;
+    if(state.over){ toast('Partida terminada'); return; }
+    if(state.turn!=='b'){ toast('Espera tu turno'); return; }
+    undoStack.push(JSON.stringify(state));
+    if(undoStack.length>300) undoStack.shift();
+    clearHint();
+    clearChain();
+    state=pass(state);
+    movesCount++;
+    render();
+    if(state.over){ toast('Fin: dos pases seguidos'); return; }
+    toast('Pasar turno');
+    scheduleAI();
+  }
+  function newGameUI(){
+    clearAnim();
+    if(aiTimer){ clearTimeout(aiTimer); aiTimer=null; }
+    clearHint();
+    clearChain();
+    state=initialState();
+    undoStack=[];
+    movesCount=0;
+    recorded=false;
+    render();
+  }
+  function undo(){
+    if(state.over){ toast('Partida terminada'); return; }
+    if(!undoStack.length){ toast('Nada que deshacer'); return; }
+    clearAnim();
+    if(aiTimer){ clearTimeout(aiTimer); aiTimer=null; }
+    clearHint();
+    clearChain();
+    state=JSON.parse(undoStack.pop());
+    render();
+    toast('Jugada deshecha');
+  }
+  function hintAction(){
+    if(busy) return;
+    if(state.over||state.turn!=='b'){ toast('Espera tu turno'); return; }
+    clearHint();
+    var m=chooseMove(state,diff);
+    if(m===null){ toast(settled(state)?'Posición asentada: pasa el turno':'Sin jugadas legales: pasa el turno'); return; }
+    hintIdx=m;
+    render();
+    toast('Pista (IA): '+(state.cells[m]===null?'juega en '+label(m):label(m)));
+    hintTimer=setTimeout(function(){ hintIdx=-1; hintTimer=null; render(); },3200);
+  }
+  function confirmNew(){
+    if(movesCount>0&&!state.over&&!confirm('¿Empezar una nueva partida? Se perderá la actual.')) return false;
+    return true;
+  }
+
+  /* ---------- entrada ---------- */
+  function handleTap(i){
+    if(busy||state.over) return;
+    if(state.cells[i]!==null){ showChain(i); return; }   /* muestra cadenas */
+    if(state.turn!=='b'){ toast('Turno de la IA'); return; }
+    if(!legal(state,i,'b')){
+      flashBad(i);
+      toast(illegalReason(state,i,'b')||'Jugada ilegal');
+      return;
+    }
+    undoStack.push(JSON.stringify(state));
+    if(undoStack.length>300) undoStack.shift();
+    clearChain();
+    playMove(i);
+  }
+  $('#board').addEventListener('pointerdown',function(e){
+    var pt=e.target&&e.target.closest?e.target.closest('.pt'):null;
+    if(!pt) return;
+    e.preventDefault();
+    handleTap(parseInt(pt.dataset.i,10));
+  });
+  $('#board').addEventListener('pointerover',function(e){
+    var pt=e.target&&e.target.closest?e.target.closest('.pt'):null;
+    if(!pt){ clearChain(); return; }
+    var i=parseInt(pt.dataset.i,10);
+    if(state.cells[i]===null){ if(chainRoot!==-1) clearChain(); return; }
+    showChain(i);
+  });
+
+  $('#btnPass').addEventListener('click',handlePass);
+  $('#btnNew').addEventListener('click',function(){ if(confirmNew()) newGameUI(); });
+  $('#btnAgain').addEventListener('click',function(){ newGameUI(); });
+  $('#btnUndo').addEventListener('click',undo);
+  $('#btnHint').addEventListener('click',hintAction);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('go9.diff',String(diff)); }
+    catch(err){}
+    toast('Dificultad: '+DIFF_NAMES[diff]);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='n'){ if(confirmNew()) newGameUI(); }
+    else if(k==='u'){ undo(); }
+    else if(k==='h'){ hintAction(); }
+    else if(k==='p'){ handlePass(); }
+  });
+
+  /* ---------- arranque ---------- */
+  rec=loadRec();
+  $('#diffSel').value=String(diff);
+  buildBoard();
+  render();
+}
+</script>
+
+<script>
+/* =========================================================================
+   TESTS EN NODE — bloque final, sin IIFE ni 'use strict'.
+
+   Extracción y ejecución:
+     awk '/<script>/{f=1;next}/<\/script>/{f=0}f' go9.html > /tmp/go9.js
+     node --check /tmp/go9.js
+     node /tmp/go9.js
+   (en navegador typeof process === undefined y esto no hace nada)
+   ========================================================================= */
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  var T=0,F=0;
+  function ok(name,cond,extra){
+    T++;
+    if(cond) console.log('PASS '+name);
+    else { F++; console.log('FAIL '+name+' -> '+(extra===undefined?'':JSON.stringify(extra))); }
+  }
+  /* Filas de 9 caracteres: 'b' negra, 'w' blanca, '.' vacía. */
+  function mkRows(rows,turn,caps){
+    var st=initialState();
+    for(var r=0;r<9;r++){
+      var row=(rows&&rows[r])?rows[r]:'';
+      for(var c=0;c<9;c++){
+        var ch=row.charAt(c);
+        if(ch==='b'||ch==='w') st.cells[r*9+c]=ch;
+      }
+    }
+    if(turn) st.turn=turn;
+    if(caps) st.captures={b:caps.b|0,w:caps.w|0};
+    return st;
+  }
+  function sorted(a){ return a.slice().sort(function(x,y){return x-y;}); }
+  function stonesOf(st,col){
+    var n=0;
+    for(var i=0;i<81;i++) if(st.cells[i]===col) n++;
+    return n;
+  }
+  function same(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+
+  /* ---- 1. estado inicial ---- */
+  var s0=initialState();
+  var empties=0;
+  for(var i0=0;i0<81;i0++) if(s0.cells[i0]===null) empties++;
+  ok('estado inicial: 81 intersecciones vacías', s0.cells.length===81&&empties===81, {len:s0.cells.length,empties:empties});
+  ok('estado inicial: negras empiezan, sin pases ni capturas',
+     s0.turn==='b'&&s0.over===false&&s0.pases===0&&s0.captures.b===0&&s0.captures.w===0&&s0.koPoint===-1, s0);
+
+  /* ---- 2. neighbors ---- */
+  var nc=sorted(neighbors(40)), ne=sorted(neighbors(0)), nb=sorted(neighbors(8));
+  ok('neighbors: centro 4 vecinos', nc.join(',')==='31,39,41,49', nc);
+  ok('neighbors: esquina 2 y borde 3', ne.join(',')==='1,9'&&nb.join(',')==='7,17', {esquina:ne,borde:nb});
+  var ncopy=neighbors(40); ncopy.push(999);
+  ok('neighbors devuelve copia (no se muta NB)', neighbors(40).length===4, neighbors(40));
+
+  /* ---- 3. grupo y libertades (fixtures) ---- */
+  var g1=group(mkRows(['.........','.........','.........','.........','....b....']),40);
+  ok('grupo aislado: 1 piedra, 4 libertades',
+     g1.stones.join(',')==='40'&&g1.liberties.join(',')==='31,39,41,49', g1);
+
+  var g2=group(mkRows(['bb.......']),0);
+  ok('grupo en línea: 2 piedras, libertades 2/9/10',
+     g2.stones.join(',')==='0,1'&&g2.liberties.join(',')==='2,9,10', g2);
+
+  var g3=group(mkRows(['.........','.........','.........','....ww...','...wbbw..','.....w...']),40);
+  ok('cadena en atari: 2 piedras y 1 sola libertad',
+     g3.stones.join(',')==='40,41'&&g3.liberties.join(',')==='49', g3);
+
+  var gEmpty=group(mkRows(['.........']),40);
+  ok('grupo sobre intersección vacía → vacío', gEmpty.stones.length===0&&gEmpty.liberties.length===0, gEmpty);
+
+  /* ---- 4. captura de 1 piedra ---- */
+  var c1=mkRows(['bwb......'],'b');
+  ok('captura de 1: wouldCapture cierto en 10', wouldCapture(c1,10,'b')===true, {wc:wouldCapture(c1,10,'b')});
+  var c1b=play(c1,10);
+  ok('captura de 1: piedra rival retirada y contada',
+     c1b.cells[1]===null&&c1b.cells[10]==='b'&&c1b.captures.b===1&&stonesOf(c1b,'w')===0,
+     {cells1:c1b.cells[1],cap:c1b.captures,w:stonesOf(c1b,'w')});
+  ok('captura de 1: no deja ko (la cadena propia tiene 4 libertades)', c1b.koPoint===-1, {ko:c1b.koPoint});
+
+  /* ---- 5. captura de 2 piedras ---- */
+  var c2=mkRows(['bwb......','bwb......'],'b');
+  ok('captura de 2: la jugada en 19 captura la cadena {1,10}',
+     wouldCapture(c2,19,'b')===true, {wc:wouldCapture(c2,19,'b')});
+  var c2b=play(c2,19);
+  ok('captura de 2: ambas retiradas, capturas=2, ko simple',
+     c2b.cells[1]===null&&c2b.cells[10]===null&&c2b.captures.b===2&&stonesOf(c2b,'b')===5&&c2b.koPoint===-1,
+     {c1:c2b.cells[1],c10:c2b.cells[10],cap:c2b.captures.b,b:stonesOf(c2b,'b'),ko:c2b.koPoint});
+  var safe=play(c2,80);
+  ok('jugada sin captura no cambia el contador', safe.captures.b===0&&safe.cells[80]==='b', safe.captures);
+
+  /* ---- 6. suicidio rechazado salvo captura ---- */
+  var sui=mkRows(['www......','w.w......','www......'],'b');
+  ok('suicidio: wouldCapture falso en 10', wouldCapture(sui,10,'b')===false, {wc:wouldCapture(sui,10,'b')});
+  ok('suicidio: ilegal y motivo documentado',
+     legal(sui,10,'b')===false&&/Suicidio/.test(illegalReason(sui,10,'b')||''),
+     {legal:legal(sui,10,'b'),why:illegalReason(sui,10,'b')});
+  var suiPlay=play(sui,10);
+  ok('suicidio: play devuelve copia intacta', same(suiPlay.cells,sui.cells)&&suiPlay!==sui, {c10:suiPlay.cells[10]});
+
+  var suiOk=mkRows(['bb.......','w.b......','bb.......'],'b');
+  ok('suicidio permitido cuando captura: wouldCapture cierto', wouldCapture(suiOk,10,'b')===true, null);
+  ok('suicidio permitido cuando captura: legal cierto', legal(suiOk,10,'b')===true, {why:illegalReason(suiOk,10,'b')});
+  var suiOkB=play(suiOk,10);
+  ok('suicidio permitido cuando captura: se retira la piedra blanca',
+     suiOkB.cells[9]===null&&suiOkB.cells[10]==='b'&&suiOkB.captures.b===1,
+     {c9:suiOkB.cells[9],c10:suiOkB.cells[10],cap:suiOkB.captures.b});
+
+  /* ---- 7. ko: recrear la posición anterior rechazado ---- */
+  /* Estado A: negras (1),(9),(19) rodean a la blanca (10) cuya única
+     libertad es (11). Negras juegan (11) → capturan y nace el punto de ko. */
+  var koA=mkRows(['.bw......','bw.w.....','.bw......'],'b');
+  var koB=play(koA,11);
+  ok('ko: la captura deja1 piedra con 1 libertad → punto de ko en (1,1)',
+     koB.cells[10]===null&&koB.captures.b===1&&koB.koPoint===10&&koB.koColor==='w',
+     {cap:koB.captures.b,koPoint:koB.koPoint,koColor:koB.koColor});
+  ok('ko: recaptura blanca en el punto de ko ilegal',
+     legal(koB,10,'w')===false&&/Ko/.test(illegalReason(koB,10,'w')||''),
+     {legal:legal(koB,10,'w'),why:illegalReason(koB,10,'w')});
+  var koRefused=play(koB,10);
+  ok('ko: play en el punto de ko devuelve copia intacta',
+     same(koRefused.cells,koB.cells)&&koRefused.pases===0&&koRefused.turn==='w',
+     {turn:koRefused.turn,cells10:koRefused.cells[10]});
+  var koC=play(koB,80);   /* blancas juegan en otra parte: el ko expira */
+  ok('ko: expira tras jugar en otro sitio (punto libre)', koC.koPoint===-1&&koC.turn==='b', {ko:koC.koPoint,koColor:koC.koColor,turn:koC.turn});
+  var koD=play(koC,79);   /* negras responden en otra parte */
+  var koE=play(koD,10);   /* blancas ya pueden recapturar */
+  ok('ko: la recaptura blanca ya es legal y captura',
+     legal(koD,10,'w')===true&&koE.cells[11]===null&&koE.captures.w===1,
+     {legal:legal(koD,10,'w'),c11:koE.cells[11],cap:koE.captures.w});
+
+  /* ---- 8. play no muta ---- */
+  var nm=mkRows(['bwb......','bwb......','....b....'],'b');
+  var nmBefore=JSON.stringify(nm);
+  var nmAfter=play(nm,19);
+  ok('play no muta el estado original', JSON.stringify(nm)===nmBefore, {before:nmBefore.slice(0,40)});
+  ok('play devuelve un estado nuevo distinto', nmAfter!==nm&&nmAfter.cells!==nm.cells, null);
+  ok('play ilegal también devuelve copia sin cambios', same(play(nm,1).cells,nm.cells), {c1:play(nm,1).cells[1]});
+
+  /* ---- 9. dos pases → fin con puntuación (kasumi + komi 5.5) ---- */
+  /* fixture de dos cajas: negras cielo 9, blancas cielo 6, resto neutro (36)
+     → gana blancas 11.5-9 por el komi */
+  var komiRows=['bbbbbwwww','b...bw..w','b...bw..w','b...bw..w','bbbbbwwww','.........','.........','.........','.........'];
+  var komiSt=mkRows(komiRows,'b');
+  var kPass1=pass(komiSt);
+  ok('pass: cambia de turno y suma 1 pase', kPass1.turn==='w'&&kPass1.pases===1, {turn:kPass1.turn,pases:kPass1.pases});
+  var kPass2=pass(kPass1);
+  var kSc=score(kPass2);
+  ok('dos pases seguidos → fin de la partida', kPass2.over===true&&kPass2.pases===2&&status(kPass2).over===true,
+     status(kPass2));
+  ok('kasumi: cielos 9-6, neutras 36, blancas +5.5 = 11.5',
+     kSc.territory.b===9&&kSc.territory.w===6&&kSc.neutral===36&&kSc.b===9&&kSc.w===11.5, kSc);
+  ok('komi 5.5 compensa a blancas (ganan blancas)', kSc.winner==='w'&&kPass2.result==='w', {winner:kSc.winner,result:kPass2.result});
+  ok('score también cuenta piedras en tablero para el recuento', kSc.stones.b===16&&kSc.stones.w===14, kSc.stones);
+
+  /* ---- 10. victoria por territorio fabricada (negras con menos piedras) ---- */
+  var boxRows=['bbbbb....','b...b....','b...b....','b...b....','bbbbb....','.........','wwwwwwwww','wwwwwwwww','wwwwwwwww'];
+  var boxSt=mkRows(boxRows,'b');
+  var boxSc=score(boxSt);
+  ok('victoria por territorio: negras 9, blancas 5.5 con komi',
+     boxSc.territory.b===9&&boxSc.territory.w===0&&boxSc.neutral===29&&boxSc.b===9&&boxSc.w===5.5, boxSc);
+  ok('victoria por territorio: gana negras CON MENOS piedras',
+     boxSc.winner==='b'&&boxSc.stones.b===16&&boxSc.stones.w===27&&boxSc.stones.w>boxSc.stones.b,
+     {winner:boxSc.winner,b:boxSc.stones.b,w:boxSc.stones.w});
+  var boxEnd=pass(pass(boxSt));
+  ok('victoria por territorio: doble pase confirma el resultado',
+     boxEnd.over===true&&boxEnd.result==='b'&&status(boxEnd).result==='b', status(boxEnd));
+
+  /* ---- 11. chooseMove legal en los 3 niveles ---- */
+  var mid=initialState();
+  for(var q=0;q<16;q++){
+    var lm=legalMoves(mid);
+    if(!lm.length) break;
+    mid=play(mid,lm[(q*5+2)%lm.length]);
+  }
+  var midLegal=legalMoves(mid);
+  ok('posición media de partida con jugadas', midLegal.length>5&&stonesOf(mid,'b')+stonesOf(mid,'w')>4,
+     {legal:midLegal.length,stones:stonesOf(mid,'b')+stonesOf(mid,'w')});
+  var midSnap=JSON.stringify(mid);
+  var levels=[1,2,3];
+  for(var li=0;li<levels.length;li++){
+    (function(L){
+      var t0=Date.now();
+      var mv=chooseMove(mid,L);
+      var dt=Date.now()-t0;
+      ok('chooseMove nivel '+L+' devuelve jugada legal ('+dt+'ms)',
+         mv===null||(typeof mv==='number'&&mv>=0&&mv<81&&legal(mid,mv,mid.turn)),
+         {mv:mv,dt:dt,turn:mid.turn});
+      if(L===3) ok('nivel Difícil time-box <=900ms', dt<=1300, {dt:dt});
+    })(levels[li]);
+  }
+  ok('chooseMove no muta el estado', JSON.stringify(mid)===midSnap, null);
+
+  /* ---- 12. chooseMove sin jugadas legales → null (hay que pasar) ---- */
+  var full=initialState();
+  for(var f=0;f<81;f++) full.cells[f]=(f%2===0)?'b':'w';
+  ok('tablero lleno:0 jugadas legales', legalMoves(full).length===0, legalMoves(full).length);
+  ok('chooseMove sin jugadas → null en los3 niveles',
+     chooseMove(full,1)===null&&chooseMove(full,2)===null&&chooseMove(full,3)===null, null);
+
+  /* ---- 12b. posición asentada → ambos pasan y se cuenta ---- */
+  var setRows=['bbbbbbbbb','bbbbbbbbb','bbbbbbbbb','bbbbbbbbb','.........','wwwwwwwww','wwwwwwwww','wwwwwwwww','wwwwwwwww'];
+  var setSt=mkRows(setRows,'b');
+  ok('asentada: 9 libres y ninguna captura posible',
+     emptyCount(setSt)===9&&settled(setSt)===true&&legalMoves(setSt).length===9,
+     {empties:emptyCount(setSt),settled:settled(setSt),legal:legalMoves(setSt).length});
+  ok('asentada: chooseMove → null (pasar) en los3 niveles',
+     chooseMove(setSt,1)===null&&chooseMove(setSt,2)===null&&chooseMove(setSt,3)===null, null);
+  ok('tablero abierto NO está asentado (la IA no pasa en la apertura)',
+     settled(initialState())===false&&chooseMove(initialState(),1)!==null, null);
+  ok('asentada + doble pase → fin con el recuento',
+     (function(){ var a=pass(setSt), b2=pass(a); return b2.over===true&&b2.result==='w'&&score(b2).w===score(b2).territory.w+5.5; })(),
+     null);
+
+  /* ---- 13. partida IA vs IA: 40 plies coherentes, con pases ---- */
+  var g=initialState();
+  var simOK=true, simErr=null, plies=0, forcedPass=false;
+  for(var p=0;p<40;p++){
+    if(g.over){ simErr='terminó antes de tiempo'; break; }
+    if(p===15){
+      var g2=pass(g);
+      if(g2.pases!==1||g2.turn===g.turn){ simOK=false; simErr='pass mal'; }
+      g=g2; plies++; forcedPass=true; continue;
+    }
+    var lvl=(p<2)?3:((p%4===3)?2:1);
+    var before=JSON.stringify(g);
+    var mv=chooseMove(g,lvl);
+    if(mv===null){
+      g=pass(g);
+    }else{
+      if(!legal(g,mv,g.turn)){ simOK=false; simErr='ilegal '+mv; break; }
+      g=play(g,mv);
+      if(JSON.stringify(g)===before){ simOK=false; simErr='play sin cambios'; break; }
+    }
+    if(g.turn===JSON.parse(before).turn){ simOK=false; simErr='turno no cambió'; break; }
+    if(g.cells.length!==81){ simOK=false; simErr='celdas!=81'; break; }
+    if(stonesOf(g,'b')+stonesOf(g,'w')>81){ simOK=false; simErr='piedras>81'; break; }
+    if(g.captures.b<0||g.captures.w<0){ simOK=false; simErr='capturas negativas'; break; }
+    plies++;
+  }
+  ok('IA vs IA: 40 plies sin romper', plies===40&&simOK, {plies:plies,err:simErr,over:g.over});
+  ok('IA vs IA: el pase forzado no rompe el ritmo', forcedPass===true&&g.pases<=1, {forcedPass:forcedPass,pases:g.pases});
+  ok('IA vs IA: estado final coherente',
+     status(g).over===false&&g.moves>=0&&g.captures.b+g.captures.w>=0&&legalMoves(g).length>=0,
+     {status:status(g),moves:g.moves,cap:g.captures,legal:legalMoves(g).length});
+
+  console.log('TESTS: '+T+' · FALLOS: '+F);
+  if(F) process.exit(1);
+}
+</script>
+</body>
+</html>

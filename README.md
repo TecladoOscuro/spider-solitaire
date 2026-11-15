@@ -24,6 +24,8 @@ Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin
 | Blackjack 21 | `blackjack.html` | Fácil, Normal, Experto · fichas y mínima configurables |
 | Dominó | `domino.html` | Fácil, Medio, Difícil (IA alfa-beta) |
 | Sopa de Letras | `sopa-de-letras.html` | 10×10 · 12×12 · 15×15 |
+| FreeCell | `freecell.html` | Fácil (6 celdas), Normal (4), Experto (2) |
+| Go 9×9 | `go9.html` | Fácil, Medio, Difícil (IA alfa-beta) |
 
 El índice `index.html` es el menú de entrada.
 
