@@ -482,10 +482,16 @@ if (typeof document !== 'undefined') {
 
   function fit(){
     if(!S) return;
-    var availW=Math.max(160,(window.innerWidth||1024)-70);
-    var availH=Math.max(160,(window.innerHeight||768)-240);
+    /* hueco MEDIDO (no estimado): ancho real del contenedor y altura
+       libre entre la cabecera y la pista de abajo; casillas hasta 56px
+       para que el tablero llene cualquier pantalla */
+    var wrap=document.querySelector('.board-wrap');
+    var r=wrap?wrap.getBoundingClientRect():{width:window.innerWidth,top:100};
+    var vh=window.innerHeight||768;
+    var availW=Math.max(160,(r.width||window.innerWidth)-16);
+    var availH=Math.max(160,vh-Math.max(40,r.top)-38);
     var cs=Math.min(Math.floor(availW/S.w),Math.floor(availH/S.h));
-    cs=Math.max(16,Math.min(40,cs));
+    cs=Math.max(16,Math.min(56,cs));
     document.documentElement.style.setProperty('--cs',cs+'px');
   }
 
