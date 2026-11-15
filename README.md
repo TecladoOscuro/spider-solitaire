@@ -21,6 +21,7 @@ Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin
 | Tres en Raya | `tres-en-raya.html` | Fácil, Medio, Difícil (IA inbatible) |
 | Palabra | `palabra.html` | 4, 5, 6 letras |
 | Damas Internacionales | `damas-internacionales.html` | Fácil, Medio, Difícil (IA alfa-beta) |
+| Blackjack 21 | `blackjack.html` | Fácil, Normal, Experto · fichas y mínima configurables |
 
 El índice `index.html` es el menú de entrada.
 

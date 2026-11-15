@@ -3,7 +3,7 @@
   "private": true,
   "description": "Tests de navegador (Playwright) para los juegos",
   "scripts": {
-    "test": "node t_spider.js && node t_damas.js && node t_ajedrez.js && node t_klondike.js && node t_buscaminas.js && node t_memoria.js && node t_reversi.js && node t_conecta4.js && node t_p15.js && node t_raya.js && node t_mobile.js",
+    "test": "node t_spider.js && node t_damas.js && node t_ajedrez.js && node t_klondike.js && node t_buscaminas.js && node t_memoria.js && node t_reversi.js && node t_conecta4.js && node t_p15.js && node t_raya.js && node t_blackjack.js && node t_mobile.js",
     "test:resp": "node t_resp.js"
   },
   "devDependencies": {

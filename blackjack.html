@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14471c">
+<title>Blackjack</title>
+<style>
+html{background-color:#14471c}
+:root{--cw:clamp(52px,15vw,102px);--gc:clamp(6px,1.4vw,12px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ---------- estado ---------- */
+.statusbar{display:flex;justify-content:center;padding:10px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.g{background:#43a047;color:#43a047}
+.dot.r{background:#e53935;color:#e53935}
+.dot.y{background:#fdd835;color:#fdd835}
+.dot.n{background:#90a4ae;color:#90a4ae}
+
+/* ---------- mesa ---------- */
+.table{
+  flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;
+  gap:clamp(8px,2vh,18px);
+  margin:12px;padding:clamp(10px,2vh,22px) 12px;
+  border-radius:18px;border:1px solid rgba(255,255,255,.14);
+  background:
+    radial-gradient(ellipse at 50% 26%,rgba(255,255,255,.12),transparent 62%),
+    linear-gradient(180deg,#1c7038 0%,#14572a 55%,#0e4421 100%);
+  box-shadow:inset 0 0 70px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.15),0 22px 55px rgba(0,0,0,.5);
+  overflow:hidden;
+}
+.side{display:flex;flex-direction:column;align-items:center;gap:9px}
+.rowhead{display:flex;align-items:center;gap:10px}
+.rowhead b{font-size:12.5px;text-transform:uppercase;letter-spacing:.9px;opacity:.75}
+.val{
+  background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);
+  border-radius:999px;padding:3px 13px;min-width:54px;text-align:center;
+  font-size:clamp(17px,4vw,24px);font-weight:800;font-variant-numeric:tabular-nums;
+  box-shadow:0 3px 10px rgba(0,0,0,.35);
+}
+.val.bust{color:#ff8a80;border-color:#ef5350;background:rgba(80,0,0,.5)}
+.midline{text-align:center;font-size:13px;opacity:.82;font-variant-numeric:tabular-nums}
+.cards{display:flex;gap:var(--gc);justify-content:center;align-items:flex-start;min-height:calc(var(--cw)*1.4)}
+.slot{
+  width:var(--cw);aspect-ratio:5/7;border:2px dashed rgba(255,255,255,.28);
+  border-radius:8px;background:rgba(0,0,0,.14);flex:none;
+}
+
+/* ---------- cartas (mismas clases que klondike) ---------- */
+.card{
+  position:relative;width:var(--cw);aspect-ratio:5/7;border-radius:8px;background:#fdfdf7;color:#111;
+  box-shadow:0 3px 8px rgba(0,0,0,.5);user-select:none;-webkit-user-select:none;
+  touch-action:none;cursor:default;font-size:clamp(13px,3.2vw,17px);flex:none;
+}
+.card.up{border:1px solid #cfd8dc}
+.card.back{
+  border:3px solid #fff;
+  background:
+    repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 5px,transparent 5px 11px),
+    radial-gradient(circle at 50% 45%,#2f74dd,#17458f 75%);
+}
+.corner{position:absolute;line-height:1;display:flex;flex-direction:column;align-items:center;gap:1px}
+.corner b{font-weight:700}
+.corner i{font-style:normal;font-size:.92em}
+.tl{top:5px;left:5px}
+.br{bottom:5px;right:5px;transform:rotate(180deg)}
+.pip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3em;line-height:1}
+.red{color:#d32f2f}
+.black{color:#111}
+@keyframes dealIn{
+  from{opacity:0;transform:translate3d(0,-32px,0) rotate(-7deg) scale(.92)}
+  to{opacity:1;transform:none}
+}
+.card.deal{animation:dealIn .36s cubic-bezier(.2,.75,.3,1) both}
+@keyframes flipIn{
+  from{transform:rotateY(88deg) scale(.95);opacity:.35}
+  to{transform:none;opacity:1}
+}
+.card.flip{animation:flipIn .45s ease-out both}
+@media (prefers-reduced-motion:reduce){.card.deal,.card.flip{animation:none}}
+
+/* ---------- apuesta ---------- */
+.betbar{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:12px 14px 0}
+.betbar .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.9px;opacity:.75}
+.chip{
+  width:54px;height:54px;padding:0;border-radius:50%;font:inherit;font-size:14px;font-weight:800;cursor:pointer;
+  border:3px dashed rgba(255,255,255,.9);color:#3b2c00;display:grid;place-items:center;
+  background:radial-gradient(circle at 34% 28%,#fff8e1,#ffd54f 58%,#c9971a);
+  box-shadow:0 4px 10px rgba(0,0,0,.45);transition:transform .12s;
+}
+.chip.cb{background:radial-gradient(circle at 34% 28%,#e3f2fd,#42a5f5 58%,#1565c0);color:#04243f}
+.chip.cp{background:radial-gradient(circle at 34% 28%,#f3e5f5,#ab47bc 58%,#6a1b9a);color:#fff}
+.chip.call{background:radial-gradient(circle at 34% 28%,#e8f5e9,#66bb6a 58%,#2e7d32);color:#08310f;font-size:12.5px}
+.chip.sel{transform:translateY(-4px) scale(1.06);outline:3px solid #fff;outline-offset:2px}
+.chip:disabled{opacity:.32;cursor:not-allowed;transform:none}
+
+/* ---------- acciones ---------- */
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:12px 14px 0}
+.big{
+  font:inherit;font-size:17px;font-weight:750;padding:13px 26px;border-radius:12px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.3);color:#fff;box-shadow:0 5px 14px rgba(0,0,0,.35);
+}
+.big:hover{filter:brightness(1.12)}
+.big:active{transform:translateY(1px)}
+.big:disabled{opacity:.35;cursor:not-allowed;filter:none;transform:none}
+.b-hit{background:#2e7d32}
+.b-stand{background:#455a64}
+.b-double{background:#ef6c00}
+.b-deal{background:#7b1fa2}
+.b-new{background:#37474f}
+
+/* ---------- historial ---------- */
+.histbar{
+  display:flex;gap:9px;align-items:center;justify-content:center;flex-wrap:wrap;
+  padding:12px 14px 0;font-size:13px;opacity:.85;font-variant-numeric:tabular-nums;
+}
+.h{
+  font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;
+  background:rgba(0,0,0,.35);font-size:12px;font-weight:800;margin-right:3px;
+}
+.h.bj{background:#c9971a;color:#2b1f00}
+.h.win{background:#2e7d32;color:#eaf5ea}
+.h.push{background:#607d8b;color:#eaf5ea}
+.h.lose{background:#c62828;color:#fff}
+.h.empty{opacity:.4}
+
+.hint-bar{padding:10px 14px 10px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:6px 0 18px;opacity:.85;font-variant-numeric:tabular-nums;line-height:1.6}
+
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .table{margin:8px;padding:14px 8px}
+  .actions{gap:8px;padding-top:10px}
+  .big{font-size:15.5px;padding:11px 18px}
+  .hint-bar{padding:8px 10px 9px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  :root{--cw:clamp(46px,14vw,72px);--gc:5px}
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .chip{width:48px;height:48px;font-size:13px}
+  .big{font-size:15px;padding:10px 15px}
+  .val{font-size:17px;padding:2px 10px;min-width:44px}
+  .histbar{font-size:12px;gap:6px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🃏</span><h1>Blackjack</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Fichas</span><b id="statChips">1000</b></div>
+    <div class="stat"><span>Récord</span><b id="statBest">0</b></div>
+    <div class="stat"><span>Manos</span><b id="statHands">0</b></div>
+  </div>
+  <div class="tools">
+    <select class="btn" id="diffSel" title="Dificultad (localStorage bj.diff)">
+      <option value="1">Fácil · banca se planta en 16</option>
+      <option value="2">Normal · 17</option>
+      <option value="3">Experto · 17 con 4 barajas</option>
+    </select>
+    <select class="btn" id="stackSel" title="Fichas iniciales (localStorage bj.stack)">
+      <option value="500">500 fichas</option>
+      <option value="1000">1000 fichas</option>
+      <option value="2500">2500 fichas</option>
+      <option value="5000">5000 fichas</option>
+    </select>
+    <select class="btn" id="minSel" title="Apuesta mínima (localStorage bj.minbet)">
+      <option value="10">Mín. 10</option>
+      <option value="25">Mín. 25</option>
+      <option value="50">Mín. 50</option>
+      <option value="100">Mín. 100</option>
+    </select>
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot n" id="stDot"></i><span id="status">Elige tu apuesta</span></span>
+</div>
+
+<main class="table" id="table">
+  <div class="side">
+    <div class="rowhead"><b>Banca</b><span class="val" id="dealVal">—</span></div>
+    <div class="cards" id="dealerHand"></div>
+  </div>
+  <div class="midline" id="midline">Elige tu apuesta y pulsa Repartir</div>
+  <div class="side">
+    <div class="cards" id="playerHand"></div>
+    <div class="rowhead"><span class="val" id="playVal">—</span><b>Tu mano</b></div>
+  </div>
+</main>
+
+<div class="betbar" id="betBar">
+  <span class="lbl" id="betLbl">Apuesta · mín 25</span>
+  <button class="chip" id="chip0" data-bet="0" title="Nivel 1 de apuesta">25</button>
+  <button class="chip cb sel" id="chip1" data-bet="1" title="Nivel 2 de apuesta">100</button>
+  <button class="chip cp" id="chip2" data-bet="2" title="Nivel 3 de apuesta">500</button>
+  <button class="chip call" id="chipAll" data-bet="all" title="Apostar todas tus fichas">Toda</button>
+  <button class="big b-deal" id="btnDeal" title="Repartir la mano (Espacio)">Repartir</button>
+</div>
+
+<div class="actions" id="actions">
+  <button class="big b-hit" id="btnHit" title="Robar una carta (Espacio)">Robar</button>
+  <button class="big b-stand" id="btnStand" title="Plantarse y que juegue la banca (S)">Plantarse</button>
+  <button class="big b-double" id="btnDouble" title="Doblar la apuesta: 1 carta y fin">Doblar</button>
+  <button class="big b-new" id="btnNew" title="Nueva mano (N)">Nueva mano</button>
+</div>
+
+<div class="histbar">
+  <span>Manos: <span id="hist"></span></span>
+  <span>· Racha: <b id="streakTxt">0</b></span>
+  <span>· Zapato: <b id="decksTxt">2 barajas</b></span>
+  <span>· Mín: <b id="minTxt">25</b></span>
+  <span>· Banque: <b id="stackTxt">1000</b></span>
+</div>
+
+<div class="hint-bar">Espacio: robar (o repartir) · S: plantarse · N: nueva mano · Blackjack paga 3:2 · Empate = devolución · Banca planta en 16/17 según nivel · Fichas iniciales 500/1000/2500/5000 y apuesta mínima 10/25/50/100 configurables (botones de ficha: mín · ×4 · ×20 + Toda) · Zapato: Fácil 1 baraja · Normal 2 · Experto 4</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <p id="winStats"></p>
+    <button class="btn" id="btnNext">Siguiente mano</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE BLACKJACK PURO — sin IIFE y sin modo estricto.
+   Solo JavaScript plano, evaluable en Node: el motor no usa nada del
+   navegador. El RNG se inyecta con el parámetro `rnd` (default Math.random)
+   para que los tests puedan pasar secuencias deterministas.
+
+   API:
+     shoe(decks,rnd)    → zapato barajado {cards,discard,decks,rnd,reshuffles}
+     draw(st)           → {st,carta}; si el zapato está vacío baraja el
+                          descarte (reshuffles++) y roba; null si no queda nada
+     handValue(cards)   → total con ases (11 si no pasa de 21, si no 1)
+     isBlackjack(cards) → true si son 2 cartas y el total es 21
+     newState(opts)     → estado inicial {chips,decks,regla,rnd}
+     canDeal(st,bet)    → ¿se puede repartir con esa apuesta?
+     newHand(st,bet)    → reparte (descuenta la apuesta) o null si es ilegal
+     hit(st)            → roba 1 carta; si se pasa, la mano acaba en 'lose'
+     stand(st)          → destapa y juega la banca hasta la regla del nivel
+     double(st)         → dobla la apuesta, 1 carta y fin (solo con 2 cartas)
+     refund(st)         → abandona la mano y devuelve la apuesta
+     nextHand(st)       → de 'over' a 'bet' (prepara la siguiente mano)
+     settle(st)         → paga, guarda racha/historial y marca bancarrota
+     result(p,b,ap,rg)  → 'win' | 'lose' | 'push' | 'bj'
+     payout(res,ap)     → ganancia neta: bj +1.5·ap (3:2), win +ap,
+                          lose -ap, push 0
+     normalizeStack(v)  → preset de fichas iniciales válido o el default
+     normalizeMinbet(v) → preset de apuesta mínima válido o el default
+     readCfg(get)       → {stack,minbet} leyendo con get(key) inyectada
+     writeCfg(set,cfg)  → normaliza y escribe 'bj.stack' y 'bj.minbet'
+     betOptions(min)    → [mín, mín×4, mín×20]: botones de ficha derivados
+     clampBet(st,amt)   → apuesta recortada a [mínima, fichas], o 0
+     syncBroke(st)      → marca bancarrota si fichas < mínima
+     var state          → estado global de partida
+
+   REGLAS:
+     - Banca: 1 carta boca abajo + 1 boca arriba; se destapa al plantarse.
+     - La banca se planta en la regla del nivel: Fácil 16, Normal 17,
+       Experto 17.
+     - Zapato por nivel: Fácil 1 baraja, Normal 2, Experto 4. Se vuelve a
+       barajar el descarte cuando el zapato se vacía.
+     - As = 11 si no pasa de 21, si no 1. Blackjack natural paga 3:2.
+     - Empate = devolución. Pasarse de 21 = pierde la apuesta.
+     - Doblar: solo en la primera jugada (2 cartas) y con fichas suficientes;
+       recibe 1 carta y termina.
+     - Fichas iniciales configurables: presets 500 / 1000 (default) / 2500 /
+       5000 en 'bj.stack'. Cambiarlo reinicia el banque y limpia la mano en
+       curso (decisión documentada en la interfaz: reinicio inmediato).
+     - Apuesta mínima configurable: presets 10 / 25 (default) / 50 / 100 en
+       'bj.minbet'. Toda apuesta debe ser >= mínima y <= fichas; los botones
+       de ficha salen de la mínima: [mín, mín×4, mín×20] + "Toda".
+     - Toda apuesta fuera de rango se recorta con clampBet() y se avisa.
+     - Bancarrota: fichas por debajo de la mínima → overlay con
+       "Reiniciar con N fichas" usando el preset de fichas iniciales.
+   ========================================================================= */
+
+var STACK_PRESETS=[500,1000,2500,5000];
+var MINBET_PRESETS=[10,25,50,100];
+var DEFAULT_STACK=1000;
+var DEFAULT_MINBET=25;
+
+/* Presets estrictos: valor ausente, corrupto o fuera de la lista → default. */
+function normalizeStack(v){
+  var n=parseInt(v,10);
+  for(var i=0;i<STACK_PRESETS.length;i++) if(STACK_PRESETS[i]===n) return n;
+  return DEFAULT_STACK;
+}
+function normalizeMinbet(v){
+  var n=parseInt(v,10);
+  for(var i=0;i<MINBET_PRESETS.length;i++) if(MINBET_PRESETS[i]===n) return n;
+  return DEFAULT_MINBET;
+}
+
+/* Lectura/escritura con funciones inyectadas (get/set): así se testea la
+   persistencia sin depender del navegador. Claves: 'bj.stack', 'bj.minbet'. */
+function readCfg(get){
+  if(typeof get!=='function') return {stack:DEFAULT_STACK,minbet:DEFAULT_MINBET};
+  return {stack:normalizeStack(get('bj.stack')),minbet:normalizeMinbet(get('bj.minbet'))};
+}
+function writeCfg(set,cfg){
+  if(typeof set!=='function'||!cfg) return null;
+  var out={stack:normalizeStack(cfg.stack),minbet:normalizeMinbet(cfg.minbet)};
+  set('bj.stack',String(out.stack));
+  set('bj.minbet',String(out.minbet));
+  return out;
+}
+
+/* Botones de ficha derivados de la mínima: 25 → [25,100,500],
+   10 → [10,40,200]. */
+function betOptions(minbet){
+  var m=normalizeMinbet(minbet);
+  return [m,m*4,m*20];
+}
+
+/* Recorta una apuesta al rango permitido [mínima, fichas].
+   Devuelve 0 cuando no hay partida posible (bancarrota). */
+function clampBet(st,amount){
+  if(!st||st.broke) return 0;
+  var mb=normalizeMinbet(st.minbet);
+  if(!(st.chips>=mb)) return 0;
+  var b=Math.floor(amount);
+  if(!(b>0)) b=mb;
+  if(b<mb) b=mb;
+  if(b>st.chips) b=st.chips;
+  return b;
+}
+
+function syncBroke(s){ s.broke=s.chips<normalizeMinbet(s.minbet); return s; }
+
+function shuffle(a,rnd){
+  var r=(typeof rnd==='function')?rnd:Math.random;
+  for(var i=a.length-1;i>0;i--){
+    var j=Math.floor(r()*(i+1));
+    var t=a[i];a[i]=a[j];a[j]=t;
+  }
+  return a;
+}
+
+/* Zapato de `decks` barajas (52·decks cartas), barajado con `rnd`. */
+function shoe(decks,rnd){
+  decks=Math.floor(decks);
+  if(!(decks>=1)) decks=1;
+  var r=(typeof rnd==='function')?rnd:Math.random;
+  var cards=[],d,s,k;
+  for(d=0;d<decks;d++) for(s=0;s<4;s++) for(k=1;k<=13;k++) cards.push({s:s,r:k});
+  shuffle(cards,r);
+  return {cards:cards,discard:[],decks:decks,rnd:r,reshuffles:0};
+}
+
+/* Roba la carta superior. NO muta: devuelve estado nuevo.
+   Zapato vacío → baraja el descarte y continúa; sin nada que barajar → null. */
+function draw(st){
+  if(!st||!st.cards) return null;
+  var next={
+    cards:st.cards.slice(),
+    discard:st.discard?st.discard.slice():[],
+    decks:st.decks,
+    rnd:st.rnd,
+    reshuffles:st.reshuffles||0
+  };
+  if(!next.cards.length){
+    if(!next.discard.length) return null;
+    next.cards=next.discard;
+    next.discard=[];
+    shuffle(next.cards,next.rnd);
+    next.reshuffles++;
+  }
+  var carta=next.cards.pop();
+  next.discard.push(carta);
+  return {st:next,carta:carta};
+}
+
+function copyCards(a){
+  var o=[],i;
+  for(i=0;i<a.length;i++) o.push({s:a[i].s,r:a[i].r});
+  return o;
+}
+
+function cloneState(st){
+  return {
+    shoe:{
+      cards:copyCards(st.shoe.cards),
+      discard:copyCards(st.shoe.discard),
+      decks:st.shoe.decks,
+      rnd:st.shoe.rnd,
+      reshuffles:st.shoe.reshuffles||0
+    },
+    player:copyCards(st.player),
+    dealer:copyCards(st.dealer),
+    bet:st.bet,
+    chips:st.chips,
+    phase:st.phase,
+    reveal:st.reveal,
+    result:st.result,
+    delta:st.delta,
+    hands:st.hands,
+    streak:st.streak,
+    history:st.history.slice(),
+    regla:st.regla,
+    decks:st.decks,
+    minbet:normalizeMinbet(st.minbet),
+    doubled:st.doubled,
+    broke:st.broke
+  };
+}
+
+/* Total de la mano con ases flexibles: 11 mientras no pase de 21, si no 1. */
+function handValue(cards){
+  var t=0,aces=0,i,r;
+  for(i=0;i<cards.length;i++){
+    r=cards[i].r;
+    if(r===1){ aces++; t+=11; }
+    else if(r>10) t+=10;
+    else t+=r;
+  }
+  while(t>21&&aces>0){ t-=10; aces--; }
+  return t;
+}
+
+function isBlackjack(cards){
+  return !!cards&&cards.length===2&&handValue(cards)===21;
+}
+
+/* Estado inicial. `opts`: {chips,decks,regla,minbet,rnd}. */
+function newState(opts){
+  opts=opts||{};
+  var decks=Math.floor(opts.decks||2);
+  if(!(decks>=1)) decks=1;
+  var regla=opts.regla||17;
+  if(regla!==16&&regla!==17) regla=17;
+  var rnd=(typeof opts.rnd==='function')?opts.rnd:Math.random;
+  var chips=(opts.chips===undefined||opts.chips===null)?DEFAULT_STACK:opts.chips;
+  var minbet=normalizeMinbet(opts.minbet);
+  return {
+    shoe:shoe(decks,rnd),
+    player:[],dealer:[],bet:0,
+    chips:chips,
+    minbet:minbet,
+    phase:'bet',
+    reveal:false,
+    result:null,
+    delta:0,
+    hands:0,
+    streak:0,
+    history:[],
+    regla:regla,
+    decks:decks,
+    doubled:false,
+    broke:chips<minbet
+  };
+}
+
+/* Apuesta legal: >= mínima y <= fichas, sin bancarrota y en fase de apuesta. */
+function canDeal(st,bet){
+  if(!st||st.phase!=='bet') return false;
+  if(st.broke) return false;
+  var mb=normalizeMinbet(st.minbet);
+  return bet>0&&bet>=mb&&bet<=st.chips;
+}
+
+function settle(s){
+  var res=result(s.player,s.dealer,s.bet,s.regla);
+  var net=payout(res,s.bet);
+  s.chips+=s.bet+net;
+  s.result=res;
+  s.delta=net;
+  s.reveal=true;
+  s.phase='over';
+  s.hands++;
+  if(res==='win'||res==='bj') s.streak++;
+  else if(res==='lose') s.streak=0;
+  s.history.push(res);
+  if(s.history.length>30) s.history.shift();
+  syncBroke(s);
+  return s;
+}
+
+/* Reparte 2 cartas a cada uno. Si hay blackjack natural, la mano termina ya. */
+function newHand(st,bet){
+  if(!canDeal(st,bet)) return null;
+  var s=cloneState(st);
+  var i,r;
+  s.chips-=bet;
+  s.bet=bet;
+  s.result=null;
+  s.delta=0;
+  s.doubled=false;
+  s.reveal=false;
+  s.player=[];
+  s.dealer=[];
+  s.phase='player';
+  for(i=0;i<2;i++){
+    r=draw(s.shoe);
+    if(!r) return null;
+    s.shoe=r.st; s.player.push(r.carta);
+    r=draw(s.shoe);
+    if(!r) return null;
+    s.shoe=r.st; s.dealer.push(r.carta);
+  }
+  if(isBlackjack(s.player)||isBlackjack(s.dealer)) return settle(s);
+  return s;
+}
+
+function hit(st){
+  if(!st||st.phase!=='player') return null;
+  var s=cloneState(st);
+  var r=draw(s.shoe);
+  if(!r) return null;
+  s.shoe=r.st;
+  s.player.push(r.carta);
+  if(handValue(s.player)>21) return settle(s);
+  return s;
+}
+
+function playDealer(s){
+  s.reveal=true;
+  var guard=0;
+  while(handValue(s.dealer)<s.regla&&guard<64){
+    guard++;
+    var r=draw(s.shoe);
+    if(!r) break;
+    s.shoe=r.st;
+    s.dealer.push(r.carta);
+  }
+  return settle(s);
+}
+
+function stand(st){
+  if(!st||st.phase!=='player') return null;
+  return playDealer(cloneState(st));
+}
+
+function double(st){
+  if(!st||st.phase!=='player') return null;
+  if(st.player.length!==2||st.doubled) return null;
+  if(!(st.chips>=st.bet)) return null;
+  var s=cloneState(st);
+  var r=draw(s.shoe);
+  if(!r) return null;
+  s.chips-=s.bet;
+  s.bet=s.bet*2;
+  s.doubled=true;
+  s.shoe=r.st;
+  s.player.push(r.carta);
+  if(handValue(s.player)>21) return settle(s);
+  return playDealer(s);
+}
+
+/* Abandona la mano y devuelve la apuesta ya entregada. */
+function refund(st){
+  if(!st||st.phase!=='player') return null;
+  var s=cloneState(st);
+  s.chips+=s.bet;
+  s.bet=0;
+  s.phase='bet';
+  s.player=[];
+  s.dealer=[];
+  s.reveal=false;
+  s.doubled=false;
+  s.result=null;
+  s.delta=0;
+  return s;
+}
+
+function nextHand(st){
+  if(!st||st.phase!=='over') return null;
+  var s=cloneState(st);
+  s.phase='bet';
+  s.bet=0;
+  s.player=[];
+  s.dealer=[];
+  s.reveal=false;
+  s.doubled=false;
+  s.result=null;
+  s.delta=0;
+  return s;
+}
+
+/* Resultado de la mano. `apuesta` y `regla` forman parte de la firma pedida:
+   la banca ya ha jugado hasta `regla` y el pago se calcula con payout(). */
+function result(player,banca,apuesta,regla){
+  var pt=handValue(player), dt=handValue(banca);
+  var pb=isBlackjack(player), db=isBlackjack(banca);
+  if(pb&&db) return 'push';
+  if(pb) return 'bj';
+  if(pt>21) return 'lose';
+  if(db) return 'lose';
+  if(dt>21) return 'win';
+  if(pt>dt) return 'win';
+  if(pt<dt) return 'lose';
+  return 'push';
+}
+
+/* Ganancia neta sobre la apuesta. */
+function payout(res,apuesta){
+  if(res==='bj') return Math.round(apuesta*1.5);
+  if(res==='win') return apuesta;
+  if(res==='lose') return -apuesta;
+  return 0;
+}
+
+var state=newState({});
+
+/* =========================================================================
+   INTERFAZ — solo en navegador (todo lo sensible vive tras esa guarda).
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+
+var $=function(s){return document.querySelector(s);};
+var SUITS=['♠','♥','♦','♣'];
+var RN=[null,'A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+var DIFF={
+  '1':{label:'Fácil · banca se planta en 16',regla:16,decks:1},
+  '2':{label:'Normal · 17',regla:17,decks:2},
+  '3':{label:'Experto · 17 con 4 barajas',regla:17,decks:4}
+};
+var RESULT_TXT={bj:'¡Blackjack!',win:'¡Ganas!',push:'Empate',lose:'La banca gana'};
+var HIST_MAP={bj:'★',win:'✓',push:'=',lose:'✗'};
+
+var diff='2', best=0, betIdx=1, betAll=false;
+var stack=DEFAULT_STACK, minbet=DEFAULT_MINBET;
+var busy=false, toastTimer=null, ovTimer=null;
+var counts={player:0,dealer:0}, prevReveal=false;
+
+function lsGet(k){
+  try{ if(typeof localStorage!=='undefined') return localStorage.getItem(k); }catch(e){}
+  return null;
+}
+function lsSet(k,v){
+  try{ if(typeof localStorage!=='undefined') localStorage.setItem(k,v); }catch(e){}
+}
+
+var d0=lsGet('bj.diff');
+if(d0==='1'||d0==='2'||d0==='3') diff=d0;
+var b0=parseInt(lsGet('bj.best')||'0',10);
+if(isFinite(b0)&&b0>0) best=b0;
+var cfg0=readCfg(lsGet);          /* 'bj.stack' y 'bj.minbet' con defaults */
+stack=cfg0.stack;
+minbet=cfg0.minbet;
+
+function cfg(){ return DIFF[diff]||DIFF['2']; }
+function saveCfg(){ writeCfg(lsSet,{stack:stack,minbet:minbet}); }
+function resetCounts(){ counts={player:0,dealer:0}; prevReveal=false; }
+function newGame(chips){
+  var c=cfg();
+  state=newState({
+    chips:(chips===undefined||chips===null)?stack:chips,
+    decks:c.decks,
+    regla:c.regla,
+    minbet:minbet
+  });
+  resetCounts();
+}
+function toast(msg){
+  var t=$('#toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){ t.classList.remove('show'); },2300);
+}
+function syncBest(){
+  if(state.chips>best){ best=state.chips; lsSet('bj.best',String(best)); }
+}
+function face(c){
+  var rn=RN[c.r], sy=SUITS[c.s];
+  var cls=(c.s===1||c.s===2)?'red':'black';
+  return '<span class="corner tl '+cls+'"><b>'+rn+'</b><i>'+sy+'</i></span>'+
+         '<span class="pip '+cls+'">'+sy+'</span>'+
+         '<span class="corner br '+cls+'"><b>'+rn+'</b><i>'+sy+'</i></span>';
+}
+
+function paintHand(el,cards,hiddenFirst,isPlayer){
+  el.innerHTML='';
+  var key=isPlayer?'player':'dealer';
+  if(!cards.length){
+    counts[key]=0;
+    var sl=document.createElement('div');
+    sl.className='slot';
+    el.appendChild(sl);
+    return;
+  }
+  for(var i=0;i<cards.length;i++){
+    var hide=!!(hiddenFirst&&i===0&&!state.reveal);
+    var d=document.createElement('div');
+    d.className='card '+(hide?'back':'up');
+    if(!hide) d.innerHTML=face(cards[i]);
+    if(i>=counts[key]){
+      d.classList.add('deal');
+      d.style.animationDelay=(i*0.11)+'s';
+    }
+    if(!isPlayer&&i===0&&state.reveal&&!prevReveal) d.classList.add('flip');
+    el.appendChild(d);
+  }
+  counts[key]=cards.length;
+}
+
+function paintVals(){
+  var pEl=$('#playVal');
+  if(!state.player.length){ pEl.textContent='—'; pEl.className='val'; }
+  else{
+    var pv=handValue(state.player);
+    pEl.textContent=String(pv);
+    pEl.className='val'+(pv>21?' bust':'');
+  }
+  var dEl=$('#dealVal');
+  if(!state.dealer.length){ dEl.textContent='—'; dEl.className='val'; }
+  else if(state.reveal){
+    var dv=handValue(state.dealer);
+    dEl.textContent=String(dv);
+    dEl.className='val'+(dv>21?' bust':'');
+  }
+  else{
+    dEl.textContent=(state.dealer.length>1?handValue([state.dealer[1]]):'?')+' + ?';
+    dEl.className='val';
+  }
+}
+
+function statusInfo(){
+  if(state.broke) return {t:'Bancarrota · pulsa Nueva mano',d:'r'};
+  if(busy) return {t:'Banca juega…',d:'y'};
+  if(state.phase==='bet') return {t:'Elige tu apuesta',d:'n'};
+  if(state.phase==='player') return {t:'Tu turno',d:'g'};
+  var d=({bj:'g',win:'g',push:'y',lose:'r'})[state.result]||'n';
+  var t=RESULT_TXT[state.result]||'Mano terminada';
+  t+=' · '+(state.delta>0?'+'+state.delta:state.delta)+' fichas';
+  return {t:t,d:d};
+}
+
+function midText(){
+  if(state.phase==='bet'){
+    return 'Blackjack paga 3:2 · Empate = devolución · Banca planta en '+
+           state.regla+' · mínima '+state.minbet;
+  }
+  if(state.phase==='player'){
+    return 'Apuesta '+state.bet+(state.doubled?' (doblada)':'')+
+           ' fichas (mínima '+state.minbet+') · Banca planta en '+state.regla;
+  }
+  return (RESULT_TXT[state.result]||'Mano terminada')+
+    ' · '+(state.delta>0?'+'+state.delta:state.delta)+' fichas · quedan '+state.chips;
+}
+
+function paintHist(){
+  var h=state.history.slice(-14),s='',i;
+  for(i=0;i<h.length;i++){
+    s+='<i class="h '+h[i]+'" title="'+(RESULT_TXT[h[i]]||'')+'">'+(HIST_MAP[h[i]]||'?')+'</i>';
+  }
+  $('#hist').innerHTML=s||'<i class="h empty">—</i>';
+  $('#streakTxt').textContent=String(state.streak);
+  $('#decksTxt').textContent=state.decks+(state.decks===1?' baraja':' barajas');
+  $('#minTxt').textContent=String(state.minbet);
+  $('#stackTxt').textContent=String(stack);
+}
+
+function paintButtons(){
+  var inBet=state.phase==='bet'&&!busy;
+  var inPlay=state.phase==='player'&&!busy;
+  var broke=state.broke;
+  var chips=state.chips;
+  $('#betBar').style.display=(inBet&&!broke)?'':'none';
+  $('#actions').style.display=(state.phase==='bet'&&!broke)?'none':'';
+  var opts=betOptions(state.minbet);
+  if(betIdx<0||betIdx>2) betIdx=1;
+  for(var i=0;i<3;i++){
+    var el=document.getElementById('chip'+i);
+    var val=opts[i];
+    el.textContent=String(val);
+    el.setAttribute('data-bet',String(i));
+    el.disabled=!inBet||broke||val>chips;
+    el.classList.toggle('sel',!betAll&&betIdx===i);
+  }
+  var allEl=$('#chipAll');
+  allEl.disabled=!inBet||broke||chips<state.minbet;
+  allEl.classList.toggle('sel',betAll);
+  var b=betAll?chips:opts[betIdx];
+  var cb=clampBet(state,b);
+  $('#btnDeal').disabled=!inBet||broke||!(cb>0);
+  $('#btnDeal').textContent='Repartir'+(cb>0?' · '+cb:'');
+  $('#btnHit').disabled=!inPlay;
+  $('#btnStand').disabled=!inPlay;
+  $('#btnDouble').disabled=!(inPlay&&state.player.length===2&&!state.doubled&&state.chips>=state.bet);
+  $('#betLbl').textContent='Apuesta · mín '+state.minbet;
+}
+
+function render(){
+  paintHand($('#dealerHand'),state.dealer,true,false);
+  paintHand($('#playerHand'),state.player,false,true);
+  paintVals();
+  var si=statusInfo();
+  $('#status').textContent=si.t;
+  $('#stDot').className='dot '+si.d;
+  $('#midline').textContent=midText();
+  $('#statChips').textContent=String(state.chips);
+  $('#statHands').textContent=String(state.hands);
+  syncBest();
+  $('#statBest').textContent=String(best);
+  paintHist();
+  paintButtons();
+  prevReveal=state.reveal;
+}
+
+function showOverlay(){
+  if(state.phase!=='over') return;
+  var title=state.broke?'Bancarrota':(RESULT_TXT[state.result]||'Mano terminada');
+  $('#winTitle').textContent=title;
+  var sg=state.delta>0?'+':'';
+  $('#winStats').textContent=
+    'Cambio: '+sg+state.delta+' · Fichas: '+state.chips+
+    ' · Manos: '+state.hands+' · Racha: '+state.streak+
+    ' · Récord: '+Math.max(best,state.chips)+
+    (state.broke?' · apuesta mínima '+state.minbet:'');
+  $('#btnNext').textContent=state.broke?('Reiniciar con '+stack+' fichas'):'Siguiente mano';
+  $('#win').classList.add('show');
+}
+function hideOverlay(){ $('#win').classList.remove('show'); }
+function overlayOpen(){ return $('#win').classList.contains('show'); }
+function queueOverlay(){
+  if(ovTimer) clearTimeout(ovTimer);
+  ovTimer=setTimeout(function(){ ovTimer=null; showOverlay(); },700);
+}
+
+/* ---------- acciones ---------- */
+function doDeal(){
+  if(busy||state.phase!=='bet') return;
+  if(state.broke){ toast('Bancarrota: pulsa Nueva mano'); return; }
+  var opts=betOptions(state.minbet);
+  var raw=betAll?state.chips:opts[betIdx];
+  var b=clampBet(state,raw);
+  if(!(b>0)){ toast('Sin fichas suficientes · mínima '+state.minbet); return; }
+  if(b!==raw){
+    toast('Apuesta ajustada a '+b+' fichas (mínima '+state.minbet+
+          ', tienes '+state.chips+')');
+  }
+  var next=newHand(state,b);
+  if(!next){ toast('No se puede repartir'); return; }
+  state=next;
+  resetCounts();
+  render();
+  if(state.phase==='over'){
+    if(state.result==='bj') toast('¡Blackjack! Paga 3:2');
+    queueOverlay();
+  } else {
+    toast('Apuesta '+state.bet+' fichas · ¡Suerte!');
+  }
+}
+
+function doHit(){
+  if(busy||state.phase!=='player') return;
+  var next=hit(state);
+  if(!next){ toast('No se puede robar'); return; }
+  state=next;
+  render();
+  if(state.phase==='over'){
+    toast('¡Te pasaste! pierdes '+state.bet+' fichas');
+    queueOverlay();
+  }
+}
+
+function doStand(){
+  if(busy||state.phase!=='player') return;
+  var before=state;
+  busy=true;
+  state.reveal=true;
+  render();
+  if(ovTimer) clearTimeout(ovTimer);
+  ovTimer=setTimeout(function(){
+    ovTimer=null;
+    busy=false;
+    if(state!==before) return;
+    var next=stand(state);
+    if(next) state=next;
+    render();
+    queueOverlay();
+  },620);
+}
+
+function doDouble(){
+  if(busy||state.phase!=='player') return;
+  if(state.player.length!==2||state.doubled){
+    toast('Solo puedes doblar en la primera jugada');
+    return;
+  }
+  if(state.chips<state.bet){
+    toast('No te quedan fichas para doblar (mínima '+state.minbet+')');
+    return;
+  }
+  var before=state;
+  busy=true;
+  render();
+  if(ovTimer) clearTimeout(ovTimer);
+  ovTimer=setTimeout(function(){
+    ovTimer=null;
+    busy=false;
+    if(state!==before) return;
+    var next=double(state);
+    if(!next){ toast('No puedes doblar'); render(); return; }
+    state=next;
+    render();
+    toast('Doblado · apuesta '+state.bet+' fichas');
+    queueOverlay();
+  },420);
+}
+
+function fromOverlay(){
+  if(ovTimer){ clearTimeout(ovTimer); ovTimer=null; }
+  hideOverlay();
+  if(state.broke){
+    newGame(stack);
+    render();
+    toast('Reiniciado con '+stack+' fichas');
+    return;
+  }
+  var n=nextHand(state);
+  if(n) state=n;
+  resetCounts();
+  render();
+}
+
+function nuevaMano(){
+  if(ovTimer){ clearTimeout(ovTimer); ovTimer=null; }
+  if(overlayOpen()) hideOverlay();
+  if(busy) return;
+  if(state.broke){
+    newGame(stack);
+    render();
+    toast('Reiniciado con '+stack+' fichas');
+    return;
+  }
+  if(state.phase==='over'){
+    var n=nextHand(state);
+    if(n) state=n;
+    resetCounts();
+    render();
+    return;
+  }
+  if(state.phase==='player'){
+    var r=refund(state);
+    if(r) state=r;
+    resetCounts();
+    render();
+    toast('Mano abandonada · apuesta devuelta');
+    return;
+  }
+  toast('Elige tu apuesta');
+}
+
+function onSpace(){
+  if(overlayOpen()){ fromOverlay(); return; }
+  if(busy) return;
+  if(state.phase==='bet'){ doDeal(); return; }
+  if(state.phase==='player'){ doHit(); }
+}
+
+/* ---------- wiring ---------- */
+$('#betBar').addEventListener('click',function(e){
+  var el=e.target&&e.target.closest?e.target.closest('.chip'):null;
+  if(!el||el.disabled) return;
+  var v=el.getAttribute('data-bet');
+  if(v==='all'){
+    betAll=true;
+    render();
+    return;
+  }
+  var i=parseInt(v,10);
+  if(!(i>=0&&i<=2)) i=1;
+  betAll=false;
+  betIdx=i;
+  var raw=betOptions(state.minbet)[i];
+  var b=clampBet(state,raw);
+  if(b!==raw){
+    toast('Apuesta ajustada a '+b+' fichas (mínima '+state.minbet+
+          ', tienes '+state.chips+')');
+  }
+  render();
+});
+$('#btnDeal').addEventListener('click',doDeal);
+$('#btnHit').addEventListener('click',doHit);
+$('#btnStand').addEventListener('click',doStand);
+$('#btnDouble').addEventListener('click',doDouble);
+$('#btnNew').addEventListener('click',nuevaMano);
+$('#btnNext').addEventListener('click',fromOverlay);
+$('#diffSel').addEventListener('change',function(e){
+  var v=e.target.value;
+  diff=(v==='1'||v==='2'||v==='3')?v:'2';
+  lsSet('bj.diff',diff);
+  if(ovTimer){ clearTimeout(ovTimer); ovTimer=null; }
+  hideOverlay();
+  busy=false;
+  newGame(state.chips);
+  render();
+  toast(DIFF[diff].label+' · '+state.decks+' barajas');
+});
+
+/* Fichas iniciales: reinicio inmediato del banque y de la mano en curso. */
+$('#stackSel').addEventListener('change',function(e){
+  stack=normalizeStack(e.target.value);
+  e.target.value=String(stack);
+  saveCfg();
+  if(ovTimer){ clearTimeout(ovTimer); ovTimer=null; }
+  hideOverlay();
+  busy=false;
+  betAll=false;
+  newGame(stack);
+  render();
+  toast('Fichas iniciales: '+stack+' · mano reiniciada');
+});
+
+/* Apuesta mínima: se aplica a la próxima apuesta (la mano en curso se
+   respeta); si no quedan fichas suficientes se marca la bancarrota. */
+$('#minSel').addEventListener('change',function(e){
+  minbet=normalizeMinbet(e.target.value);
+  e.target.value=String(minbet);
+  saveCfg();
+  state.minbet=minbet;
+  if(state.phase!=='player') state.broke=state.chips<minbet;
+  betAll=false;
+  betIdx=1;
+  render();
+  toast('Apuesta mínima: '+minbet+
+        (state.broke?' · te quedan '+state.chips+' fichas':''));
+});
+
+document.addEventListener('keydown',function(e){
+  if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  var k=(e.key||'').toLowerCase();
+  if(k===' '||k==='spacebar'){ e.preventDefault(); onSpace(); return; }
+  if(k==='s'){ doStand(); return; }
+  if(k==='n'){ nuevaMano(); }
+});
+
+/* ---------- arranque ---------- */
+$('#diffSel').value=diff;
+$('#stackSel').value=String(stack);
+$('#minSel').value=String(minbet);
+newGame(stack);
+render();
+
+}
+</script>
+</body>
+</html>

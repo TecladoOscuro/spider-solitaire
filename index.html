@@ -179,6 +179,13 @@ footer{padding:16px;text-align:center;font-size:12px;opacity:.55}
     <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
     <button class="info" data-g="damas-internacionales" aria-label="Cómo jugar: Damas Internacionales">ⓘ</button>
   </a>
+  <a class="game" href="blackjack.html">
+    <span class="icon">♤</span>
+    <h2>Blackjack21</h2>
+    <p>Contra la banca: roba, planta o dobla y llega a21.</p>
+    <span class="lv">FICHAS Y MÍNIMA CONFIGURABLES</span>
+    <button class="info" data-g="blackjack" aria-label="Cómo jugar: Blackjack21">ⓘ</button>
+  </a>
 </main>
 
 <footer>Un archivo HTML por juego, sin dependencias.</footer>
@@ -209,7 +216,9 @@ var RULES={
   'puzzle15':{t:'Rompecabezas15',lv:'FÁCIL · MEDIO · EXPERTO',r:'Desliza fichas numeradas al hueco hasta ordenar1..15 (hueco abajo-derecha).\n\n• Solo entra al hueco una ficha adyacente (o usa las flechas).\n• El barajado siempre es resoluble.\n• Dificultad = profundidad del barajado; récord de tiempo por nivel.\nTeclas: flechas · U deshacer · N nuevo.'},
   'tres-en-raya':{t:'Tres en Raya',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas ✕ (azul), la IA ○ (rojo).\n\n• Tres en línea horizontal, vertical o diagonal gana.\n• En Difícil la IA es inbatible (empata siempre).\n• Estadísticas de victorias, tablas y derrotas.\nTeclas: U deshacer · N nuevo.'},
   'palabra':{t:'Palabra',lv:'4 · 5 · 6 LETRAS',r:'Adivina la palabra oculta en6 intentos.\n\n• Verde = letra exacta · Amarillo = letra en otra posición · Gris = no está.\n• Se respeta la regla de duplicados de Wordle.\n• Teclado en pantalla con Ñ, o escribe con el teclado.\n• Estadísticas y distribución por longitud.\nTecla N: nueva partida.'},
-  'damas-internacionales':{t:'Damas Internacionales',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'10×10,16 piezas por bando. Tú con rojas.\n\n• Los hombres capturan en las4 diagonales (también atrás).\n• La dama vuela por las diagonales y captura a distancia.\n• Captura obligatoria y siempre la de MÁS piezas.\n• Coronación al terminar en la fila meta.\nTeclas: U deshacer · H pista · N nuevo.'}
+  'damas-internacionales':{t:'Damas Internacionales',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'10×10,16 piezas por bando. Tú con rojas.\n\n• Los hombres capturan en las4 diagonales (también atrás).\n• La dama vuela por las diagonales y captura a distancia.\n• Captura obligatoria y siempre la de MÁS piezas.\n• Coronación al terminar en la fila meta.\nTeclas: U deshacer · H pista · N nuevo.'},
+
+  'blackjack':{t:'Blackjack 21',lv:'FÁCIL · NORMAL · EXPERTO',r:'Contra la banca: llega a21 sin pasarte. As vale1 o11.\n\n• Roba, Plantarse o Doblar (solo la primera jugada).\n• Blackjack natural (A+10) paga3:2. Empate = te devuelven.\n• Banca planta en16/17 según dificultad;1,2 o4 barajas.\n• Fichas iniciales (500-5000) y apuesta mínima (10-100) CONFIGURABLES en la cabecera.\nTeclas: ESPACIO robar · S plantar · N nueva.'}
 };
 var ov=document.getElementById('infoOv');
 function openInfo(g){
