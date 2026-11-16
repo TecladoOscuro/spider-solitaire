@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<meta name="theme-color" content="#14471c">
+<title>Breakout</title>
+<style>
+html{background-color:#14471c}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- estado ---------- */
+.statusbar{display:flex;justify-content:center;padding:10px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.g{background:#43a047;color:#43a047}
+.dot.r{background:#e53935;color:#e53935}
+.dot.y{background:#fdd835;color:#fdd835}
+.dot.n{background:#90a4ae;color:#90a4ae}
+
+/* ---------- tablero ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 12px;min-height:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1vh,12px)}
+.field{
+  position:relative;line-height:0;
+  width:clamp(240px,min(94vw,calc((100vh - 268px)*.75)),480px);
+  background:linear-gradient(180deg,#17512a,#0d3a1e);
+  border-radius:clamp(8px,1.4vw,16px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.22),inset 0 -3px 0 rgba(0,0,0,.35);
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.field canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+
+/* ---------- botones táctiles ---------- */
+.dpad{
+  display:none;grid-template-columns:repeat(2,clamp(64px,18vw,92px));
+  gap:10px;justify-content:center;
+}
+.dbtn{
+  font:inherit;font-size:20px;height:clamp(48px,13vw,58px);
+  background:rgba(0,0,0,.38);color:#eaf5ea;
+  border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:0;cursor:pointer;
+  display:grid;place-items:center;touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
+}
+.dbtn:active{background:rgba(255,255,255,.22);transform:translateY(1px)}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+
+@media (max-width:760px),(hover:none) and (pointer:coarse){
+  .dpad{display:grid}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .dpad{display:none}
+}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+}
+/* app nativa apple: safe areas (notch/status bar/home indicator) */
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@supports(padding:env(safe-area-inset-top)){
+  body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+  .top{top:env(safe-area-inset-top)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🧱</span><h1>Breakout</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Puntos</span><b id="statP">0</b></div>
+    <div class="stat"><span>Récord</span><b id="statB">0</b></div>
+    <div class="stat"><span>Vidas</span><b id="statL">2</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad: vidas y velocidad de la bola">
+      <option value="1">Fácil ·3 vidas y bola lenta (5.5px/frame)</option>
+      <option value="2">Normal ·2 vidas (7)</option>
+      <option value="3">Experto ·1 vida y bola rápida (9)</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnPause" title="Pausa (tecla Espacio)">Pausa</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot n" id="stDot"></i><span id="status">Nivel 1 · Listo</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="field"><canvas id="cv" width="480" height="640" aria-label="Tablero de Breakout"></canvas></div>
+    <div class="dpad" id="dpad">
+      <button class="dbtn" data-d="left" aria-label="Izquierda" title="Mover a la izquierda">◀</button>
+      <button class="dbtn" data-d="right" aria-label="Derecha" title="Mover a la derecha">▶</button>
+    </div>
+  </div>
+</main>
+
+<div class="hint-bar">Ratón o dedo mueve la pala · Flechas o A/D · Espacio lanza o pausa · N nueva partida</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE BREAKOUT PURO — sin IIFE, sin 'use strict'.
+   Sin document / window / localStorage / setTimeout / RAF: JavaScript plano
+   evaluable tal cual en Node (los tests viven fuera de este archivo).
+
+   GEOMETRÍA (unidades lógicas; el canvas escala con el CSS):
+     - Campo FIELD_W × FIELD_H = 480 × 640 px.
+     - Ladrillos: COLS=10 columnas × ROWS=6 filas.
+       BRICK_W=36 × BRICK_H=20, BRICK_GAP=10, origen (BRICK_LEFT=15,
+       BRICK_TOP=40). Ancho exacto: 10*36 + 9*10 + 2*15 = 480 ✓.
+       El hueco (10 px) es ≥ 2·BALL_R (10): al expulsar la bola contra la
+       cara de un ladrillo nunca queda solapada con el vecino y, de hecho,
+       jamás puede haber dos ladrillos solapados a la vez.
+     - Puntos de ABAJO ARRIBA: fila 5 (abajo)=10, 4=20, 3=30, 2=40,
+       1=50, fila 0 (arriba)=60. pts=(ROWS-fila)*10.
+     - Color por fila (de arriba abajo): rojo, naranja, amarillo, cian,
+       índigo, rosa.
+     - Pala: PADDLE_W=96 (−4 por nivel, mínimo 64) × PADDLE_H=12, tope en
+       PADDLE_Y=594. ATENCIÓN: paddle.x es el CENTRO de la pala.
+     - Bola: BALL_R=5 (diámetro 10 px).
+
+   DIFICULTAD (solo datos aquí; la interfaz los persiste en 'bk.diff'):
+     1 Fácil   · 3 vidas · bola lenta   5.5 px/frame
+     2 Normal  · 2 vidas ·               7 px/frame
+     3 Experto · 1 vida  · bola rápida   9 px/frame
+     (1 frame ≈ 16,7 ms; el bucle de la interfaz usa setTimeout de 16 ms,
+      así que 7 px/frame ≈ 420 px/s.)
+   NIVEL: newGame(level, diff). La velocidad base sube +0.3 px/frame por
+     nivel sobre el nivel 1, con tope +2.4 (nivel 9 en adelante). La pala
+     pierde 4 px de ancho por nivel (mínimo 64). El patrón de ladrillos
+     cicla cada 4 niveles: 1=relleno (60), 2=bordes con huecos (54),
+     3=damero (30), 4=columna central libre arriba (56).
+
+   VELOCIDAD POR FILA (documentada): cada vez que se vacía COMPLETAMENTE
+     una fila de ladrillos, la velocidad base se multiplica por
+     (1 + 0.02 × filas vacías), con tope de 6 filas vacías = +12 %. Solo
+     se re-normaliza la magnitud; la dirección se conserva. Golpear un
+     ladrillo suelto (sin vaciar su fila) NO cambia la velocidad.
+
+   FÍSICA DE step(st, dt):
+     - dt = frames a simular (por defecto 1). Velocidad en px/frame.
+     - SIN TUNELAMIENTO: cada sub-paso desplaza como máximo SUB_STEP=10 px
+       (BRICK_H/2), recalculado con la velocidad ACTUAL en cada sub-paso.
+       Atravesar un ladrillo exigiría 30 px (20+2·5) y atravesar la pala
+       22 px, siempre > 10 px, así que ni dt=1 con dy=45 ni dt=30
+       atraviesan nada.
+     - Paredes izq/der/techo: clamp + cambio de signo.
+     - Pala: solo con dy>0 y solape AABB. El punto de impacto fija el
+       ángulo: centro → dx=0 (cenital); borde → |dx|=speed·sen(60°)
+       (máximo) y dy=−speed·cos(60°).
+     - Ladrillo: solape AABB contra la celda viva tocada; el eje se
+       resuelve con la posición PREVIA (arriba/abajo/izq/der) y, si la
+       bola ya estaba dentro, con la penetración mínima. Después,
+       applyBrickHit: alive=false, score+=pts, velocidad recalculada.
+     - Si al romper un ladrillo no queda ninguno vivo → phase='won'.
+     - Si la bola supera el borde inferior → loseLife(): lives−1 y, si
+       quedan vidas, phase='ready' con la bola inmóvil sobre la pala
+       (ESPACIO o toque la lanzan); si no, phase='over'.
+     - step / movePaddle / launch / hitBrick NUNCA mutan la entrada:
+       devuelven un estado nuevo (bricks, paddle y ball copiados).
+   ========================================================================= */
+
+var COLS=10, ROWS=6;
+var FIELD_W=480, FIELD_H=640;
+var BRICK_W=36, BRICK_H=20, BRICK_GAP=10, BRICK_LEFT=15, BRICK_TOP=40;
+var BRICK_COLORS=['#ef5350','#ffa726','#ffee58','#26c6da','#5c6bc0','#ec407a'];
+var PADDLE_W=96, PADDLE_W_MIN=64, PADDLE_H=12, PADDLE_Y=594;
+var BALL_R=5;
+var MAX_BOUNCE=60*Math.PI/180;          /* ángulo máximo desde la vertical */
+var LAUNCH_ANGLE=25*Math.PI/180;        /* lanzamiento inicial */
+var SUB_STEP=BRICK_H/2;                 /* 10 px máx. por sub-paso */
+var SPEED_ROW_BONUS=0.02, SPEED_ROW_CAP=6;
+var LEVEL_SPEED_BONUS=0.3, LEVEL_SPEED_STEPS=8;
+var LEVEL_PADDLE_SHRINK=4;
+var DIFFS={
+  1:{name:'Fácil',lives:3,speed:5.5},
+  2:{name:'Normal',lives:2,speed:7},
+  3:{name:'Experto',lives:1,speed:9}
+};
+
+function pointFor(r){ return (ROWS-r)*10; }
+
+function brickRect(r,c){
+  return {x:BRICK_LEFT+c*(BRICK_W+BRICK_GAP), y:BRICK_TOP+r*(BRICK_H+BRICK_GAP),
+          w:BRICK_W, h:BRICK_H};
+}
+
+/* Patrón de ladrillos por nivel (cicla cada 4). El nivel 1 es relleno
+   completo: 60 ladrillos vivos. Las celdas ausentes quedan alive=false. */
+function brickLayout(level){
+  var lv=Math.floor(level);
+  if(!(lv>=1)) lv=1;
+  var pat=(lv-1)%4;
+  var m=[],r,c;
+  for(r=0;r<ROWS;r++){
+    var row=[];
+    for(c=0;c<COLS;c++){
+      var alive=true;
+      if(pat===1){ if(r%2===1&&(c===0||c===COLS-1)) alive=false; }
+      else if(pat===2){ if((r+c)%2===1) alive=false; }
+      else if(pat===3){ if(r<2&&(c===4||c===5)) alive=false; }
+      row.push({pts:alive?pointFor(r):0, alive:alive, row:r, col:c});
+    }
+    m.push(row);
+  }
+  return m;
+}
+
+function baseSpeed(level,diff){
+  var lv=Math.floor(level);
+  if(!(lv>=1)) lv=1;
+  var d=DIFFS[diff]||DIFFS[2];
+  return d.speed+Math.min(lv-1,LEVEL_SPEED_STEPS)*LEVEL_SPEED_BONUS;
+}
+
+function hasAlive(st){
+  for(var r=0;r<st.bricks.length;r++){
+    var row=st.bricks[r];
+    for(var c=0;c<row.length;c++) if(row[c].alive) return true;
+  }
+  return false;
+}
+
+function clearedRows(st){
+  var n=0,r,c;
+  for(r=0;r<st.bricks.length;r++){
+    var row=st.bricks[r], all=true;
+    for(c=0;c<row.length;c++){ if(row[c].alive){ all=false; break; } }
+    if(all) n++;
+  }
+  return n;
+}
+
+function recomputeSpeed(st){
+  var rows=clearedRows(st);
+  if(rows>SPEED_ROW_CAP) rows=SPEED_ROW_CAP;
+  var v=baseSpeed(st.level,st.diff)*(1+SPEED_ROW_BONUS*rows);
+  return Math.round(v*1000)/1000;
+}
+
+/* Copia profunda: la inmutabilidad vive aquí. */
+function cloneState(st){
+  var bricks=[],r,c;
+  for(r=0;r<st.bricks.length;r++){
+    var src=st.bricks[r], row=[];
+    for(c=0;c<src.length;c++){
+      var k=src[c];
+      row.push({pts:k.pts, alive:k.alive, row:k.row, col:k.col});
+    }
+    bricks.push(row);
+  }
+  return {
+    level:st.level, diff:st.diff, bricks:bricks,
+    paddle:{x:st.paddle.x, w:st.paddle.w},
+    ball:{x:st.ball.x, y:st.ball.y, dx:st.ball.dx, dy:st.ball.dy},
+    lives:st.lives, score:st.score, phase:st.phase, speed:st.speed
+  };
+}
+
+/* Estado inicial: 60 ladrillos, pala centrada, bola inmóvil sobre la
+   pala y fase 'ready'. diff 1/2/3 = Fácil/Normal/Experto. */
+function newGame(level,diff){
+  var lv=Math.floor(level);
+  if(!(lv>=1)) lv=1;
+  var df=Math.floor(diff);
+  if(!DIFFS[df]) df=2;
+  var w=PADDLE_W-(lv-1)*LEVEL_PADDLE_SHRINK;
+  if(w<PADDLE_W_MIN) w=PADDLE_W_MIN;
+  var cx=FIELD_W/2;
+  return {
+    level:lv, diff:df,
+    bricks:brickLayout(lv),
+    paddle:{x:cx, w:w},
+    ball:{x:cx, y:PADDLE_Y-BALL_R-2, dx:0, dy:0},
+    lives:DIFFS[df].lives, score:0, phase:'ready',
+    speed:baseSpeed(lv,df)
+  };
+}
+
+function isWon(st){ return !!st&&!hasAlive(st); }
+function isOver(st){ return !!st&&st.phase==='over'; }
+
+/* Mueve la PALA por su centro (x) y lo recorta al tablero. En fase
+   'ready' la bola sigue al centro de la pala. No muta. */
+function movePaddle(st,xc){
+  if(!st) return null;
+  var next=cloneState(st);
+  var x=next.paddle.x;
+  if(typeof xc==='number'&&isFinite(xc)) x=xc;
+  var half=next.paddle.w/2;
+  if(x<half) x=half;
+  if(x>FIELD_W-half) x=FIELD_W-half;
+  next.paddle.x=x;
+  if(next.phase==='ready') next.ball.x=x;
+  return next;
+}
+
+/* Lanza la bola (solo desde 'ready'). No muta. */
+function launch(st){
+  if(!st) return null;
+  var next=cloneState(st);
+  if(next.phase!=='ready') return next;
+  next.ball.dx=next.speed*Math.sin(LAUNCH_ANGLE);
+  next.ball.dy=-next.speed*Math.cos(LAUNCH_ANGLE);
+  next.phase='play';
+  return next;
+}
+
+/* Rompe un ladrillo a mano (lo usa step y los tests). No muta. */
+function hitBrick(st,r,c){
+  if(!st) return null;
+  var next=cloneState(st);
+  if(!(r>=0&&r<next.bricks.length)) return next;
+  var row=next.bricks[r];
+  if(!(c>=0&&c<row.length)) return next;
+  applyBrickHit(next,row[c]);
+  return next;
+}
+
+/* Mutación interna: SOLO sobre estados ya clonados por la API pública. */
+function applyBrickHit(st,k){
+  if(!k||!k.alive) return;
+  k.alive=false;
+  st.score+=k.pts;
+  st.speed=recomputeSpeed(st);
+  var b=st.ball;
+  var m=Math.sqrt(b.dx*b.dx+b.dy*b.dy);
+  if(m>1e-9){ b.dx=b.dx/m*st.speed; b.dy=b.dy/m*st.speed; }
+  if(!hasAlive(st)) st.phase='won';
+}
+
+/* Mutación interna (solo estados clonados): pierde una vida. */
+function loseLife(st){
+  st.lives-=1;
+  if(st.lives<=0){
+    st.lives=0;
+    st.phase='over';
+    st.ball.dx=0;
+    st.ball.dy=0;
+    return;
+  }
+  st.phase='ready';
+  st.ball.x=st.paddle.x;
+  st.ball.y=PADDLE_Y-BALL_R-2;
+  st.ball.dx=0;
+  st.ball.dy=0;
+}
+
+function paddleBounce(st){
+  var b=st.ball,p=st.paddle;
+  if(b.dy<=0) return;
+  if(b.x+BALL_R<=p.x-p.w/2||b.x-BALL_R>=p.x+p.w/2) return;
+  if(b.y+BALL_R<PADDLE_Y||b.y-BALL_R>PADDLE_Y+PADDLE_H) return;
+  var off=(b.x-p.x)/(p.w/2);
+  if(off>1) off=1;
+  else if(off<-1) off=-1;
+  var ang=off*MAX_BOUNCE;
+  b.dx=st.speed*Math.sin(ang);
+  b.dy=-st.speed*Math.cos(ang);
+  b.y=PADDLE_Y-BALL_R;
+}
+
+function brickBounce(st,px,py){
+  var b=st.ball;
+  var l=b.x-BALL_R, r=b.x+BALL_R, t=b.y-BALL_R, bo=b.y+BALL_R;
+  var c0=Math.floor((l-BRICK_LEFT)/(BRICK_W+BRICK_GAP));
+  var c1=Math.floor((r-BRICK_LEFT)/(BRICK_W+BRICK_GAP));
+  var r0=Math.floor((t-BRICK_TOP)/(BRICK_H+BRICK_GAP));
+  var r1=Math.floor((bo-BRICK_TOP)/(BRICK_H+BRICK_GAP));
+  var hit=null,i,j;
+  for(i=Math.max(0,r0);i<=Math.min(ROWS-1,r1)&&!hit;i++){
+    for(j=Math.max(0,c0);j<=Math.min(COLS-1,c1);j++){
+      var k=st.bricks[i][j];
+      if(!k.alive) continue;
+      var q=brickRect(i,j);
+      if(l<q.x+q.w&&r>q.x&&t<q.y+q.h&&bo>q.y){ hit=k; break; }
+    }
+  }
+  if(!hit) return;
+  var rc=brickRect(hit.row,hit.col);
+  var bl=rc.x, bt=rc.y, br=rc.x+rc.w, bb=rc.y+rc.h;
+  if(py+BALL_R<=bt){ b.dy=-Math.abs(b.dy); b.y=bt-BALL_R; }
+  else if(py-BALL_R>=bb){ b.dy=Math.abs(b.dy); b.y=bb+BALL_R; }
+  else if(px+BALL_R<=bl){ b.dx=-Math.abs(b.dx); b.x=bl-BALL_R; }
+  else if(px-BALL_R>=br){ b.dx=Math.abs(b.dx); b.x=br+BALL_R; }
+  else{
+    var penT=(b.y+BALL_R)-bt, penB=bb-(b.y-BALL_R);
+    var penL=(b.x+BALL_R)-bl, penR=br-(b.x-BALL_R);
+    var m=Math.min(penT,penB,penL,penR);
+    if(m===penT){ b.dy=-Math.abs(b.dy); b.y=bt-BALL_R; }
+    else if(m===penB){ b.dy=Math.abs(b.dy); b.y=bb+BALL_R; }
+    else if(m===penL){ b.dx=-Math.abs(b.dx); b.x=bl-BALL_R; }
+    else{ b.dx=Math.abs(b.dx); b.x=br+BALL_R; }
+  }
+  applyBrickHit(st,hit);
+}
+
+/* Mutación interna (solo estados clonados): un sub-paso de tamaño sx,sy. */
+function subMove(st,sx,sy){
+  var b=st.ball;
+  var px=b.x, py=b.y;
+  b.x+=sx;
+  if(b.x-BALL_R<0){ b.x=BALL_R; b.dx=Math.abs(b.dx); }
+  else if(b.x+BALL_R>FIELD_W){ b.x=FIELD_W-BALL_R; b.dx=-Math.abs(b.dx); }
+  b.y+=sy;
+  if(b.y-BALL_R<0){ b.y=BALL_R; b.dy=Math.abs(b.dy); }
+  if(b.dy>0) paddleBounce(st);
+  brickBounce(st,px,py);
+}
+
+/* Avanza dt frames. Devuelve un estado NUEVO; jamás muta la entrada. */
+function step(st,dt){
+  if(!st) return null;
+  var next=cloneState(st);
+  if(next.phase!=='play') return next;
+  if(dt===undefined||dt===null) dt=1;
+  if(!(dt>0)) return next;
+  var elapsed=0, guard=0;
+  while(elapsed<dt&&guard<20000){
+    guard++;
+    var b=next.ball;
+    var sp=Math.max(Math.abs(b.dx),Math.abs(b.dy));
+    if(!(sp>0)) break;
+    var h=dt-elapsed;
+    var cap=SUB_STEP/sp;
+    if(h>cap) h=cap;
+    subMove(next,b.dx*h,b.dy*h);
+    elapsed+=h;
+  }
+  if(next.phase==='play'&&(next.ball.y-BALL_R)>FIELD_H) loseLife(next);
+  return next;
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=newGame(1,2);
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var DIFF_NAMES={1:'Fácil',2:'Normal',3:'Experto'};
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var d0=parseInt(localStorage.getItem('bk.diff')||'2',10);
+      if(d0===1||d0===2||d0===3) diff=d0;
+    }
+  }catch(e){}
+
+  /* Récord por dificultad: 'bk.best.1|2|3' */
+  var best=0;
+  function loadBest(){
+    best=0;
+    try{
+      if(typeof localStorage!=='undefined'){
+        var v=parseInt(localStorage.getItem('bk.best.'+diff)||'0',10);
+        if(isFinite(v)&&v>0) best=v;
+      }
+    }catch(e){}
+  }
+  function saveBest(){
+    try{
+      if(typeof localStorage!=='undefined'){
+        localStorage.setItem('bk.best.'+diff,String(best));
+      }
+    }catch(e){}
+  }
+  loadBest();
+
+  var FRAME_MS=16, KEY_SPEED=9, POP_MS=220;
+  var keys={left:false,right:false};
+  var paused=false, pointerDown=false;
+  var timer=null, toastTimer=null, endTimer=null, drainTimer=null, runId=0;
+  var pops=[];
+
+  var cv=$('#cv');
+  var ctx=cv.getContext('2d');
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(FIELD_W*dpr);
+  cv.height=Math.round(FIELD_H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  /* ---------- util ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2200);
+  }
+  function shade(hex,f){
+    var n=parseInt(hex.slice(1),16);
+    var r=Math.min(255,Math.round(((n>>16)&255)*f));
+    var g=Math.min(255,Math.round(((n>>8)&255)*f));
+    var b=Math.min(255,Math.round((n&255)*f));
+    return 'rgb('+r+','+g+','+b+')';
+  }
+  function rr(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  /* ---------- pintura ---------- */
+  function paintStats(){
+    $('#statP').textContent=String(state.score);
+    $('#statB').textContent=String(Math.max(best,state.score));
+    $('#statL').textContent=String(state.lives);
+  }
+  function paintStatus(){
+    var txt,dot;
+    if(state.phase==='won'){ txt='¡Nivel '+state.level+' superado!'; dot='y'; }
+    else if(state.phase==='over'){ txt='Fin de la partida'; dot='r'; }
+    else if(paused){ txt='En pausa'; dot='n'; }
+    else if(state.phase==='ready'){ txt='Nivel '+state.level+' · ¡Lanza la bola!'; dot='n'; }
+    else{ txt='Nivel '+state.level+' · En marcha'; dot='g'; }
+    $('#status').textContent=txt;
+    $('#stDot').className='dot '+dot;
+    $('#btnPause').textContent=paused?'Seguir':'Pausa';
+  }
+  function render(){
+    var r,c,i;
+    ctx.clearRect(0,0,FIELD_W,FIELD_H);
+    var font='600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+
+    /* ladrillos */
+    for(r=0;r<ROWS;r++){
+      for(c=0;c<COLS;c++){
+        var k=state.bricks[r][c];
+        if(!k.alive) continue;
+        var q=brickRect(r,c);
+        rr(q.x,q.y,q.w,q.h,5);
+        var g=ctx.createLinearGradient(q.x,q.y,q.x,q.y+q.h);
+        g.addColorStop(0,shade(BRICK_COLORS[r],1.2));
+        g.addColorStop(1,BRICK_COLORS[r]);
+        ctx.fillStyle=g;
+        ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.55)';
+        ctx.fillRect(q.x+1,q.y+1,q.w-2,2);
+        ctx.fillStyle='rgba(0,0,0,.32)';
+        ctx.fillRect(q.x,q.y+q.h-3,q.w,3);
+        ctx.fillStyle='rgba(0,0,0,.66)';
+        ctx.font='700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(String(k.pts),q.x+q.w/2,q.y+q.h/2+2);
+      }
+    }
+
+    /* pop de los ladrillos rotos */
+    var now=Date.now();
+    for(i=pops.length-1;i>=0;i--){
+      var p=pops[i], age=now-p.t;
+      if(age>=POP_MS){ pops.splice(i,1); continue; }
+      var t=age/POP_MS;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,6+18*t,0,Math.PI*2);
+      ctx.strokeStyle=p.color;
+      ctx.lineWidth=3;
+      ctx.globalAlpha=.85*(1-t);
+      ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+
+    /* pala */
+    var px=state.paddle.x-state.paddle.w/2;
+    rr(px,PADDLE_Y,state.paddle.w,PADDLE_H,6);
+    var pg=ctx.createLinearGradient(0,PADDLE_Y,0,PADDLE_Y+PADDLE_H);
+    pg.addColorStop(0,'#e6ffbf');
+    pg.addColorStop(1,'#5cb85c');
+    ctx.fillStyle=pg;
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.35)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+
+    /* bola */
+    ctx.save();
+    ctx.shadowColor='rgba(255,255,255,.7)';
+    ctx.shadowBlur=8;
+    var bg=ctx.createRadialGradient(state.ball.x-1.5,state.ball.y-1.5,1,
+                                    state.ball.x,state.ball.y,BALL_R);
+    bg.addColorStop(0,'#ffffff');
+    bg.addColorStop(1,'#cfd8dc');
+    ctx.fillStyle=bg;
+    ctx.beginPath();
+    ctx.arc(state.ball.x,state.ball.y,BALL_R,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    /* avisos en el tablero */
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    if(paused&&state.phase==='play'){
+      ctx.fillStyle='rgba(0,0,0,.55)';
+      ctx.fillRect(0,FIELD_H/2-34,FIELD_W,68);
+      ctx.fillStyle='#eaf5ea';
+      ctx.font='700 26px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+      ctx.fillText('PAUSA',FIELD_W/2,FIELD_H/2-8);
+      ctx.font='500 14px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+      ctx.fillStyle='rgba(234,245,234,.85)';
+      ctx.fillText('Espacio para continuar',FIELD_W/2,FIELD_H/2+18);
+    }else if(state.phase==='ready'){
+      ctx.fillStyle='rgba(0,0,0,.45)';
+      ctx.fillRect(0,PADDLE_Y-58,FIELD_W,28);
+      ctx.fillStyle='#eaf5ea';
+      ctx.font=font;
+      ctx.fillText('Pulsa ESPACIO o toca para lanzar',FIELD_W/2,PADDLE_Y-44);
+    }
+
+    paintStats();
+    paintStatus();
+  }
+
+  /* ---------- detección de cambios (pops + vidas) ---------- */
+  function snapAlive(){
+    var m=[],r,c;
+    for(r=0;r<ROWS;r++){
+      m.push([]);
+      for(c=0;c<COLS;c++) m[r].push(state.bricks[r][c].alive);
+    }
+    return m;
+  }
+  function detectChanges(prev,prevLives){
+    var now=Date.now(),r,c;
+    for(r=0;r<ROWS;r++){
+      for(c=0;c<COLS;c++){
+        if(prev[r][c]&&!state.bricks[r][c].alive){
+          var q=brickRect(r,c);
+          pops.push({x:q.x+q.w/2, y:q.y+q.h/2, t:now, color:BRICK_COLORS[r]});
+        }
+      }
+    }
+    if(state.lives<prevLives&&state.phase==='ready'){
+      toast('¡Vida perdida! Te quedan '+state.lives);
+    }
+  }
+
+  /* ---------- bucle de juego (setTimeout fijo de 16 ms) ---------- */
+  function schedule(){
+    if(timer){ clearTimeout(timer); timer=null; }
+    if(paused||state.phase==='over'||state.phase==='won') return;
+    timer=setTimeout(tick,FRAME_MS);
+  }
+  function applyKeys(){
+    if(state.phase!=='play'&&state.phase!=='ready') return;
+    var d=0;
+    if(keys.left) d-=KEY_SPEED;
+    if(keys.right) d+=KEY_SPEED;
+    if(d) state=movePaddle(state,state.paddle.x+d);
+  }
+  function tick(){
+    timer=null;
+    if(paused||state.phase==='over'||state.phase==='won') return;
+    var prevLives=state.lives;
+    var prevAlive=snapAlive();
+    applyKeys();
+    state=step(state,1);
+    detectChanges(prevAlive,prevLives);
+    render();
+    if(state.phase==='over'||state.phase==='won'){ endGame(); return; }
+    schedule();
+  }
+  function drainPops(){
+    drainTimer=null;
+    if(!pops.length) return;
+    render();
+    drainTimer=setTimeout(drainPops,60);
+  }
+  function endGame(){
+    if(timer){ clearTimeout(timer); timer=null; }
+    var won=state.phase==='won';
+    var record=state.score>best;
+    if(record){ best=state.score; saveBest(); }
+    render();
+    if(pops.length&&!drainTimer) drainTimer=setTimeout(drainPops,60);
+    var id=runId;
+    if(endTimer) clearTimeout(endTimer);
+    endTimer=setTimeout(function(){
+      if(id!==runId) return;
+      $('#winTitle').textContent=won?('¡Nivel '+state.level+' superado!'):'Fin de la partida';
+      $('#winStats').textContent='Puntos '+state.score+' · Récord '+best+
+        ' · Vidas '+state.lives+' · Nivel '+state.level;
+      $('#btnAgain').textContent=won?'Siguiente nivel':'Jugar otra vez';
+      $('#win').classList.add('show');
+    },500);
+    if(record) toast('¡Nuevo récord! '+best+' puntos');
+    else if(won) toast('¡Nivel '+state.level+' superado!');
+    else toast('Fin de la partida · '+state.score+' puntos');
+  }
+  function togglePause(){
+    if(state.phase==='over'||state.phase==='won') return;
+    if(state.phase==='ready'){
+      toast('Pulsa Espacio o toca para lanzar');
+      return;
+    }
+    if(paused){
+      paused=false;
+      schedule();
+      toast('En marcha');
+    }else{
+      paused=true;
+      if(timer){ clearTimeout(timer); timer=null; }
+      toast('En pausa · Espacio para continuar');
+    }
+    render();
+  }
+  function onSpace(){
+    if(state.phase==='ready'){
+      state=launch(state);
+      render();
+      return;
+    }
+    togglePause();
+  }
+  function startNew(newLevel,silent){
+    runId++;
+    if(timer){ clearTimeout(timer); timer=null; }
+    if(endTimer){ clearTimeout(endTimer); endTimer=null; }
+    if(drainTimer){ clearTimeout(drainTimer); drainTimer=null; }
+    $('#win').classList.remove('show');
+    paused=false;
+    keys.left=false;
+    keys.right=false;
+    state=newGame(newLevel||1,diff);
+    pops=[];
+    loadBest();
+    render();
+    schedule();
+    if(!silent) toast('Nueva partida · Nivel '+state.level+' · '+DIFF_NAMES[diff]+' · '+DIFFS[diff].lives+' vidas');
+  }
+
+  /* ---------- entrada ---------- */
+  function xFromEvent(e){
+    var r=cv.getBoundingClientRect();
+    if(!r.width) return state.paddle.x;
+    return (e.clientX-r.left)*(FIELD_W/r.width);
+  }
+
+  $('#btnNew').addEventListener('click',function(){ startNew(1,false); });
+  $('#btnPause').addEventListener('click',togglePause);
+  $('#btnAgain').addEventListener('click',function(){
+    if(state.phase==='won') startNew(state.level+1,false);
+    else startNew(1,false);
+  });
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('bk.diff',String(diff));
+    }catch(err){}
+    loadBest();
+    startNew(1,true);
+    toast('Dificultad: '+DIFF_NAMES[diff]+' · '+DIFFS[diff].lives+' vidas · '+DIFFS[diff].speed+' px/frame');
+  });
+
+  /* Flechas + A/D + Espacio + N */
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='arrowleft'||k==='a'){ e.preventDefault(); keys.left=true; return; }
+    if(k==='arrowright'||k==='d'){ e.preventDefault(); keys.right=true; return; }
+    if(k===' '||k==='spacebar'){ e.preventDefault(); onSpace(); return; }
+    if(k==='n'){ startNew(1,false); }
+  });
+  document.addEventListener('keyup',function(e){
+    var k=(e.key||'').toLowerCase();
+    if(k==='arrowleft'||k==='a') keys.left=false;
+    if(k==='arrowright'||k==='d') keys.right=false;
+  });
+
+  /* Botones ◀ ▶ táctiles (mantener pulsado) */
+  var dpad=$('#dpad');
+  function dpadSet(e,down){
+    var el=e.target&&e.target.closest?e.target.closest('[data-d]'):null;
+    if(!el) return;
+    var d=el.getAttribute('data-d');
+    if(d==='left'||d==='right'){ keys[d]=down; if(e.preventDefault) e.preventDefault(); }
+  }
+  dpad.addEventListener('pointerdown',function(e){ dpadSet(e,true); });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){
+    dpad.addEventListener(ev,function(e){ dpadSet(e,false); });
+  });
+
+  /* Ratón/touch: la pala sigue el cursor y el dedo */
+  cv.addEventListener('pointerdown',function(e){
+    if(e.preventDefault) e.preventDefault();
+    pointerDown=true;
+    if(cv.setPointerCapture){ try{ cv.setPointerCapture(e.pointerId); }catch(err){} }
+    state=movePaddle(state,xFromEvent(e));
+    if(state.phase==='ready') state=launch(state);
+    render();
+  });
+  cv.addEventListener('pointermove',function(e){
+    if(e.pointerType!=='mouse'&&!pointerDown) return;
+    state=movePaddle(state,xFromEvent(e));
+    render();
+  });
+  function pointerUp(){ pointerDown=false; }
+  cv.addEventListener('pointerup',pointerUp);
+  cv.addEventListener('pointercancel',pointerUp);
+
+  /* pausa al perder el foco */
+  function autoPause(){
+    if(!paused&&state.phase==='play'){
+      paused=true;
+      if(timer){ clearTimeout(timer); timer=null; }
+      render();
+      toast('En pausa · ventana sin foco');
+    }
+  }
+  window.addEventListener('blur',autoPause);
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden) autoPause();
+  });
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  startNew(1,true);
+}
+</script>
+</body>
+</html>

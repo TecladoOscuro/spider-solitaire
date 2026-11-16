@@ -239,6 +239,20 @@ body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
     <span class="lv">FÁCIL · MEDIO · DIFÍCIL + REGLA</span>
     <button class="info" data-g="quarto" aria-label="Cómo jugar: Quarto">ⓘ</button>
   </a>
+  <a class="game" href="simon.html">
+    <span class="icon">◉</span>
+    <h2>Simon</h2>
+    <p>Memoriza y repite la secuencia de colores con sus tonos.</p>
+    <span class="lv">LENTO · NORMAL · RÁPIDO</span>
+    <button class="info" data-g="simon" aria-label="Cómo jugar: Simon">ⓘ</button>
+  </a>
+  <a class="game" href="breakout.html">
+    <span class="icon">▰</span>
+    <h2>Breakout</h2>
+    <p>Rompe los60 ladrillos con la pala antes de perder las vidas.</p>
+    <span class="lv">FÁCIL · NORMAL · EXPERTO</span>
+    <button class="info" data-g="breakout" aria-label="Cómo jugar: Breakout">ⓘ</button>
+  </a>
 </main>
 
 <footer>Un archivo HTML por juego, sin dependencias.</footer>
@@ -280,7 +294,10 @@ var RULES={
   'go':{t:'Go 9×9',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas NEGRAS y empiezas.\n\n• Coloca piedras en las intersecciones; captura al rodear cadenas enemigas (sin suicidio, ko simple).\n• Dos PASAS seguidos terminan la partida: gana territorio + capturas (komi5.5 compensa a blancas).\n• Toca una piedra para ver su cadena y libertades.\nTeclas: P pasar · U deshacer · H pista · N nuevo.'},
 
   'ahorcado':{t:'Ahorcado',lv:'4 · 5 · 6 LETRAS',r:'Adivina la palabra antes de7 errores.\n\n• Toca las letras del teclado o escribe con el teclado físico.\n• Cada error dibuja una parte del ahorcado (7 trazos).\n• Las letras usadas quedan marcadas ✓/✗.\n• Estadísticas y distribución por nivel.\nTecla N: nueva partida.'},
-  'quarto':{t:'Quarto',lv:'FÁCIL · MEDIO · DIFÍCIL + REGLA',r:'Tú eliges QUÉ pieza se juega: toca una casilla vacía y luego una pieza del banco (o al revés).\n\n•16 piezas con4 atributos: forma, relleno, color y altura.\n• Regla Clásica: gana la línea de4 con al menos un atributo COMÚN (empates posibles).\n• Regla Libre: gana cualquier4 en línea.\n• Dificultad = fuerza de la IA; la regla se elige aparte.\nTeclas: U deshacer · H pista · N nuevo.'}
+  'quarto':{t:'Quarto',lv:'FÁCIL · MEDIO · DIFÍCIL + REGLA',r:'Tú eliges QUÉ pieza se juega: toca una casilla vacía y luego una pieza del banco (o al revés).\n\n•16 piezas con4 atributos: forma, relleno, color y altura.\n• Regla Clásica: gana la línea de4 con al menos un atributo COMÚN (empates posibles).\n• Regla Libre: gana cualquier4 en línea.\n• Dificultad = fuerza de la IA; la regla se elige aparte.\nTeclas: U deshacer · H pista · N nuevo.'},
+
+  'simon':{t:'Simon',lv:'LENTO · NORMAL · RÁPIDO',r:'Memoriza la secuencia y repítela con los4 colores.\n\n• Cada ronda añade un paso a la secuencia.\n• Error, o se acaba el tiempo → fin de partida (puntuación = longitud alcanzada).\n• Sonido con tonos únicos por color; M silencia.\n• Teclas:1-4 o flechas para los colores · N nueva · M silencio.\n• Récord por velocidad.'},
+  'breakout':{t:'Breakout',lv:'FÁCIL · NORMAL · EXPERTO',r:'Mueve la pala con el ratón, el dedo o ←→/A-D y rompe los60 ladrillos.\n\n• ESPACIO lanza la bola y pausa.\n• El centro de la pala lanza en vertical; los bordes dan ángulo.\n• Cada ladrillo perdido = una vida (3/2/1 según dificultad, con más o menos velocidad).\n• Teclas: N nueva · ESPACIO lanzar/pausa.'}
 };
 var ov=document.getElementById('infoOv');
 function openInfo(g){

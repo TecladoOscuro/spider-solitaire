@@ -28,6 +28,8 @@ Tres juegos de navegador en un solo archivo HTML cada uno. Sin dependencias, sin
 | Go 9×9 | `go9.html` | Fácil, Medio, Difícil (IA alfa-beta) |
 | Ahorcado | `ahorcado.html` | 4, 5, 6 letras |
 | Quarto | `quarto.html` | Fácil, Medio, Difícil + regla Clásica/Libre |
+| Simon | `simon.html` | Lento, Normal, Rápido (velocidad) |
+| Breakout | `breakout.html` | Fácil, Normal, Experto (vidas y velocidad) |
 
 El índice `index.html` es el menú de entrada.
 
