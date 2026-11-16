@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<meta name="theme-color" content="#14471c">
+<title>Simon</title>
+<style>
+html{background-color:#14471c}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- estado ---------- */
+.statusbar{display:flex;justify-content:center;padding:10px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.g{background:#43a047;color:#43a047}
+.dot.r{background:#e53935;color:#e53935}
+.dot.draw{background:#90a4ae;color:#90a4ae}
+
+/* ---------- tablero Simon ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:14px;min-height:0}
+.simon{
+  --s:min(84vw,52vh,430px);
+  width:var(--s);height:var(--s);
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  gap:clamp(5px,1.2vw,11px);
+}
+.pad{
+  -webkit-appearance:none;appearance:none;border:none;padding:0;margin:0;
+  border-radius:50%;cursor:pointer;
+  filter:brightness(.64) saturate(.85);
+  box-shadow:inset 0 -8px 16px rgba(0,0,0,.45),inset 0 6px 12px rgba(255,255,255,.3),0 8px 18px rgba(0,0,0,.42);
+  transition:filter .1s ease-out,box-shadow .1s ease-out,transform .07s;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.pad:active{transform:scale(.97)}
+.pad.g{background:radial-gradient(circle at 35% 30%,#8bff9a,#2e9e46 55%,#176c2c);grid-area:1/2}
+.pad.r{background:radial-gradient(circle at 35% 30%,#ff9a90,#e53935 55%,#a91f1a);grid-area:2/3}
+.pad.y{background:radial-gradient(circle at 35% 30%,#ffe9a0,#fdd835 55%,#e0a800);grid-area:3/2}
+.pad.b{background:radial-gradient(circle at 35% 30%,#9fc6ff,#3d7ee6 55%,#1c4fa8);grid-area:2/1}
+.pad.lit{transform:scale(1.04)}
+.pad.g.lit{filter:brightness(1.5) saturate(1.1);box-shadow:inset 0 -6px 14px rgba(0,0,0,.25),inset 0 4px 10px rgba(255,255,255,.55),0 0 34px 5px rgba(80,255,120,.65)}
+.pad.r.lit{filter:brightness(1.5) saturate(1.1);box-shadow:inset 0 -6px 14px rgba(0,0,0,.25),inset 0 4px 10px rgba(255,255,255,.55),0 0 34px 5px rgba(255,95,85,.65)}
+.pad.y.lit{filter:brightness(1.5) saturate(1.1);box-shadow:inset 0 -6px 14px rgba(0,0,0,.25),inset 0 4px 10px rgba(255,255,255,.55),0 0 34px 5px rgba(255,232,95,.7)}
+.pad.b.lit{filter:brightness(1.5) saturate(1.1);box-shadow:inset 0 -6px 14px rgba(0,0,0,.25),inset 0 4px 10px rgba(255,255,255,.55),0 0 34px 5px rgba(110,160,255,.65)}
+.hub{
+  grid-area:2/2;border-radius:50%;
+  background:radial-gradient(circle at 50% 35%,#1b3a20,#0e2413);
+  border:2px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 4px 12px rgba(0,0,0,.6);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-variant-numeric:tabular-nums;text-align:center;padding:4px;
+}
+.hub b{font-size:clamp(24px,7vw,46px);line-height:1}
+.hub span{font-size:clamp(8px,2.2vw,11px);opacity:.7;text-transform:uppercase;letter-spacing:1px}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+}
+/* app nativa apple: safe areas (notch/status bar/home indicator) */
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@supports(padding:env(safe-area-inset-top)){
+  body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+  .top{top:env(safe-area-inset-top)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">🟡</span><h1>Simon</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Puntos</span><b id="statScore">0</b></div>
+    <div class="stat"><span>Nivel</span><b id="statLevel">0</b></div>
+    <div class="stat"><span>Récord</span><b id="statBest">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <button class="btn" id="btnSound" title="Activar/silenciar sonido (tecla M)">🔊</button>
+    <select class="btn" id="diffSel" title="Dificultad">
+      <option value="1">Lento · Aprendiz</option>
+      <option value="2">Normal</option>
+      <option value="3">Rápido · Experto</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nueva partida (tecla N)">Nuevo</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot g" id="phaseDot"></i><span id="status">Preparando…</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="simon" id="simon">
+    <button type="button" class="pad g" id="pad1" data-btn="1" aria-label="Verde"></button>
+    <button type="button" class="pad r" id="pad2" data-btn="2" aria-label="Rojo"></button>
+    <button type="button" class="pad y" id="pad3" data-btn="3" aria-label="Amarillo"></button>
+    <button type="button" class="pad b" id="pad4" data-btn="4" aria-label="Azul"></button>
+    <div class="hub"><b id="hubN">0</b><span>nivel</span></div>
+  </div>
+</main>
+
+<div class="hint-bar">Memoriza la secuencia y repítela con los colores · Teclas: 1-4 o flechas · N nueva · M silencio</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE SIMON PURO — sin IIFE, sin 'use strict'.
+   Sin document / window / setTimeout / localStorage / WebAudio dentro del
+   motor: JavaScript plano evaluable en Node.
+
+   DISEÑO DEL ESTADO (documentado):
+     - state = {seq, input, phase, score, best}
+         seq   : array de botones 1..4 (1 verde, 2 rojo, 3 amarillo, 4 azul)
+         input : botones que el jugador ya repitió en la ronda actual
+         phase : 'show'  → se muestra la secuencia / toca añadir una jugada
+                 'input' → turno del jugador
+                 'over'  → partida perdida
+         score : rondas completadas
+         best  : récord de la dificultad actual
+   - Invariante: en 'show'/'input' score = max(0, seq.length-1); al COMPLETAR
+     una ronda score = seq.length (la fase vuelve a 'show').
+   - TODAS las funciones son inmutables: devuelven un estado NUEVO o la MISMA
+     referencia en no-op; jamás mutan el estado recibido.
+   - RNG inyectable opcional: nextRound(st, rnd) acepta rnd() → [0,1) al estilo
+     de Math.random, o directamente un entero 1..4.
+   ========================================================================= */
+
+var TONES=[329.63,261.63,220,164.81];   /* E5 · C5 · A4 · E4 — verde, rojo, amarillo, azul */
+var DIFFS=[
+  {id:1,name:'Lento · Aprendiz',step:850},
+  {id:2,name:'Normal',step:600},
+  {id:3,name:'Rápido · Experto',step:400}
+];
+
+/* ---------- estado ---------- */
+function newState(){
+  return {seq:[],input:[],phase:'show',score:0,best:0};
+}
+
+/* Partida nueva; conserva el récord de la dificultad (best). */
+function newGame(best){
+  var st=newState();
+  if(best>0) st.best=best|0;
+  return st;
+}
+
+function cloneState(st){
+  return {seq:st.seq.slice(),input:st.input.slice(),phase:st.phase,score:st.score,best:st.best};
+}
+
+/* ---------- helpers de fase ---------- */
+function phaseIs(st,p){ return !!st && st.phase===p; }
+function isShow(st){ return phaseIs(st,'show'); }
+function isInput(st){ return phaseIs(st,'input'); }
+function isOver(st){ return phaseIs(st,'over'); }
+
+/* 'show' → 'input'. No-op si la fase no es 'show' o seq está vacía. */
+function beginInput(st){
+  if(!st||st.phase!=='show'||st.seq.length===0) return st;
+  var nx=cloneState(st);
+  nx.phase='input';
+  nx.input=[];
+  return nx;
+}
+
+/* ---------- azar ---------- */
+/* rnd() → [0,1) estilo Math.random, o entero directo 1..4. */
+function pickBtn(rnd){
+  var r=(typeof rnd==='function')?rnd():Math.random();
+  if(r>=1&&r<=4&&r===Math.floor(r)) return r;
+  if(!(r>0)) r=0;
+  if(r>0.999999999999) r=0.999999999999;
+  return 1+Math.floor(r*4);
+}
+
+/* Nueva ronda: añade UNA jugada aleatoria en 1..4. Solo en fase 'show'. */
+function nextRound(st,rnd){
+  if(!st||st.phase!=='show') return st;
+  var nx=cloneState(st);
+  nx.seq.push(pickBtn(rnd));
+  nx.input=[];
+  nx.phase='show';
+  return nx;
+}
+
+/* Derrota (botón equivocado o tiempo agotado). score = longitud - 1. */
+function fail(st){
+  if(!st||st.phase==='over') return st;
+  var nx=cloneState(st);
+  nx.phase='over';
+  nx.input=[];
+  nx.score=Math.max(0,nx.seq.length-1);
+  return nx;
+}
+
+/* Repetir el botón `btn`. Solo en fase 'input'. Devuelve {st, ok}. */
+function input(st,btn){
+  if(!st||st.phase!=='input') return {st:st,ok:false};
+  if(!(btn>=1&&btn<=4)||btn!==Math.floor(btn)) return {st:st,ok:false};
+  if(st.input.length>=st.seq.length) return {st:st,ok:false};
+  if(st.seq[st.input.length]!==btn) return {st:fail(st),ok:false};
+  var nx=cloneState(st);
+  nx.input.push(btn);
+  if(nx.input.length===nx.seq.length){   /* ronda completa → toca nueva jugada */
+    nx.phase='show';
+    nx.input=[];
+    nx.score=nx.seq.length;
+  }
+  return {st:nx,ok:true};
+}
+
+/* ---------- récord por dificultad ---------- */
+function bestKey(diff){
+  var d=(diff===1||diff===3)?diff:2;
+  return 'sim.best.'+d;
+}
+
+/* best = max(best, score). Inmutable. */
+function updateBest(st){
+  if(!st) return st;
+  var nx=cloneState(st);
+  if(nx.score>nx.best) nx.best=nx.score;
+  return nx;
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=newState();
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage y timers dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=2, soundOn=true;
+  var padEls=[];
+  var token=0, timers=[], deadlineId=null, winTimer=null, toastTimer=null;
+  var actx=null, audioOK=true;
+
+  /* ---------- persistencia (guardada) ---------- */
+  try{
+    if(typeof localStorage!=='undefined'){
+      var sd=parseInt(localStorage.getItem('sim.diff')||'2',10);
+      if(sd===1||sd===2||sd===3) diff=sd;
+      var ss=localStorage.getItem('sim.sound');
+      if(ss!==null) soundOn=(ss!=='0');
+    }
+  }catch(e){}
+
+  function loadBest(d){
+    try{
+      if(typeof localStorage!=='undefined'){
+        var v=parseInt(localStorage.getItem(bestKey(d))||'0',10);
+        if(v>0) return v;
+      }
+    }catch(e){}
+    return 0;
+  }
+  function saveBest(d,v){
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem(bestKey(d),String(v)); }catch(e){}
+  }
+
+  /* ---------- WebAudio (osciladores, sin archivos) ---------- */
+  function ensureCtx(){
+    if(!soundOn||!audioOK) return null;
+    try{
+      if(!actx){
+        if(typeof window==='undefined'){ audioOK=false; return null; }
+        var AC=window.AudioContext||window.webkitAudioContext;
+        if(!AC){ audioOK=false; return null; }
+        actx=new AC();
+      }
+      if(actx.state==='suspended'&&actx.resume) actx.resume();
+      return actx;
+    }catch(e){ audioOK=false; actx=null; return null; }
+  }
+  function beep(btn,ms){
+    var ctx=ensureCtx();
+    if(!ctx) return;
+    try{
+      var o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sine';
+      o.frequency.value=TONES[btn-1];
+      var t=ctx.currentTime, dur=Math.max(0.08,ms/1000);
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.2,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t+dur+0.03);
+    }catch(e){ audioOK=false; }
+  }
+  function buzz(){   /* tono de fallo */
+    var ctx=ensureCtx();
+    if(!ctx) return;
+    try{
+      var o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sawtooth';
+      o.frequency.value=92;
+      var t=ctx.currentTime;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.25,t+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+0.75);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t+0.8);
+    }catch(e){ audioOK=false; }
+  }
+  function resumeAudio(){
+    try{ if(actx&&actx.state==='suspended'&&actx.resume) actx.resume(); }catch(e){}
+  }
+
+  /* ---------- temporizadores ---------- */
+  function later(fn,ms){
+    var id=setTimeout(function(){
+      var i=timers.indexOf(id);
+      if(i>=0) timers.splice(i,1);
+      fn();
+    },ms);
+    timers.push(id);
+    return id;
+  }
+  function clearDeadline(){
+    if(deadlineId!==null){ clearTimeout(deadlineId); deadlineId=null; }
+  }
+  function cancelAll(){
+    token++;
+    clearDeadline();
+    for(var i=0;i<timers.length;i++) clearTimeout(timers[i]);
+    timers=[];
+    for(var j=0;j<padEls.length;j++) if(padEls[j]) padEls[j].classList.remove('lit');
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+  }
+
+  /* ---------- util UI ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
+  }
+  function setStatus(){
+    var txt,dot;
+    if(state.phase==='show'){ txt=(state.seq.length>1)?'Memoriza…':'Atento…'; dot='g'; }
+    else if(state.phase==='input'){ txt='Tu turno'; dot='r'; }
+    else { txt='Fin'; dot='draw'; }
+    $('#status').textContent=txt;
+    $('#phaseDot').className='dot '+dot;
+  }
+  function render(){
+    $('#statScore').textContent=String(state.score);
+    $('#statLevel').textContent=String(state.seq.length);
+    $('#statBest').textContent=String(state.best);
+    $('#hubN').textContent=String(state.seq.length);
+    setStatus();
+  }
+  function renderOverlay(){
+    $('#winTitle').textContent='¡Fallaste!';
+    $('#winStats').textContent='Secuencia: '+state.seq.length+
+      ' · Puntos: '+state.score+' · Récord: '+state.best+' · '+DIFFS[diff-1].name;
+    $('#win').classList.add('show');
+  }
+
+  /* ---------- mostrar secuencia ---------- */
+  function flash(btn,ms){
+    var el=padEls[btn-1];
+    if(el){
+      el.classList.add('lit');
+      later(function(){ el.classList.remove('lit'); },ms);
+    }
+    beep(btn,ms);
+  }
+  function responseMs(){
+    return 2200+state.seq.length*DIFFS[diff-1].step*1.4;
+  }
+  function armDeadline(){
+    clearDeadline();
+    var my=token;
+    deadlineId=setTimeout(function(){
+      deadlineId=null;
+      if(my!==token||state.phase!=='input') return;
+      state=fail(state);
+      gameOver();
+    },responseMs());
+  }
+  function playSequence(){
+    var my=token;
+    setStatus();
+    var step=DIFFS[diff-1].step;
+    var seq=state.seq;
+    for(var i=0;i<seq.length;i++){
+      (function(pos){
+        later(function(){
+          if(my!==token||state.phase!=='show') return;
+          flash(seq[pos],Math.round(step*0.6));
+        },350+pos*step);
+      })(i);
+    }
+    later(function(){
+      if(my!==token||state.phase!=='show') return;
+      state=beginInput(state);
+      render();
+      armDeadline();
+    },350+seq.length*step+Math.round(step*0.5));
+  }
+
+  /* ---------- partida ---------- */
+  function press(btn){
+    if(!state||state.phase!=='input') return;    /* fuera de turno: no-op */
+    flash(btn,170);
+    var res=input(state,btn);
+    state=res.st;
+    render();
+    if(state.phase==='over'){ gameOver(); return; }
+    if(state.phase==='show'){                    /* ronda completada */
+      clearDeadline();
+      var my=token;
+      later(function(){
+        if(my!==token||state.phase!=='show') return;
+        state=nextRound(state);
+        render();
+        playSequence();
+      },950);
+    }
+  }
+  function gameOver(){
+    clearDeadline();
+    var before=state.best;
+    state=updateBest(state);
+    if(state.best>before) saveBest(diff,state.best);
+    render();
+    buzz();
+    if(winTimer) clearTimeout(winTimer);
+    winTimer=setTimeout(function(){ winTimer=null; renderOverlay(); },750);
+  }
+  function startGame(){
+    cancelAll();
+    $('#win').classList.remove('show');
+    state=newGame(loadBest(diff));
+    state=nextRound(state);
+    render();
+    playSequence();
+  }
+  function toggleSound(){
+    soundOn=!soundOn;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('sim.sound',soundOn?'1':'0'); }catch(e){}
+    $('#btnSound').textContent=soundOn?'🔊':'🔇';
+    toast(soundOn?'Sonido activado':'Sonido silenciado');
+    if(soundOn) beep(1,220);
+  }
+
+  /* ---------- cableado ---------- */
+  $('#simon').addEventListener('click',function(e){
+    var el=e.target&&e.target.closest?e.target.closest('[data-btn]'):null;
+    if(el) press(parseInt(el.dataset.btn,10));
+  });
+  $('#btnNew').addEventListener('click',startGame);
+  $('#btnAgain').addEventListener('click',startGame);
+  $('#btnSound').addEventListener('click',toggleSound);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('sim.diff',String(diff)); }catch(err){}
+    toast('Dificultad: '+DIFFS[diff-1].name);
+    startGame();
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=e.key;
+    if(k==='ArrowUp'){ e.preventDefault(); press(1); return; }
+    if(k==='ArrowRight'){ e.preventDefault(); press(2); return; }
+    if(k==='ArrowDown'){ e.preventDefault(); press(3); return; }
+    if(k==='ArrowLeft'){ e.preventDefault(); press(4); return; }
+    if(k==='1'||k==='2'||k==='3'||k==='4'){ press(parseInt(k,10)); return; }
+    var lk=(k||'').toLowerCase();
+    if(lk==='n') startGame();
+    else if(lk==='m') toggleSound();
+  });
+  document.addEventListener('pointerdown',resumeAudio,true);
+
+  /* ---------- arranque ---------- */
+  padEls=[$('#pad1'),$('#pad2'),$('#pad3'),$('#pad4')];
+  $('#diffSel').value=String(diff);
+  $('#btnSound').textContent=soundOn?'🔊':'🔇';
+  startGame();
+}
+
+/* =========================================================================
+   TESTS EN NODE — se ejecutan solo en Node (typeof process !== 'undefined').
+   Extraer el contenido de este <script> y ejecutarlo con `node`.
+   ========================================================================= */
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  var t_total=0, t_fail=0;
+  var T=function(cond,msg){
+    t_total++;
+    if(cond) console.log('ok   '+msg);
+    else { t_fail++; console.log('FAIL '+msg); }
+  };
+  var Teq=function(a,b,msg){
+    T(a===b,msg+' | esperado='+JSON.stringify(b)+' obtuvo='+JSON.stringify(a));
+  };
+
+  /* --- newState coherente --- */
+  var s0=newState();
+  Teq(s0.phase,'show','newState: fase show');
+  Teq(s0.seq.length,0,'newState: seq vacía');
+  Teq(s0.input.length,0,'newState: input vacío');
+  Teq(s0.score,0,'newState: score 0');
+  Teq(s0.best,0,'newState: best 0');
+  T(state&&state.phase==='show','var state global coherente');
+
+  /* --- newGame coherente --- */
+  var g0=newGame(7);
+  Teq(g0.best,7,'newGame conserva el récord (best=7)');
+  Teq(g0.phase,'show','newGame: fase show');
+  Teq(g0.seq.length,0,'newGame: seq vacía');
+  Teq(g0.input.length,0,'newGame: input vacío');
+  Teq(g0.score,0,'newGame: score 0');
+  Teq(newGame().best,0,'newGame sin récord → best 0');
+  Teq(newGame(-3).best,0,'newGame récord negativo → best 0');
+
+  /* --- nextRound crece seq y solo en fase show --- */
+  var a=newState();
+  var b=nextRound(a);
+  Teq(b.seq.length,1,'nextRound: seq crece a 1');
+  T(b.seq[0]>=1&&b.seq[0]<=4&&b.seq[0]===Math.floor(b.seq[0]),'nextRound: jugada entera en 1..4');
+  Teq(b.phase,'show','nextRound: sigue en show');
+  Teq(b.input.length,0,'nextRound: input vacío');
+  Teq(a.seq.length,0,'nextRound NO muta el original');
+  Teq(JSON.stringify(a),'{"seq":[],"input":[],"phase":"show","score":0,"best":0}','nextRound: original byte a byte intacto');
+
+  /* RNG inyectable: contrato [0,1) y entero directo 1..4 */
+  Teq(nextRound(newState(),function(){return 0;}).seq[0],1,'rnd 0 → botón 1');
+  Teq(nextRound(newState(),function(){return 0.999999;}).seq[0],4,'rnd ~1 → botón 4');
+  Teq(nextRound(newState(),function(){return 0.5;}).seq[0],3,'rnd 0.5 → botón 3');
+  Teq(nextRound(newState(),function(){return 3;}).seq[0],3,'rnd entero 3 → botón 3');
+  Teq(nextRound(newState(),function(){return 1;}).seq[0],1,'rnd entero 1 → botón 1');
+  T(nextRound(newState()).seq[0]>=1&&nextRound(newState()).seq[0]<=4,'rnd por defecto (Math.random) en 1..4');
+
+  /* nextRound en fases distintas de show: no-op por referencia */
+  var inSt=beginInput(nextRound(newState()));
+  var sameIn=nextRound(inSt);
+  T(sameIn===inSt,'nextRound en fase input: no-op (misma referencia)');
+  Teq(sameIn.seq.length,1,'nextRound en fase input: seq intacta');
+  var overSt0=fail(nextRound(newState()));
+  var sameOver=nextRound(overSt0);
+  T(sameOver===overSt0,'nextRound en fase over: no-op (misma referencia)');
+
+  /* --- beginInput --- */
+  var sB=beginInput(nextRound(newState()));
+  Teq(sB.phase,'input','beginInput: show → input');
+  T(beginInput(sB)===sB,'beginInput en fase input: no-op');
+  var fresh=newState();
+  T(beginInput(fresh)===fresh,'beginInput con seq vacía: no-op');
+
+  /* --- input correcta acumula y al completar pasa a siguiente ronda --- */
+  var st=nextRound(nextRound(nextRound(newState())));   /* seq de 3 */
+  Teq(st.seq.length,3,'preparado: seq de 3');
+  st=beginInput(st);
+  var mid=input(st,st.seq[0]);
+  T(mid.ok,'paso 1 correcto: ok=true');
+  Teq(mid.st.input.length,1,'paso 1: acumula en input');
+  Teq(mid.st.phase,'input','paso 1: sigue en fase input');
+  Teq(mid.st.score,0,'paso 1: score sigue 0 (ronda sin completar)');
+  var cur=mid.st;
+  for(var i=1;i<3;i++){
+    var r=input(cur,cur.seq[i]);
+    T(r.ok,'paso '+(i+1)+' correcto: ok=true');
+    cur=r.st;
+  }
+  Teq(cur.phase,'show','al completar la ronda: vuelve a show (siguiente ronda)');
+  Teq(cur.input.length,0,'al completar: input se limpia');
+  Teq(cur.score,3,'al completar ronda de 3: score 3');
+  Teq(cur.seq.length,3,'al completar: seq intacta');
+  Teq(JSON.stringify(cur.seq),JSON.stringify(st.seq),'al completar: misma seq que al empezar');
+
+  /* --- input incorrecta → over con score = longitud - 1 --- */
+  var st3=beginInput(nextRound(nextRound(newState())));   /* seq de 2 */
+  var wrong=st3.seq[0]===1?2:1;
+  var snap3=JSON.stringify(st3);
+  var r3=input(st3,wrong);
+  T(r3.ok===false,'input incorrecta: ok=false');
+  Teq(r3.st.phase,'over','input incorrecta: fase over');
+  Teq(r3.st.score,1,'input incorrecta: score = longitud-1 (2-1=1)');
+  Teq(r3.st.input.length,0,'input incorrecta: input vacío en over');
+  Teq(JSON.stringify(st3),snap3,'input incorrecta NO muta el original');
+  T(isOver(r3.st),'isOver detecta la derrota');
+  /* fallo en la primera ronda (longitud 1) → score 0 */
+  Teq(fail(nextRound(newState())).score,0,'fail en ronda 1: score 0');
+  Teq(fail(newState()).score,0,'fail con seq vacía: score 0');
+  T(fail(fail(newState()))===fail(newState())||isOver(fail(fail(newState()))),'fail en over: no-op coherente');
+
+  /* --- inputs fuera de turno: no-op --- */
+  var showSt=nextRound(newState());
+  var rS=input(showSt,1);
+  T(rS.st===showSt&&rS.ok===false,'input en fase show: no-op por referencia');
+  var overSt=fail(nextRound(newState()));
+  var rO=input(overSt,1);
+  T(rO.st===overSt&&rO.ok===false,'input en fase over: no-op por referencia');
+  var inSt2=beginInput(nextRound(newState()));
+  var r0=input(inSt2,0);
+  T(r0.st===inSt2&&r0.ok===false,'btn 0 inválido: no-op');
+  var r5=input(inSt2,5);
+  T(r5.st===inSt2&&r5.ok===false,'btn 5 inválido: no-op');
+  var rF=input(inSt2,2.5);
+  T(rF.st===inSt2&&rF.ok===false,'btn fraccionario: no-op');
+  var rN=input(inSt2,NaN);
+  T(rN.st===inSt2&&rN.ok===false,'btn NaN: no-op');
+  T(typeof rS.ok==='boolean'&&rS.st,'input devuelve siempre {st, ok}');
+
+  /* --- inmutabilidad de input correcta --- */
+  var im=beginInput(nextRound(newState()));
+  var snap=JSON.stringify(im);
+  input(im,im.seq[0]);
+  Teq(JSON.stringify(im),snap,'input correcta NO muta el original');
+
+  /* --- 100 rondas simuladas con rnd inyectado: coherentes --- */
+  var seed=12345;
+  var lcg=function(){
+    seed=(seed*1103515245+12345)%2147483648;
+    return seed/2147483648;
+  };
+  var stR=newState(), coherent=true, prevLen=0;
+  for(var n=0;n<100;n++){
+    stR=nextRound(stR,lcg);
+    if(stR.seq.length!==prevLen+1) coherent=false;
+    if(stR.phase!=='show') coherent=false;
+    if(JSON.stringify(stR.input)!=='[]') coherent=false;
+    for(var k=0;k<stR.seq.length;k++){
+      var v=stR.seq[k];
+      if(!(v>=1&&v<=4&&v===Math.floor(v))) coherent=false;
+    }
+    prevLen=stR.seq.length;
+    stR=beginInput(stR);
+    if(stR.phase!=='input') coherent=false;
+    for(var k2=0;k2<stR.seq.length;k2++){
+      var rr=input(stR,stR.seq[k2]);
+      if(!rr.ok) coherent=false;
+      stR=rr.st;
+    }
+    if(stR.phase!=='show') coherent=false;
+    if(stR.score!==stR.seq.length) coherent=false;
+    if(stR.best!==0) coherent=false;
+  }
+  T(coherent,'100 rondas con rnd inyectado: todo coherente');
+  Teq(stR.seq.length,100,'100 rondas: seq de 100');
+  Teq(stR.score,100,'100 rondas: score 100');
+
+  /* misma semilla → misma secuencia (determinismo con rnd inyectado) */
+  var runSeed=function(sd){
+    var s=sd, out=[], stn=newState();
+    for(var q=0;q<20;q++){
+      stn=nextRound(stn,function(){
+        s=(s*1103515245+12345)%2147483648;
+        return s/2147483648;
+      });
+      out.push(stn.seq[stn.seq.length-1]);
+      stn=beginInput(stn);
+      for(var w=0;w<stn.seq.length;w++) stn=input(stn,stn.seq[w]).st;
+    }
+    return out.join(',');
+  };
+  Teq(runSeed(7),runSeed(7),'misma semilla → misma secuencia');
+
+  /* derrota a mitad de una ronda larga: score = longitud-1 */
+  var longSt=beginInput(nextRound(nextRound(nextRound(nextRound(newState())))));  /* seq 4 */
+  var rLong=input(longSt,longSt.seq[0]===4?1:4);
+  T(!rLong.ok&&rLong.st.phase==='over','fallo en ronda de 4 → over');
+  Teq(rLong.st.score,3,'fallo en ronda de 4 → score 3 (=4-1)');
+
+  /* --- récord por nivel (lógica pura) --- */
+  Teq(bestKey(1),'sim.best.1','bestKey(1)');
+  Teq(bestKey(2),'sim.best.2','bestKey(2)');
+  Teq(bestKey(3),'sim.best.3','bestKey(3)');
+  Teq(bestKey(9),'sim.best.2','bestKey inválido → 2');
+  Teq(bestKey(0),'sim.best.2','bestKey 0 → 2');
+  var ub=updateBest({seq:[1,2,3],input:[],phase:'over',score:5,best:3});
+  Teq(ub.best,5,'updateBest sube el récord al score');
+  var ub2=updateBest({seq:[1],input:[],phase:'over',score:2,best:9});
+  Teq(ub2.best,9,'updateBest nunca baja el récord');
+  var origU={seq:[1],input:[],phase:'over',score:2,best:9};
+  updateBest(origU);
+  Teq(origU.best,9,'updateBest NO muta el original');
+  var origU2={seq:[1],input:[],phase:'over',score:2,best:9};
+  var ubSame=updateBest(origU2);
+  T(ubSame!==origU2,'updateBest devuelve estado nuevo');
+  /* récords independientes por dificultad (claves distintas) */
+  var keys=[bestKey(1),bestKey(2),bestKey(3)];
+  T(keys[0]!==keys[1]&&keys[1]!==keys[2]&&keys[0]!==keys[2],'claves de récord distintas por dificultad');
+
+  console.log('----');
+  console.log((t_fail?'RESULTADO: FAIL':'RESULTADO: PASS')+' '+(t_total-t_fail)+'/'+t_total);
+  if(t_fail) process.exitCode=1;
+}
+</script>
+</body>
+</html>
