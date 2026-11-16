@@ -225,6 +225,20 @@ body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
     <span class="lv">FÁCIL · MEDIO · DIFÍCIL</span>
     <button class="info" data-g="go" aria-label="Cómo jugar: Go 9×9">ⓘ</button>
   </a>
+  <a class="game" href="ahorcado.html">
+    <span class="icon">☠</span>
+    <h2>Ahorcado</h2>
+    <p>Adivina la palabra antes de los7 errores, con ahorcado animado.</p>
+    <span class="lv">4 · 5 · 6 LETRAS</span>
+    <button class="info" data-g="ahorcado" aria-label="Cómo jugar: Ahorcado">ⓘ</button>
+  </a>
+  <a class="game" href="quarto.html">
+    <span class="icon">◇</span>
+    <h2>Quarto</h2>
+    <p>Elige la pieza de tu rival:4 en línea con atributo común.</p>
+    <span class="lv">FÁCIL · MEDIO · DIFÍCIL + REGLA</span>
+    <button class="info" data-g="quarto" aria-label="Cómo jugar: Quarto">ⓘ</button>
+  </a>
 </main>
 
 <footer>Un archivo HTML por juego, sin dependencias.</footer>
@@ -263,7 +277,10 @@ var RULES={
   'sopa':{t:'Sopa de Letras',lv:'10×10 · 12×12 · 15×15',r:'Encuentra todas las palabras de la lista.\n\n• Arrastra de la primera a la última letra (solo líneas rectas, diagonales incluidas).\n• Alternativa táctil: toca la primera casilla y después la última.\n• Las encontradas se quedan coloreadas y tachadas.\n• Récord de tiempo por nivel.\nTecla N: nueva partida.'},
 
   'freecell':{t:'FreeCell',lv:'FÁCIL · NORMAL · EXPERTO (2 CELDAS)',r:'Objetivo: llevar las4 montañas de la A al Rey.\n\n• Entre columnas: descendente de color alterno. A columna vacía puede ir cualquier carta.\n• Las4 celdas libres guardan1 carta cada una (Fácil6, Experto2).\n• Doble toque: manda la carta a su montaña si es legal.\n• Secuencias válidas se arrastran enteras.\nTeclas: U deshacer · H pista · N nuevo.'},
-  'go':{t:'Go 9×9',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas NEGRAS y empiezas.\n\n• Coloca piedras en las intersecciones; captura al rodear cadenas enemigas (sin suicidio, ko simple).\n• Dos PASAS seguidos terminan la partida: gana territorio + capturas (komi5.5 compensa a blancas).\n• Toca una piedra para ver su cadena y libertades.\nTeclas: P pasar · U deshacer · H pista · N nuevo.'}
+  'go':{t:'Go 9×9',lv:'FÁCIL · MEDIO · DIFÍCIL',r:'Tú juegas NEGRAS y empiezas.\n\n• Coloca piedras en las intersecciones; captura al rodear cadenas enemigas (sin suicidio, ko simple).\n• Dos PASAS seguidos terminan la partida: gana territorio + capturas (komi5.5 compensa a blancas).\n• Toca una piedra para ver su cadena y libertades.\nTeclas: P pasar · U deshacer · H pista · N nuevo.'},
+
+  'ahorcado':{t:'Ahorcado',lv:'4 · 5 · 6 LETRAS',r:'Adivina la palabra antes de7 errores.\n\n• Toca las letras del teclado o escribe con el teclado físico.\n• Cada error dibuja una parte del ahorcado (7 trazos).\n• Las letras usadas quedan marcadas ✓/✗.\n• Estadísticas y distribución por nivel.\nTecla N: nueva partida.'},
+  'quarto':{t:'Quarto',lv:'FÁCIL · MEDIO · DIFÍCIL + REGLA',r:'Tú eliges QUÉ pieza se juega: toca una casilla vacía y luego una pieza del banco (o al revés).\n\n•16 piezas con4 atributos: forma, relleno, color y altura.\n• Regla Clásica: gana la línea de4 con al menos un atributo COMÚN (empates posibles).\n• Regla Libre: gana cualquier4 en línea.\n• Dificultad = fuerza de la IA; la regla se elige aparte.\nTeclas: U deshacer · H pista · N nuevo.'}
 };
 var ov=document.getElementById('infoOv');
 function openInfo(g){

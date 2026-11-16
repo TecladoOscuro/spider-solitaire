@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<meta name="theme-color" content="#14471c">
+<title>Quarto</title>
+<style>
+html{background-color:#14471c}
+:root{--cw:clamp(34px,min(15vw,14vh),76px);--gap:clamp(4px,1vw,9px);--sw:calc(var(--cw)*.72)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(ellipse at top,#2f7d3a,#14471c 72%) fixed,#14471c;
+  color:#eaf5ea;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit}
+a.btn{text-decoration:none}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.4px}
+.brand .mark{font-size:22px}
+.stats{display:flex;gap:9px;font-variant-numeric:tabular-nums}
+.stat{background:rgba(0,0,0,.3);padding:4px 11px;border-radius:8px;min-width:66px;text-align:center}
+.stat span{display:block;font-size:9.5px;opacity:.72;text-transform:uppercase;letter-spacing:.7px}
+.stat b{font-size:15px;font-weight:650}
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:13px;background:#37474f;color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+.btn:hover{background:#455a64}
+.btn:active{transform:translateY(1px)}
+select.btn{background:#263238;padding:7px 8px}
+
+/* ---------- turno ---------- */
+.statusbar{display:flex;justify-content:center;padding:10px 14px 0}
+.pill{
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);padding:5px 16px;border-radius:999px;
+  font-size:14px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#90a4ae;box-shadow:0 0 7px currentColor;flex:none}
+.dot.r{background:#e53935;color:#e53935}
+.dot.y{background:#fdd835;color:#fdd835}
+.dot.draw{background:#90a4ae;color:#90a4ae}
+
+/* ---------- tablero4×4 ---------- */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;min-height:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1.6vh,16px)}
+.board{
+  position:relative;
+  display:grid;grid-template-columns:repeat(4,var(--cw));gap:var(--gap);
+  padding:var(--gap);
+  background:linear-gradient(180deg,#4f93e6,#1d5fb2);
+  border-radius:clamp(8px,1.4vw,16px);
+  box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.4),inset 0 -3px 0 rgba(0,0,0,.28);
+}
+.cell{
+  width:var(--cw);height:var(--cw);border-radius:calc(var(--cw)*.2);
+  background:#0d3a1e;
+  box-shadow:inset 0 3px 7px rgba(0,0,0,.6),inset 0 -1px 0 rgba(255,255,255,.06);
+  display:grid;place-items:center;position:relative;cursor:pointer;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.cell:hover{box-shadow:inset 0 3px 7px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.3)}
+.cell.sel{box-shadow:inset 0 3px 7px rgba(0,0,0,.6),0 0 0 3px #ffee58,0 0 12px rgba(255,238,88,.65)}
+.cell.hint{animation:hintcell .55s ease-in-out infinite alternate}
+@keyframes hintcell{
+  from{box-shadow:inset 0 3px 7px rgba(0,0,0,.6),0 0 0 2px rgba(255,238,88,.5)}
+  to{box-shadow:inset 0 3px 7px rgba(0,0,0,.6),0 0 0 6px rgba(255,238,88,.95)}
+}
+.cell.won{animation:cellpulse .65s ease-in-out infinite alternate}
+@keyframes cellpulse{
+  from{box-shadow:inset 0 3px 7px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.55)}
+  to{box-shadow:inset 0 3px 7px rgba(0,0,0,.6),0 0 0 6px rgba(255,255,255,.95)}
+}
+.cell.won .pwrap{filter:drop-shadow(0 0 5px rgba(255,255,255,.9))}
+
+/* ---------- piezas (4 atributos) ---------- */
+.pwrap{width:84%;height:84%;display:grid;place-items:center;pointer-events:none}
+.piece{
+  width:100%;height:100%;position:relative;border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,#fffdf6,#eadfc4 52%,#c9b98f);
+  box-shadow:0 2px 5px rgba(0,0,0,.5),inset 0 -3px 6px rgba(0,0,0,.22),inset 0 3px 5px rgba(255,255,255,.65);
+}
+.piece.sq{border-radius:22%}
+.piece.dark{background:radial-gradient(circle at 34% 28%,#78909c,#37474f 52%,#1b242b);box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 -3px 6px rgba(0,0,0,.4),inset 0 3px 5px rgba(255,255,255,.28)}
+.piece.hollow::after{
+  content:"";position:absolute;inset:27%;border-radius:inherit;background:#0d3a1e;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.7);
+}
+.piece.tall{transform:scale(1.13);filter:drop-shadow(0 4px 4px rgba(0,0,0,.5))}
+.piece.short{transform:scale(.84)}
+.pwrap.pop{animation:pop .42s cubic-bezier(.3,1.35,.5,1) both}
+@keyframes pop{
+  0%{transform:scale(.2);opacity:0}
+  62%{transform:scale(1.1);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+
+/* ---------- línea ganadora ---------- */
+#wl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;display:none;z-index:5}
+#wl.show{display:block}
+#wl line{stroke:#ffee58;stroke-width:6;stroke-linecap:round;filter:drop-shadow(0 0 7px rgba(255,238,88,.95))}
+
+/* ---------- banco ---------- */
+.bankwrap{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.banklabel{font-size:11.5px;opacity:.72;letter-spacing:.6px;text-transform:uppercase}
+.bank{
+  display:flex;flex-wrap:wrap;gap:calc(var(--gap)*.8);justify-content:center;
+  max-width:min(94vw,560px);padding:8px 10px;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);border-radius:12px;
+}
+.slot{
+  width:var(--sw);height:var(--sw);display:grid;place-items:center;position:relative;
+  border-radius:calc(var(--sw)*.24);background:#0d3a1e;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.55);
+  cursor:pointer;transition:transform .12s,box-shadow .12s;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;
+}
+.slot:hover{transform:translateY(-2px)}
+.slot.on{box-shadow:inset 0 2px 5px rgba(0,0,0,.55),0 0 0 3px #ffee58,0 0 10px rgba(255,238,88,.75)}
+.slot.hintp{animation:slotblink .5s steps(1) infinite}
+@keyframes slotblink{
+  50%{box-shadow:inset 0 2px 5px rgba(0,0,0,.55),0 0 0 3px #ffee58,0 0 10px rgba(255,238,88,.75)}
+}
+.slot>.piece{width:80%;height:80%}
+
+/* ---------- ayuda / overlays ---------- */
+.hint-bar{padding:0 14px 8px;font-size:12px;opacity:.6;text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.15);
+  padding:9px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;max-width:88vw;text-align:center;
+}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#win{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;place-items:center;z-index:70}
+#win.show{display:grid}
+.winbox{
+  background:#17351b;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:26px 34px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:90vw;
+}
+.winbox h2{margin:0 0 8px;font-size:26px}
+.winbox p{margin:12px 0 18px;opacity:.85;font-variant-numeric:tabular-nums}
+.winbox .why{margin:4px 0 0;font-size:13px;opacity:.75}
+.winline{display:flex;gap:7px;justify-content:center;margin:4px 0 2px;flex-wrap:wrap}
+.winline[hidden]{display:none}
+.mini{
+  width:30px;height:30px;flex:none;
+  animation:minipulse .65s ease-in-out infinite alternate;
+}
+@keyframes minipulse{
+  from{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.75)}
+  to{transform:scale(1.14);box-shadow:0 0 0 6px rgba(255,255,255,.22)}
+}
+@media (max-width:760px){
+  .top{gap:7px;padding:8px 10px}
+  .brand h1{font-size:15px}
+  .stat{min-width:56px;padding:3px 8px}
+  .board-wrap{padding:8px}
+  .hint-bar{padding:0 10px 7px}
+  .statusbar{padding-top:7px}
+}
+@media (max-width:600px){
+  .stats{gap:6px}
+  .stat{min-width:50px;padding:3px 7px}
+  .stat b{font-size:13.5px}
+  .btn{font-size:12.5px;padding:6px 10px}
+  .pill{font-size:13px;padding:4px 12px}
+  .winbox{padding:20px 22px}
+  .winbox h2{font-size:22px}
+}
+/* app nativa apple: safe areas (notch/status bar/home indicator) */
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@supports(padding:env(safe-area-inset-top)){
+  body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+  .top{top:env(safe-area-inset-top)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html" title="Lista de juegos"><span class="mark">◆</span><h1>Quarto</h1></a>
+  <div class="stats">
+    <div class="stat"><span>Victorias</span><b id="statW">0</b></div>
+    <div class="stat"><span>Tablas</span><b id="statD">0</b></div>
+    <div class="stat"><span>Derrotas</span><b id="statL">0</b></div>
+  </div>
+  <div class="tools">
+    <a class="btn" href="index.html" title="Volver a la lista de juegos">⌂ Juegos</a>
+    <select class="btn" id="diffSel" title="Dificultad de la IA (localStorage qt.diff)">
+      <option value="1">Fácil</option>
+      <option value="2">Medio</option>
+      <option value="3">Difícil</option>
+    </select>
+    <select class="btn" id="ruleSel" title="Regla de victoria (localStorage qt.rule)">
+      <option value="classic">Regla: Clásica</option>
+      <option value="free">Regla: Libre</option>
+    </select>
+    <button class="btn" id="btnNew" title="Nuevo juego (tecla N)">Nuevo</button>
+    <button class="btn" id="btnUndo" title="Deshacer tu jugada y la de la IA (tecla U)">Deshacer</button>
+    <button class="btn" id="btnHint" title="Pista: casilla y pieza recomendadas (tecla H)">Pista</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="pill"><i class="dot r" id="turnDot"></i><span id="status" aria-live="polite">Tu turno</span></span>
+</div>
+
+<main class="board-wrap">
+  <div class="stage">
+    <div class="board" id="board">
+      <svg id="wl" aria-hidden="true"><line id="wlLine" x1="0" y1="0" x2="0" y2="0"></line></svg>
+    </div>
+    <div class="bankwrap">
+      <div class="banklabel" id="bankLabel">Banco · 16 piezas</div>
+      <div class="bank" id="bank"></div>
+    </div>
+  </div>
+</main>
+
+<div class="hint-bar">Toca una casilla y luego una pieza del banco (o al revés) · Regla Clásica: gana la línea de4 con al menos un atributo común · Regla Libre: cualquier4 · Teclas: N nuevo · U deshacer · H pista</div>
+
+<div id="toast"></div>
+
+<div id="win">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <div class="winline" id="winLine" hidden></div>
+    <p class="why" id="winWhy"></p>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">Jugar otra vez</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOTOR DE QUARTO PURO — sin IIFE, sin 'use strict'.
+   Sin referencias a document / window / setTimeout / localStorage en el
+   motor: todo es JavaScript plano evaluable en Node.
+
+   REGLAS (clásico Gigamic) — DOCUMENTADAS:
+     Tablero 4x4 (16 casillas) y 16 piezas con 4 atributos binarios:
+       bit0 forma   (0 redondo / 1 cuadrado)
+       bit1 relleno (0 sólido  / 1 hueco)
+       bit2 color   (0 claro   / 1 oscuro)
+       bit3 altura  (0 bajo    / 1 alto)
+     Cada turno tocas una CASILLA VACÍA y luego eliges una pieza del banco
+     (o al revés): la pieza se coloca ahí. No hay piezas fijas por jugador:
+     el banco es común.
+
+     DOS MODOS DE VICTORIA (selector "Regla", localStorage 'qt.rule'):
+       · 'classic' (por defecto = la clásica de Gigicap/Gigamic, la
+         "difícil"): gana quien complete una línea de 4 (horizontal,
+         vertical o diagonal) donde LAS 4 PIEZAS COMPARTAN AL MENOS UN
+         ATRIBUTO. Se revisan las 10 líneas en orden fijo (4 filas,
+         4 columnas, 2 diagonales: en un tablero 4x4 hay 10 líneas de 4,
+         no 8). Tablero lleno sin línea ganadora: EMPATE.
+       · 'free' ("fácil"): gana quien complete CUALQUIER 4 en línea, sin
+         mirar atributos. Con el tablero lleno SIEMPRE hay una línea
+         completa, así que en este modo no existen empates.
+     La línea completada se atribuye al jugador que coloca la última
+     pieza. Los dos modos conviven con la dificultad de la IA (3 niveles),
+     que es un ajuste independiente ('qt.diff'): así el jugador puede
+     jugar regla clásica contra una IA fácil, etc.
+
+   DISEÑO DEL ESTADO:
+     state = {board, turn, over, result, line, attrs, rule, bank}
+       board : array de 16 (índice = fila*4 + columna, fila 0 = arriba),
+               null | id de pieza (0..15)
+       turn  : 'p' (tú) | 'a' (IA) → a quién le toca
+       over  : boolean
+       result: null | 'p' | 'a' | 'draw'
+       line  : [4 índices] de la línea ganadora | null
+       attrs : atributos comunes de esa línea (índices 0..3) | null
+       rule  : 'classic' | 'free'
+       bank  : {n, pieces[]} → piezas aún no colocadas (banco común)
+     place() NUNCA muta: devuelve un estado nuevo, o null si es ilegal
+     (casilla ocupada, pieza fuera del banco, partida terminada).
+     winner(board, rule) → {line, attrs} | null.
+     chooseMove(st, level, opts) → {i, piece} | null. opts.rng inyecta el
+     generador aleatorio; opts.timeBox fija el presupuesto en ms.
+
+   NIVELES DE IA (localStorage 'qt.diff'):
+     1 Fácil   : casilla y pieza al azar (juega mal a propósito).
+     2 Medio   : heurística — siempre aprovecha la victoria inmediata,
+                  nunca regala victoria inmediata al rival (bloquear),
+                  premia avanzar líneas vivas (amenazar) + 30% de azar.
+                  time-box 300 ms.
+     3 Difícil : minimax con poda alfa-beta y deepening iterativo,
+                  time-box <= 900 ms. Detección exacta de victoria y
+                  derrota inmediatas (dobles amenazas) y evaluación de
+                  líneas vivas + escasez de piezas que rompen la línea.
+   ========================================================================= */
+
+var NCELLS=16, NPIECES=16;
+var ATTRS=['forma','relleno','color','altura'];
+var ATTR_VALUES=[['redondo','cuadrado'],['sólido','hueco'],['claro','oscuro'],['bajo','alto']];
+var RULE_CLASSIC='classic', RULE_FREE='free';
+var RULE_NAMES={classic:'Clásica (4 con atributo común)',free:'Libre (cualquier 4)'};
+var LEVEL_NAMES=['','Fácil','Medio','Difícil'];
+var LEVEL_TIMEBOX=[0,0,300,900];   /* ms: Fácil sin search, Medio 300, Difícil 900 */
+var WIN_SCORE=100000, INF=1e9;
+var ENGINE_TIMEOUT={};
+
+/* Las 10 líneas de 4: 4 filas, 4 columnas, 2 diagonales (orden fijo). */
+var LINES=[
+  [0,1,2,3],[4,5,6,7],[8,9,10,11],[12,13,14,15],
+  [0,4,8,12],[1,5,9,13],[2,6,10,14],[3,7,11,15],
+  [0,5,10,15],[3,6,9,12]
+];
+var LINES_BY_CELL=[], _i, _t, _c;
+for(_i=0;_i<NCELLS;_i++) LINES_BY_CELL.push([]);
+for(_t=0;_t<LINES.length;_t++){
+  for(_c=0;_c<4;_c++) LINES_BY_CELL[LINES[_t][_c]].push(LINES[_t]);
+}
+/* Orden de exploración: centro primero (mejora la poda alfa-beta). */
+var CENTER_ORDER=[5,6,9,10,4,7,8,11,0,1,2,3,12,13,14,15];
+
+/* ---------- piezas ---------- */
+function pieceAttrs(id){ return [(id&1),((id>>1)&1),((id>>2)&1),((id>>3)&1)]; }
+function pieceName(id){
+  var a=pieceAttrs(id),out='',k;
+  for(k=0;k<4;k++) out+=(k?' · ':'')+ATTR_VALUES[k][a[k]];
+  return out;
+}
+/* Atributos que comparten TODAS las piezas de ids (intersección). */
+function commonAttrs(ids){
+  var out=[],a,k,ok,v;
+  if(!ids.length) return out;
+  for(a=0;a<4;a++){
+    v=(ids[0]>>a)&1; ok=true;
+    for(k=1;k<ids.length;k++){ if(((ids[k]>>a)&1)!==v){ ok=false; break; } }
+    if(ok) out.push(a);
+  }
+  return out;
+}
+/* ¿Hay pieza en el banco que comparta al menos un atributo de ca? */
+function shareablePiece(ids,ca,mask){
+  var p,a,av;
+  for(p=0;p<NPIECES;p++){
+    if(!((mask>>p)&1)) continue;
+    for(a=0;a<ca.length;a++){
+      av=(ids[0]>>ca[a])&1;
+      if(((p>>ca[a])&1)===av) return true;
+    }
+  }
+  return false;
+}
+/* Nº de piezas del banco que rompen TODOS los atributos comunes de ids. */
+function spoilersFor(ids,mask){
+  var ca=commonAttrs(ids);
+  if(!ca.length) return 0;
+  var cnt=0,p,a,breaks,av;
+  for(p=0;p<NPIECES;p++){
+    if(!((mask>>p)&1)) continue;
+    breaks=true;
+    for(a=0;a<ca.length;a++){
+      av=(ids[0]>>ca[a])&1;
+      if(((p>>ca[a])&1)===av){ breaks=false; break; }
+    }
+    if(breaks) cnt++;
+  }
+  return cnt;
+}
+
+/* ---------- detección de ganador ---------- */
+function lineWinner(board,L,rule){
+  var ids=[],k,v;
+  for(k=0;k<4;k++){
+    v=board[L[k]];
+    if(v===null||v===undefined||v<0) return null;
+    ids.push(v);
+  }
+  var ca=commonAttrs(ids);
+  if(rule===RULE_FREE||ca.length) return {line:L.slice(),attrs:ca};
+  return null;
+}
+/* winner(board[,rule]) → {line,attrs} | null. Las10 líneas en orden fijo. */
+function winner(board,rule){
+  if(!board) return null;
+  if(rule!==RULE_FREE) rule=RULE_CLASSIC;
+  for(var t=0;t<LINES.length;t++){
+    var w=lineWinner(board,LINES[t],rule);
+    if(w) return w;
+  }
+  return null;
+}
+/* Igual que winner pero solo las líneas que pasan por la casilla i
+   (la victoria creada por una jugada siempre pasa por la casilla jugada). */
+function winnerAt(board,i,rule){
+  if(!(i>=0&&i<NCELLS)) return null;
+  if(rule!==RULE_FREE) rule=RULE_CLASSIC;
+  var Ls=LINES_BY_CELL[i];
+  for(var t=0;t<Ls.length;t++){
+    var w=lineWinner(board,Ls[t],rule);
+    if(w) return w;
+  }
+  return null;
+}
+/* ¿Puede el que mueve ganar YA con esta jugada? (simétrico: banco común) */
+function winAvailable(board,mask,rule){
+  for(var t=0;t<LINES.length;t++){
+    var L=LINES[t],ids=[],c;
+    for(c=0;c<4;c++){
+      var v=board[L[c]];
+      if(v!==null&&v!==undefined&&v>=0) ids.push(v);
+    }
+    if(ids.length!==3) continue;
+    if(rule===RULE_FREE) return true;
+    var ca=commonAttrs(ids);
+    if(ca.length&&shareablePiece(ids,ca,mask)) return true;
+  }
+  return false;
+}
+function maskOf(st){
+  var m=0,k;
+  if(!st||!st.bank) return 0;
+  for(k=0;k<st.bank.pieces.length;k++) m|=(1<<st.bank.pieces[k]);
+  return m;
+}
+
+/* ---------- estado ---------- */
+function initialState(rule){
+  if(rule!==RULE_FREE) rule=RULE_CLASSIC;
+  var board=[],pieces=[],k;
+  for(k=0;k<NCELLS;k++) board.push(null);
+  for(k=0;k<NPIECES;k++) pieces.push(k);
+  return {board:board,turn:'p',over:false,result:null,line:null,attrs:null,
+          rule:rule,bank:{n:NPIECES,pieces:pieces}};
+}
+function legalCells(st){
+  var out=[],i;
+  if(!st) return out;
+  for(i=0;i<NCELLS;i++) if(st.board[i]===null||st.board[i]===undefined) out.push(i);
+  return out;
+}
+function legalMoves(st){
+  var out=[],cells=legalCells(st),k,j;
+  if(!st) return out;
+  for(k=0;k<cells.length;k++)
+    for(j=0;j<st.bank.pieces.length;j++)
+      out.push({i:cells[k],piece:st.bank.pieces[j]});
+  return out;
+}
+/* Movimientos como enteros compactos: (i<<4)|piece. */
+function moveCodes(st){
+  var out=[],i,k;
+  for(i=0;i<NCELLS;i++){
+    if(st.board[i]===null||st.board[i]===undefined){
+      for(k=0;k<st.bank.pieces.length;k++) out.push((i<<4)|st.bank.pieces[k]);
+    }
+  }
+  return out;
+}
+
+/* ---------- aplicación de jugadas (deep copy, no muta) ---------- */
+/* place(st,i,piece) → estado NUEVO, o null si es ilegal:
+   casilla ocupada, pieza que no está en el banco, o partida terminada. */
+function place(st,i,piece){
+  if(!st||st.over) return null;
+  if(typeof i!=='number'||i!==Math.floor(i)||i<0||i>=NCELLS) return null;
+  if(st.board[i]!==null&&st.board[i]!==undefined) return null;
+  if(!st.bank||st.bank.pieces.indexOf(piece)<0) return null;
+  var board=st.board.slice(), pieces=st.bank.pieces.slice(), mover=st.turn;
+  board[i]=piece;
+  pieces.splice(pieces.indexOf(piece),1);
+  var w=winner(board,st.rule);
+  var over=!!w, result=w?mover:null, line=w?w.line:null, attrs=w?w.attrs:null;
+  if(!over&&pieces.length===0){ over=true; result='draw'; }
+  return {board:board,turn:(mover==='p'?'a':'p'),over:over,result:result,
+          line:line,attrs:attrs,rule:st.rule,bank:{n:pieces.length,pieces:pieces}};
+}
+
+/* ---------- evaluación ---------- */
+function engineNow(){
+  if(typeof performance!=='undefined'&&performance&&typeof performance.now==='function'){
+    return performance.now();
+  }
+  return Date.now();
+}
+/* Puntuación desde la perspectiva de QUIEN MUEVE. No detecta victoria
+   inmediata: llamar antes winAvailable(). Términos negativos = presión
+   (líneas vivas que el que mueve debe sortear). */
+function staticEval(board,mask,rule){
+  var score=0,t,c;
+  for(t=0;t<LINES.length;t++){
+    var L=LINES[t],ids=[];
+    for(c=0;c<4;c++){
+      var v=board[L[c]];
+      if(v!==null&&v!==undefined&&v>=0) ids.push(v);
+    }
+    var k=ids.length;
+    if(k===0||k===4) continue;         /* completa sin victoria: fuera */
+    if(rule===RULE_FREE){
+      if(k===2) score-=40; else if(k===1) score-=5;
+    }else{
+      var ca=commonAttrs(ids);
+      if(k===3){ /* sin victoria: muerta o sin pieza que la complete */ }
+      else if(k===2&&ca.length) score-=(spoilersFor(ids,mask)===0)?90:40;
+      else if(k===1) score-=5;
+    }
+  }
+  return score;
+}
+/* Premio por avanzar líneas vivas desde la casilla i (amenazar). */
+function advanceBonus(board,i,rule){
+  var bonus=0,Ls=LINES_BY_CELL[i],t,c;
+  for(t=0;t<Ls.length;t++){
+    var L=Ls[t],ids=[];
+    for(c=0;c<4;c++){
+      var v=board[L[c]];
+      if(v!==null&&v!==undefined&&v>=0) ids.push(v);
+    }
+    var k=ids.length;
+    if(k<2) continue;
+    if(rule===RULE_FREE){ if(k===2) bonus+=30; }
+    else if(commonAttrs(ids).length){ bonus+=(k===3)?45:30; }
+  }
+  return bonus;
+}
+function cellClass(board,i,mask,rule){
+  var Ls=LINES_BY_CELL[i],t,c,ids;
+  for(t=0;t<Ls.length;t++){
+    ids=[];
+    for(c=0;c<4;c++){ var v=board[Ls[t][c]]; if(v!==null&&v!==undefined&&v>=0) ids.push(v); }
+    if(ids.length===3){
+      if(rule===RULE_FREE) return 2;
+      var ca=commonAttrs(ids);
+      if(ca.length&&shareablePiece(ids,ca,mask)) return 2;
+    }
+  }
+  for(t=0;t<Ls.length;t++){
+    ids=[];
+    for(c=0;c<4;c++){ var v2=board[Ls[t][c]]; if(v2!==null&&v2!==undefined&&v2>=0) ids.push(v2); }
+    if(ids.length===2&&commonAttrs(ids).length) return 1;
+  }
+  return 0;
+}
+/* Orden de raíz: primero ganadoras, luego amenazas, luego el resto. */
+function rootCellOrder(board,mask,rule){
+  var wins=[],threats=[],rest=[],k,i;
+  for(k=0;k<CENTER_ORDER.length;k++){
+    i=CENTER_ORDER[k];
+    if(!(board[i]===null||board[i]===undefined||board[i]<0)) continue;
+    var cls=cellClass(board,i,mask,rule);
+    if(cls===2) wins.push(i);
+    else if(cls===1) threats.push(i);
+    else rest.push(i);
+  }
+  return wins.concat(threats,rest);
+}
+function emptyCenterCells(board){
+  var out=[],k,i;
+  for(k=0;k<CENTER_ORDER.length;k++){
+    i=CENTER_ORDER[k];
+    if(board[i]===null||board[i]===undefined||board[i]<0) out.push(i);
+  }
+  return out;
+}
+
+/* ---------- búsqueda ---------- */
+function negamax(board,mask,depth,alpha,beta,ply,rule,ctx){
+  ctx.nodes++;
+  if((ctx.nodes&255)===0&&engineNow()>=ctx.deadline) throw ENGINE_TIMEOUT;
+  if(winAvailable(board,mask,rule)) return WIN_SCORE-ply;
+  if(depth<=0) return staticEval(board,mask,rule);
+  var cells=emptyCenterCells(board),best=-INF,cut=false;
+  for(var ci=0;ci<cells.length&&!cut;ci++){
+    var i=cells[ci];
+    for(var p=0;p<NPIECES;p++){
+      if(!((mask>>p)&1)) continue;
+      board[i]=p;
+      var w=winnerAt(board,i,rule),v;
+      if(w) v=WIN_SCORE-(ply+1);
+      else v=-negamax(board,mask&~(1<<p),depth-1,-beta,-alpha,ply+1,rule,ctx);
+      board[i]=null;
+      if(v>best) best=v;
+      if(best>alpha) alpha=best;
+      if(alpha>=beta){ cut=true; break; }
+    }
+  }
+  return best;
+}
+function searchRoot(board,mask,depth,rule,ctx){
+  var cells=rootCellOrder(board,mask,rule);
+  var best=null,bestV=-INF,alpha=-INF,cut=false;
+  for(var ci=0;ci<cells.length&&!cut;ci++){
+    var i=cells[ci];
+    for(var p=0;p<NPIECES;p++){
+      if(!((mask>>p)&1)) continue;
+      board[i]=p;
+      var w=winnerAt(board,i,rule),v;
+      if(w) v=WIN_SCORE-1;
+      else v=-negamax(board,mask&~(1<<p),depth-1,-INF,-alpha,1,rule,ctx);
+      board[i]=null;
+      if(v>bestV){ bestV=v; best={i:i,piece:p}; }
+      if(v>alpha) alpha=v;
+      if(v>=WIN_SCORE-1){ cut=true; break; }   /* victoria forzada: para */
+    }
+  }
+  return {move:best,score:bestV};
+}
+/* Nivel 3: deepening iterativo con time-box. Devuelve SIEMPRE la jugada
+   de la última profundidad COMPLETADA (o la primera legal si ninguna). */
+function chooseSearch(st,timeBox){
+  var moves=moveCodes(st), mask=maskOf(st), rule=st.rule;
+  if(!moves.length) return null;
+  var work=st.board.slice(),ci,p,i;
+  /* victoria inmediata: se toma sin buscar */
+  if(winAvailable(work,mask,rule)){
+    var cells=rootCellOrder(work,mask,rule);
+    for(ci=0;ci<cells.length;ci++){
+      i=cells[ci];
+      for(p=0;p<NPIECES;p++){
+        if(!((mask>>p)&1)) continue;
+        work[i]=p; var w=winnerAt(work,i,rule); work[i]=null;
+        if(w) return {i:i,piece:p};
+      }
+    }
+  }
+  var ctx={deadline:engineNow()+timeBox,nodes:0};
+  var best=moves[0];
+  for(var depth=1;depth<=9;depth++){
+    if(engineNow()>=ctx.deadline) break;
+    var res;
+    try{ res=searchRoot(work,mask,depth,rule,ctx); }
+    catch(e){ if(e!==ENGINE_TIMEOUT) throw e; break; }
+    if(res&&res.move) best=res.move;
+    if(res&&res.score>=WIN_SCORE-1) break;   /* victoria forzada: no seguir */
+  }
+  return best;
+}
+/* Nivel 2: heurística con time-box. */
+function chooseHeuristic(st,rng,timeBox){
+  var moves=moveCodes(st), mask=maskOf(st), rule=st.rule;
+  if(!moves.length) return null;
+  var work=st.board.slice(),k,wi,wp,w;
+  /* 1) victoria inmediata: siempre, sin consultar el azar */
+  if(winAvailable(work,mask,rule)){
+    for(k=0;k<moves.length;k++){
+      wi=moves[k]>>4; wp=moves[k]&15;
+      work[wi]=wp; w=winnerAt(work,wi,rule); work[wi]=null;
+      if(w) return {i:wi,piece:wp};
+    }
+  }
+  /* 2) 30% de azar */
+  if(rng()<0.3){
+    var r=moves[Math.floor(rng()*moves.length)%moves.length];
+    return {i:r>>4,piece:r&15};
+  }
+  /* 3) heurística: bloquear (no regalar victoria inmediata) + amenazar */
+  var deadline=engineNow()+timeBox;
+  var best=null,bestScore=-Infinity;
+  for(k=0;k<moves.length;k++){
+    if(best!==null&&engineNow()>=deadline) break;
+    var i=moves[k]>>4, p=moves[k]&15, sc;
+    work[i]=p;
+    if(winnerAt(work,i,rule)) sc=WIN_SCORE;
+    else{
+      var childMask=mask&~(1<<p);
+      if(winAvailable(work,childMask,rule)) sc=-WIN_SCORE;
+      else sc=-staticEval(work,childMask,rule)+advanceBonus(work,i,rule);
+    }
+    work[i]=null;
+    if(sc>bestScore){ bestScore=sc; best={i:i,piece:p}; }
+  }
+  return best||{i:moves[0]>>4,piece:moves[0]&15};
+}
+
+/* chooseMove(st,level[,opts]) → {i,piece} | null.
+   opts.rng: generador () => [0,1).  opts.timeBox: ms. */
+function chooseMove(st,level,opts){
+  if(!st||st.over) return null;
+  if(!(level>=1)) level=2;
+  if(level>3) level=3;
+  level=Math.floor(level);
+  opts=opts||{};
+  var rng=(typeof opts.rng==='function')?opts.rng:Math.random;
+  var timeBox=opts.timeBox;
+  if(!(timeBox>0)) timeBox=LEVEL_TIMEBOX[level];
+  var cells=legalCells(st), pieces=st.bank.pieces;
+  if(!cells.length||!pieces.length) return null;
+  if(level===1){
+    return {i:cells[Math.floor(rng()*cells.length)%cells.length],
+            piece:pieces[Math.floor(rng()*pieces.length)%pieces.length]};
+  }
+  if(level===2) return chooseHeuristic(st,rng,timeBox);
+  return chooseSearch(st,timeBox);
+}
+
+/* RNG inyectable (mulberry32) para tests y reproducibilidad. */
+function makeRng(seed){
+  var s=seed>>>0;
+  return function(){
+    s=(s+0x6D2B79F5)>>>0;
+    var t=s;
+    t=Math.imul(t^(t>>>15),t|1);
+    t^=t+Math.imul(t^(t>>>7),t|61);
+    return ((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+
+/* Estado global (lo usa la interfaz). */
+var state=initialState();
+
+/* =========================================================================
+   INTERFAZ — solo en navegador. localStorage dentro de este bloque.
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  var $=function(s){return document.querySelector(s);};
+
+  var diff=2;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var stored=parseInt(localStorage.getItem('qt.diff')||'2',10);
+      if(stored===1||stored===2||stored===3) diff=stored;
+    }
+  }catch(e){}
+
+  var rule=RULE_CLASSIC;
+  try{
+    if(typeof localStorage!=='undefined'){
+      var storedRule=localStorage.getItem('qt.rule');
+      if(storedRule===RULE_FREE||storedRule===RULE_CLASSIC) rule=storedRule;
+    }
+  }catch(e){}
+
+  var stats={w:0,d:0,l:0};
+  try{
+    if(typeof localStorage!=='undefined'){
+      var rawStats=localStorage.getItem('qt.stats');
+      if(rawStats){
+        var parsedStats=JSON.parse(rawStats);
+        if(parsedStats&&typeof parsedStats==='object'){
+          stats.w=parsedStats.w|0; stats.d=parsedStats.d|0; stats.l=parsedStats.l|0;
+        }
+      }
+    }
+  }catch(e){}
+
+  var RESULT_TEXT={draw:'¡Empate!',p:'¡Has ganado!',a:'Gana la IA'};
+  var hist=[];            /* estados anteriores, para deshacer */
+  var aiThinking=false;
+  var aiToken=0;          /* invalida la IA en curso (nuevo/deshacer) */
+  var anim=null;          /* índice de la casilla recién colocada */
+  var selCell=-1, selPiece=-1;
+  var hintCell=-1, hintPiece=-1, hintTimer=null, winTimer=null, toastTimer=null;
+  var cellEls=[];
+
+  /* ---------- util UI ---------- */
+  function toast(msg){
+    var t=$('#toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); },2400);
+  }
+  function saveStats(){
+    try{
+      if(typeof localStorage!=='undefined') localStorage.setItem('qt.stats',JSON.stringify(stats));
+    }catch(e){}
+  }
+  function paintStats(){
+    $('#statW').textContent=String(stats.w);
+    $('#statD').textContent=String(stats.d);
+    $('#statL').textContent=String(stats.l);
+  }
+  function setStatus(){
+    var txt,dot;
+    if(state.over){
+      txt=RESULT_TEXT[state.result]||'Terminada';
+      dot=state.result==='draw'?'draw':state.result;
+    }else if(aiThinking){
+      txt='IA piensa…'; dot='y';
+    }else{
+      txt='Tu turno'; dot='r';
+    }
+    $('#status').textContent=txt;
+    $('#turnDot').className='dot '+dot;
+  }
+  function pieceClasses(id){
+    var c='piece';
+    if(id&1) c+=' sq';
+    if(id&2) c+=' hollow';
+    if(id&4) c+=' dark';
+    if(id&8) c+=' tall'; else c+=' short';
+    return c;
+  }
+  function clearHint(){
+    if(hintTimer){ clearTimeout(hintTimer); hintTimer=null; }
+    hintCell=-1; hintPiece=-1;
+  }
+
+  /* ---------- tablero ---------- */
+  function buildBoard(){
+    var b=$('#board');
+    cellEls=[];
+    for(var i=0;i<NCELLS;i++){
+      var d=document.createElement('div');
+      d.className='cell';
+      d.dataset.i=String(i);
+      d.setAttribute('aria-label','casilla '+(i+1));
+      b.appendChild(d);
+      cellEls.push(d);
+    }
+  }
+  function render(){
+    var won=state.line;
+    for(var i=0;i<NCELLS;i++){
+      var el=cellEls[i];
+      var v=state.board[i];
+      var key=(v===null||v===undefined)?'':String(v);
+      var isWon=!!(won&&won.indexOf(i)>=0);
+      var cls='cell'+(isWon?' won':'')+((selCell===i)?' sel':'')+((hintCell===i)?' hint':'');
+      if(el.dataset.v!==key||el.className!==cls){
+        el.className=cls;
+        el.dataset.v=key;
+        if(key===''){ el.innerHTML=''; el.title=''; }
+        else{
+          var id=parseInt(key,10);
+          el.innerHTML='<div class="pwrap'+((anim===i)?' pop':'')+'"><div class="'+pieceClasses(id)+'"></div></div>';
+          el.title=pieceName(id);
+        }
+      }
+    }
+    anim=null;
+    renderBank();
+    paintStats();
+    setStatus();
+  }
+  function renderBank(){
+    var b=$('#bank'), html='', pieces=state.bank.pieces, k;
+    for(k=0;k<pieces.length;k++){
+      var p=pieces[k];
+      html+='<div class="slot'+((selPiece===p)?' on':'')+((hintPiece===p)?' hintp':'')+
+            '" data-piece="'+p+'" title="'+pieceName(p)+'" aria-label="'+pieceName(p)+
+            '"><div class="'+pieceClasses(p)+'"></div></div>';
+    }
+    b.innerHTML=html;
+    var label='Banco · '+state.bank.n+' pieza'+(state.bank.n===1?'':'s');
+    if(!state.over) label+=state.turn==='p'?' · tu turno':' · turno de la IA';
+    $('#bankLabel').textContent=label;
+  }
+  function renderWin(){
+    var show=!!state.over;
+    $('#win').classList.toggle('show',show);
+    if(!show) return;
+    $('#winTitle').textContent=RESULT_TEXT[state.result]||'Terminada';
+    /* por qué terminó */
+    var why='';
+    if(state.line&&state.line.length===4){
+      if(rule===RULE_FREE) why='Regla Libre: cualquier 4 en línea.';
+      else{
+        var id0=state.board[state.line[0]], names=[],k;
+        for(k=0;k<state.attrs.length;k++){
+          var a=state.attrs[k];
+          names.push(ATTRS[a]+' '+ATTR_VALUES[a][((id0>>a)&1)]);
+        }
+        why='Atributo común: '+names.join(' · ')+'.';
+      }
+    }else{
+      why='Tablero completo: ninguna línea de4 comparte atributo.';
+    }
+    $('#winWhy').textContent=why;
+    $('#winStats').textContent='Victorias '+stats.w+' · Tablas '+stats.d+
+      ' · Derrotas '+stats.l+' · '+LEVEL_NAMES[diff]+' · '+(rule===RULE_FREE?'Regla Libre':'Regla Clásica');
+    var strip=$('#winLine');
+    strip.innerHTML='';
+    if(state.line&&state.line.length===4){
+      for(var i=0;i<state.line.length;i++){
+        var m=document.createElement('span');
+        m.className=pieceClasses(state.board[state.line[i]])+' mini';
+        strip.appendChild(m);
+      }
+      strip.hidden=false;
+    }else{
+      strip.hidden=true;
+    }
+  }
+  /* Línea ganadora animada sobre el tablero (SVG medido por rects). */
+  function drawWinLine(){
+    var svg=$('#wl'), line=$('#wlLine');
+    if(!svg||!line) return;
+    if(!state.line||state.line.length!==4){ svg.classList.remove('show'); return; }
+    var bRect=$('#board').getBoundingClientRect(), pts=[],k;
+    for(k=0;k<4;k++){
+      var r=cellEls[state.line[k]].getBoundingClientRect();
+      pts.push({x:r.left-bRect.left+r.width/2,y:r.top-bRect.top+r.height/2});
+    }
+    line.setAttribute('x1',pts[0].x); line.setAttribute('y1',pts[0].y);
+    line.setAttribute('x2',pts[3].x); line.setAttribute('y2',pts[3].y);
+    var len=Math.sqrt(Math.pow(pts[3].x-pts[0].x,2)+Math.pow(pts[3].y-pts[0].y,2));
+    line.style.transition='none';
+    line.style.strokeDasharray=String(len);
+    line.style.strokeDashoffset=String(len);
+    svg.classList.add('show');
+    requestAnimationFrame(function(){
+      line.style.transition='stroke-dashoffset .7s ease .12s';
+      line.style.strokeDashoffset='0';
+    });
+  }
+  function hideWinLine(){
+    var svg=$('#wl');
+    if(svg) svg.classList.remove('show');
+  }
+
+  /* ---------- partida ---------- */
+  function newGame(){
+    aiToken++;
+    aiThinking=false;
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    clearHint();
+    selCell=-1; selPiece=-1;
+    hist=[];
+    state=initialState(rule);
+    anim=null;
+    hideWinLine();
+    render();
+    renderWin();
+  }
+  function pushHist(){ hist.push(state); }   /* inmutable: basta la referencia */
+
+  function countStats(){
+    if(state.result==='p') stats.w++;
+    else if(state.result==='a') stats.l++;
+    else if(state.result==='draw') stats.d++;
+    saveStats();
+  }
+  function revertStats(){
+    if(state.result==='p'&&stats.w>0) stats.w--;
+    else if(state.result==='a'&&stats.l>0) stats.l--;
+    else if(state.result==='draw'&&stats.d>0) stats.d--;
+    saveStats();
+  }
+  function finish(){
+    aiThinking=false;
+    countStats();
+    render();
+    drawWinLine();
+    if(winTimer) clearTimeout(winTimer);
+    winTimer=setTimeout(renderWin,900);     /* deja ver la línea pulsando */
+  }
+  function doPlace(i,p){
+    var next=place(state,i,p);
+    if(!next){ toast('Jugada no válida'); return false; }
+    pushHist();
+    state=next;
+    anim=i;
+    selCell=-1; selPiece=-1;
+    render();
+    if(state.over) finish(); else setStatus();
+    return true;
+  }
+  function commitFrom(i,p){
+    if(doPlace(i,p)&&!state.over) startAI();
+  }
+  function startAI(){
+    aiThinking=true;
+    setStatus();
+    var token=aiToken;
+    setTimeout(function(){
+      if(token!==aiToken||state.over||state.turn!=='a'){ aiThinking=false; setStatus(); return; }
+      var mv=chooseMove(state,diff);
+      if(!mv){ aiThinking=false; setStatus(); return; }
+      /* resalta casilla y pieza elegidas antes de colocar */
+      var el=cellEls[mv.i];
+      if(el) el.classList.add('sel');
+      var slot=$('#bank').querySelector('[data-piece="'+mv.piece+'"]');
+      if(slot) slot.classList.add('on');
+      setTimeout(function(){
+        if(token!==aiToken||state.over) return;
+        aiThinking=false;
+        doPlace(mv.i,mv.piece);
+      },240);
+    },70);
+  }
+  function playerCell(i){
+    if(state.over){ toast('Partida terminada: pulsa Nuevo'); return; }
+    if(aiThinking||state.turn!=='p'){ toast('Espera a la IA'); return; }
+    if(typeof i!=='number'||i<0||i>=NCELLS||state.board[i]!==null){ toast('Casilla ocupada'); return; }
+    clearHint();
+    if(selPiece>=0&&state.bank.pieces.indexOf(selPiece)>=0){ commitFrom(i,selPiece); return; }
+    selCell=(selCell===i)?-1:i;
+    render();
+  }
+  function playerPiece(p){
+    if(state.over){ toast('Partida terminada: pulsa Nuevo'); return; }
+    if(aiThinking||state.turn!=='p'){ toast('Espera a la IA'); return; }
+    if(state.bank.pieces.indexOf(p)<0){ toast('Esa pieza ya está en el tablero'); return; }
+    clearHint();
+    if(selCell>=0){ commitFrom(selCell,p); return; }
+    selPiece=(selPiece===p)?-1:p;
+    render();
+  }
+  function undo(){
+    if(aiThinking){ aiToken++; aiThinking=false; }
+    if(winTimer){ clearTimeout(winTimer); winTimer=null; }
+    if(!hist.length){ toast('Nada que deshacer'); renderWin(); setStatus(); return; }
+    clearHint();
+    if(state.over) revertStats();
+    /* deshace tu jugada + la de la IA (1 si la IA aún no ha respondido) */
+    var steps=(state.turn==='p')?2:1;
+    if(steps>hist.length) steps=hist.length;
+    for(var s=0;s<steps;s++) state=hist.pop();
+    anim=null;
+    selCell=-1; selPiece=-1;
+    hideWinLine();
+    render();
+    renderWin();
+  }
+  function hintAction(){
+    if(state.over){ toast('Partida terminada: pulsa Nuevo'); return; }
+    if(aiThinking||state.turn!=='p'){ toast('Espera a la IA'); return; }
+    clearHint();
+    var mv=chooseMove(state,diff);
+    if(!mv){ toast('Sin jugadas disponibles'); return; }
+    hintCell=mv.i; hintPiece=mv.piece;
+    render();
+    toast('Pista: casilla '+(mv.i+1)+' · pieza '+pieceName(mv.piece));
+    hintTimer=setTimeout(function(){ clearHint(); render(); },3200);
+  }
+
+  /* ---------- cableado ---------- */
+  $('#board').addEventListener('click',function(e){
+    var el=e&&e.target&&e.target.closest?e.target.closest('.cell'):null;
+    if(!el) return;
+    playerCell(parseInt(el.dataset.i,10));
+  });
+  $('#bank').addEventListener('click',function(e){
+    var el=e&&e.target&&e.target.closest?e.target.closest('[data-piece]'):null;
+    if(!el) return;
+    playerPiece(parseInt(el.dataset.piece,10));
+  });
+
+  $('#btnNew').addEventListener('click',newGame);
+  $('#btnAgain').addEventListener('click',newGame);
+  $('#btnUndo').addEventListener('click',undo);
+  $('#btnHint').addEventListener('click',hintAction);
+  $('#diffSel').addEventListener('change',function(e){
+    var v=parseInt(e.target.value,10);
+    diff=(v===1||v===2||v===3)?v:2;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('qt.diff',String(diff)); }
+    catch(err){}
+    renderWin();
+    toast('Dificultad IA: '+LEVEL_NAMES[diff]);
+  });
+  $('#ruleSel').addEventListener('change',function(e){
+    var v=e.target.value;
+    rule=(v===RULE_FREE)?RULE_FREE:RULE_CLASSIC;
+    try{ if(typeof localStorage!=='undefined') localStorage.setItem('qt.rule',rule); }
+    catch(err){}
+    newGame();
+    toast('Regla: '+(rule===RULE_FREE?'Libre (cualquier 4)':'Clásica (atributo común)'));
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=(e.key||'').toLowerCase();
+    if(k==='n') newGame();
+    else if(k==='u') undo();
+    else if(k==='h') hintAction();
+  });
+
+  /* ---------- arranque ---------- */
+  $('#diffSel').value=String(diff);
+  $('#ruleSel').value=rule;
+  buildBoard();
+  newGame();
+}
+
+/* =========================================================================
+   TESTS EN NODE — solo se ejecutan fuera del navegador
+   (typeof document === 'undefined'). Se evalúan con el motor anterior.
+   ========================================================================= */
+if (typeof document === 'undefined') {
+  var __pass=0, __fail=0, __lines=[];
+  function T(name,fn){
+    try{ fn(); __pass++; __lines.push('PASS '+name); }
+    catch(e){ __fail++; __lines.push('FAIL '+name+' -> '+(e&&e.message?e.message:String(e))); }
+  }
+  function A(cond,msg){ if(!cond) throw new Error(msg||'aserción falsa'); }
+  function Ae(a,b,msg){
+    if(JSON.stringify(a)!==JSON.stringify(b))
+      throw new Error((msg||'')+' esperado '+JSON.stringify(b)+' obtenido '+JSON.stringify(a));
+  }
+  function mkBoard(){ var b=[],k; for(k=0;k<NCELLS;k++) b.push(null); return b; }
+  function mkState(board,ruleName,turn){
+    var used={},i,pieces=[];
+    for(i=0;i<NCELLS;i++) if(board[i]!==null&&board[i]!==undefined) used[board[i]]=1;
+    for(i=0;i<NPIECES;i++) if(!used[i]) pieces.push(i);
+    return {board:board.slice(),turn:turn||'p',over:false,result:null,line:null,
+            attrs:null,rule:ruleName||RULE_CLASSIC,bank:{n:pieces.length,pieces:pieces}};
+  }
+  function assertLegal(st,mv,label){
+    A(mv,label+': devolvió null');
+    A(typeof mv.i==='number'&&mv.i>=0&&mv.i<NCELLS,label+': casilla fuera de rango '+JSON.stringify(mv));
+    A(st.board[mv.i]===null,label+': casilla ocupada '+JSON.stringify(mv));
+    A(st.bank.pieces.indexOf(mv.piece)>=0,label+': pieza fuera del banco '+JSON.stringify(mv));
+  }
+  /* Genera un estado aleatorio determinista aplicando jugadas legales. */
+  function randomState(rng,ruleName){
+    var st=initialState(ruleName), n=Math.floor(rng()*17), guard=0;
+    while(!st.over&&n>0&&guard++<40){
+      var moves=legalMoves(st);
+      if(!moves.length) break;
+      var m=moves[Math.floor(rng()*moves.length)];
+      var nx=place(st,m.i,m.piece);
+      if(!nx) break;
+      st=nx; n--;
+    }
+    return st;
+  }
+  /* Estado no terminado (para medir time-box en partidas vivas). */
+  function randomOngoing(rng,ruleName){
+    var guard=0, st;
+    do{ st=randomState(rng,ruleName); }while(st.over&&guard++<8);
+    return st;
+  }
+  /* Partida completa IA contra IA con verificación de coherencia. */
+  function aiGame(ruleName,l1,l2,timeBox){
+    var rng=makeRng(98765), st=initialState(ruleName), moves=0, seen={};
+    while(!st.over&&moves<17){
+      var lvl=(st.turn==='p')?l1:l2;
+      var mv=chooseMove(st,lvl,{rng:rng,timeBox:timeBox});
+      assertLegal(st,mv,'mov '+moves+' nivel '+lvl);
+      var nx=place(st,mv.i,mv.piece);
+      A(nx,'place devolvió null en mov '+moves);
+      st=nx; moves++;
+    }
+    A(st.over,'partida sin terminar');
+    A(moves<=16,'más de16 jugadas: '+moves);
+    A(st.bank.n===16-moves,'banco incoherente: '+st.bank.n+' vs '+(16-moves));
+    var i;
+    for(i=0;i<NCELLS;i++){
+      if(st.board[i]!==null&&st.board[i]!==undefined){
+        A(!seen[st.board[i]],'pieza repetida en tablero');
+        seen[st.board[i]]=1;
+      }
+    }
+    var w=winner(st.board,ruleName);
+    if(st.result==='draw'){
+      A(!w,'empate declarado pero hay línea ganadora');
+      A(ruleName===RULE_CLASSIC,'solo puede haber empate en regla Clásica');
+    }else{
+      A(st.result==='p'||st.result==='a','resultado inválido: '+st.result);
+      A(w,'resultado declarado sin línea ganadora');
+      A(st.line&&w.line.join()===st.line.join(),'la línea del estado no coincide con winner()');
+    }
+    return {moves:moves,result:st.result};
+  }
+
+  /* ---------- fixtures ---------- */
+  /* Comparten SOLO el atributo color oscuro (bit2) → attrs [2]:
+     4=0100 7=0111 12=1100 15=1111 (b0 y b1 y b3 mezclados). */
+  var SHARED_COLOR=[4,7,12,15];
+  /* Cuatro en línea SIN ningún atributo común. */
+  var NO_COMMON=[0,15,5,10];
+  /* Tablero completo sin ninguna línea con atributo común → empate clásico. */
+  var DRAW_BOARD=[9,5,10,4,14,13,7,8,2,15,6,1,3,0,12,11];
+
+  T('estado inicial:16 casillas libres, banco16, turno p, regla Clásica',function(){
+    var st=initialState();
+    Ae(st.board,mkBoard(),'board');
+    Ae(st.bank.pieces,[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],'banco');
+    A(st.bank.n===16,'bank.n');
+    A(st.turn==='p','turno');
+    A(!st.over&&st.result===null&&st.line===null&&st.attrs===null,'estado de fin');
+    A(st.rule===RULE_CLASSIC,'regla por defecto debe ser Clásica');
+  });
+
+  T('16 piezas únicas cubren los4 atributos binarios',function(){
+    var seen={},i;
+    for(i=0;i<NPIECES;i++){
+      A(!seen[i],'pieza duplicada'); seen[i]=1;
+    }
+    /* cada valor de cada atributo aparece8 veces (combinaciones completas) */
+    var a,v,cnt;
+    for(a=0;a<4;a++) for(v=0;v<2;v++){
+      cnt=0;
+      for(i=0;i<NPIECES;i++) if(((i>>a)&1)===v) cnt++;
+      A(cnt===8,'atributo '+ATTRS[a]+' valor '+v+' aparece '+cnt+' veces');
+    }
+    A(ATTRS.length===4&&ATTR_VALUES.length===4,'4 atributos documentados');
+  });
+
+  T('etiqueta de pieza documenta sus4 atributos',function(){
+    var n=pieceName(11);   /* 1011 → cuadrado · hueco · claro · alto */
+    Ae(n,'cuadrado · hueco · claro · alto',n);
+    A(pieceName(0)==='redondo · sólido · claro · bajo',pieceName(0));
+    A(pieceName(15)==='cuadrado · hueco · oscuro · alto',pieceName(15));
+  });
+
+  T('LINES:10 líneas de4 (4 filas, 4 columnas, 2 diagonales)',function(){
+    A(LINES.length===10,'nº de líneas: '+LINES.length);
+    var t,c;
+    for(t=0;t<8;t++) A(LINES[t].length===4,'línea '+t+' no tiene4');
+    Ae(LINES[8],[0,5,10,15],'diagonal principal');
+    Ae(LINES[9],[3,6,9,12],'diagonal antidiagonal');
+  });
+
+  T('winner: línea con atributo común gana (solo color oscuro)',function(){
+    var b=mkBoard(),c;
+    for(c=0;c<4;c++) b[LINES[0][c]]=SHARED_COLOR[c];
+    var w=winner(b,RULE_CLASSIC);
+    A(w,'no detectó victoria');
+    Ae(w.line,[0,1,2,3],'línea');
+    Ae(w.attrs,[2],'atributos comunes');
+    A(ATTR_VALUES[2][1]==='oscuro','valor del atributo');
+  });
+
+  T('winner: las10 líneas detectadas con atributo común',function(){
+    var t,c;
+    for(t=0;t<LINES.length;t++){
+      var b=mkBoard();
+      for(c=0;c<4;c++) b[LINES[t][c]]=SHARED_COLOR[c];
+      var w=winner(b,RULE_CLASSIC);
+      A(w,'línea '+t+' no detectada');
+      Ae(w.line,LINES[t],'línea '+t);
+      Ae(w.attrs,[2],'attrs línea '+t);
+      var f=winner(b,RULE_FREE);
+      A(f&&f.line.join()===LINES[t].join(),'libre línea '+t);
+    }
+  });
+
+  T('regla Clásica (difícil): NO gana4 sin atributo común',function(){
+    var b=mkBoard(),c;
+    for(c=0;c<4;c++) b[LINES[0][c]]=NO_COMMON[c];
+    A(winner(b,RULE_CLASSIC)===null,'gana sin atributo común');
+    A(winner(b)===null,'winner() sin regla debe ser Clásica');
+    A(!winAvailable(b,maskOf(mkState(b)),RULE_CLASSIC),'winAvailable también debe negarlo');
+  });
+
+  T('regla Libre (fácil): gana cualquier4 aunque no comparta atributo',function(){
+    var b=mkBoard(),c;
+    for(c=0;c<4;c++) b[LINES[0][c]]=NO_COMMON[c];
+    var w=winner(b,RULE_FREE);
+    A(w,'regla Libre no detectó la línea');
+    Ae(w.line,[0,1,2,3],'línea');
+    Ae(w.attrs,[],'sin atributos comunes');
+    A(initialState(RULE_FREE).rule===RULE_FREE,'initialState acepta Libre');
+  });
+
+  T('winner: tablero vacío → null',function(){
+    A(winner(mkBoard(),RULE_CLASSIC)===null,'tablero vacío gana');
+    A(winner(mkBoard(),RULE_FREE)===null,'tablero vacío gana en Libre');
+    A(winner(null)===null,'null entrante');
+  });
+
+  T('empate: tablero completo sin línea con atributo (fixture Clásica)',function(){
+    var i,seen={};
+    for(i=0;i<NCELLS;i++){ A(!seen[DRAW_BOARD[i]],'pieza repetida'); seen[DRAW_BOARD[i]]=1; }
+    A(Object.keys(seen).length===16,'no usa las16 piezas');
+    A(winner(DRAW_BOARD,RULE_CLASSIC)===null,'la Clásica tendría ganador');
+    var f=winner(DRAW_BOARD,RULE_FREE);
+    A(f,'la Libre sí gana con tablero lleno (sin empates)');
+  });
+
+  T('empate: la última pieza produce draw',function(){
+    var lastCell=7, lastPiece=DRAW_BOARD[lastCell];
+    var b=DRAW_BOARD.slice(); b[lastCell]=null;
+    var st=mkState(b,RULE_CLASSIC,'a');
+    A(st.bank.n===1,'banco debe tener1 pieza, tiene '+st.bank.n);
+    A(st.bank.pieces[0]===lastPiece,'pieza del banco inesperada');
+    var nx=place(st,lastCell,lastPiece);
+    A(nx,'place devolvió null');
+    A(nx.over&&nx.result==='draw','no declaró empate: '+nx.result);
+    A(nx.line===null&&nx.attrs===null,'line/attrs deberían ser null');
+    A(nx.bank.n===0,'banco no vacío');
+    Ae(nx.board,DRAW_BOARD,'tablero final');
+  });
+
+  T('place: casilla vacía + pieza del banco → estado nuevo',function(){
+    var st=initialState(), nx=place(st,5,3);
+    A(nx,'devolvió null');
+    A(nx!==st&&nx!==st.board,'debe ser un estado nuevo');
+    A(nx.board[5]===3,'pieza no colocada');
+    A(nx.bank.n===15&&nx.bank.pieces.indexOf(3)<0,'banco mal actualizado');
+    A(nx.turn==='a','no invirtió el turno');
+    A(!nx.over&&nx.result===null,'terminó sin motivo');
+    A(nx.rule===RULE_CLASSIC,'perdió la regla');
+  });
+
+  T('place: no muta el estado original',function(){
+    var st=mkState([4,5,null,null,null,12,null,null,null,null,null,null,null,null,null,null],RULE_CLASSIC,'p');
+    var before=JSON.stringify(st);
+    place(st,2,13);
+    A(JSON.stringify(st)===before,'el estado fue mutado');
+  });
+
+  T('place: casilla ocupada → null',function(){
+    var st=initialState();
+    var first=place(st,0,0);
+    A(first!==null,'primera jugada válida no debería fallar');
+    A(place(first,0,1)===null,'permitió casilla ocupada');
+    A(first.board[0]===0,'la primera jugada no colocó la pieza');
+  });
+
+  T('place: pieza fuera del banco o repetida → null',function(){
+    var st=initialState();
+    A(place(st,0,99)===null,'pieza inexistente');
+    A(place(st,0,-1)===null,'pieza negativa');
+    var nx=place(st,0,7);              /* 7 sale del banco */
+    A(nx,'jugada válida falló');
+    A(place(nx,1,7)===null,'permitió repetir pieza ya usada');
+    A(place(nx,1,42)===null,'pieza fuera de rango tras mover');
+  });
+
+  T('place: índices inválidos → null',function(){
+    var st=initialState();
+    A(place(st,-1,0)===null,'índice -1');
+    A(place(st,16,0)===null,'índice16');
+    A(place(st,2.5,0)===null,'índice fraccionario');
+    A(place(st,'3',0)===null,'índice string');
+    A(place(null,0,0)===null,'estado null');
+  });
+
+  T('place: victoria atribuida al jugador que coloca (línea+attrs)',function(){
+    var b=mkBoard();
+    b[0]=4; b[1]=7; b[2]=12;          /* color oscuro en3 casillas (attrs {2}) */
+    var st=mkState(b,RULE_CLASSIC,'p');
+    A(winAvailable(st.board,maskOf(st),RULE_CLASSIC),'fixture sin victoria disponible');
+    var nx=place(st,3,15);            /*15 = color oscuro →4 con color */
+    A(nx,'place devolvió null');
+    A(nx.over&&nx.result==='p','no ganó el que colocó: '+nx.result);
+    Ae(nx.line,[0,1,2,3],'línea');
+    Ae(nx.attrs,[2],'attrs');
+    A(nx.turn==='a','el turno se invierte igual');
+  });
+
+  T('place: pieza que rompe el atributo no gana',function(){
+    var b=mkBoard();
+    b[0]=4; b[1]=7; b[2]=12;
+    var st=mkState(b,RULE_CLASSIC,'p');
+    A(winAvailable(st.board,maskOf(st),RULE_CLASSIC),'fixture sin victoria disponible');
+    var nx=place(st,3,0);             /* 0 = claro → rompe el color */
+    A(nx&&!nx.over,'gana con pieza que rompe el atributo');
+    A(nx.line===null&&nx.attrs===null,'line/attrs no nulos');
+    A(nx.turn==='a','turno invertido');
+  });
+
+  T('place: partida terminada → null',function(){
+    var b=mkBoard(),c;
+    for(c=0;c<4;c++) b[LINES[0][c]]=SHARED_COLOR[c];
+    var st=mkState(b,RULE_CLASSIC,'a');
+    A(st.over===false,'fixture no debe estar terminado aún');
+    var nx=place(st,4,1);             /* gana en0,1,2,3 */
+    A(nx&&nx.over,'no terminó');
+    A(place(nx,5,2)===null,'permitió jugar partida terminada');
+  });
+
+  T('legalMoves = casillas vacías × banco',function(){
+    var st=initialState();
+    A(legalMoves(st).length===16*16,'al inicio256 movimientos, hay '+legalMoves(st).length);
+    var nx=place(st,0,0);
+    A(legalMoves(nx).length===15*15,'tras1 jugada225, hay '+legalMoves(nx).length);
+    A(legalCells(nx).length===15&&legalCells(nx).indexOf(0)<0,'casilla0 sigue libre');
+  });
+
+  T('chooseMove: legal en los3 niveles (30 estados aleatorios)',function(){
+    var rng=makeRng(42),n,i;
+    for(n=0;n<30;n++){
+      var st=randomState(rng,(n%2)?RULE_CLASSIC:RULE_FREE);
+      for(i=1;i<=3;i++){
+        if(st.over){ A(chooseMove(st,i,{rng:rng,timeBox:40})===null,'nulo sobre estado terminado'); continue; }
+        var mv=chooseMove(st,i,{rng:rng,timeBox:40});
+        assertLegal(st,mv,'nivel '+i+' estado '+n);
+      }
+    }
+  });
+
+  T('chooseMove: null si la partida terminó',function(){
+    var st=initialState(); st.over=true;
+    A(chooseMove(st,1)===null,'nivel1');
+    A(chooseMove(st,2)===null,'nivel2');
+    A(chooseMove(st,3)===null,'nivel3');
+  });
+
+  T('chooseMove: no muta el estado',function(){
+    var rng=makeRng(7);
+    var st=randomState(rng,RULE_CLASSIC);
+    var before=JSON.stringify(st);
+    chooseMove(st,3,{rng:rng,timeBox:60});
+    A(JSON.stringify(st)===before,'el estado fue mutado por la IA');
+    chooseMove(st,2,{rng:rng,timeBox:60});
+    A(JSON.stringify(st)===before,'el estado fue mutado por Medio');
+  });
+
+  T('nivel1 (Fácil): elección aleatoria (varía con la semilla)',function(){
+    var st=initialState(), seen={},k;
+    for(k=0;k<12;k++){
+      var mv=chooseMove(st,1,{rng:makeRng(1000+k)});
+      assertLegal(st,mv,'nivel1');
+      seen[mv.i+'/'+mv.piece]=1;
+    }
+    A(Object.keys(seen).length>1,'nivel1 siempre eligió lo mismo');
+  });
+
+  T('nivel2 (Medio): siempre victoria inmediata (ignora el azar)',function(){
+    var b=mkBoard();
+    b[0]=4; b[1]=7; b[2]=12;           /* color oscuro en3 casillas (attrs {2}) */
+    var st=mkState(b,RULE_CLASSIC,'p');
+    var rng=makeRng(5),calls=0;
+    var mv=chooseMove(st,2,{rng:function(){calls++;return 0.0;},timeBox:300});
+    A(calls===0,'el azar se consultó habiendo victoria inmediata');
+    assertLegal(st,mv,'nivel2 victoria');
+    var nx=place(st,mv.i,mv.piece);
+    A(nx&&nx.over&&nx.result==='p','no aprovechó la victoria: '+JSON.stringify(mv));
+    Ae(nx.line,[0,1,2,3],'línea correcta');
+    A(((mv.piece>>2)&1)===1,'pieza sin color oscuro '+mv.piece);
+  });
+
+  /* Fixture para ramas aleatorio/heurística:
+     col1 [1,5,9,13] con piezas4 y6 vivas (comparten color/altura/forma);
+     casilla0 vacía = primer movimiento legal. */
+  function branchFixture(){
+    var b=mkBoard();
+    b[5]=4; b[9]=6;
+    return mkState(b,RULE_CLASSIC,'p');
+  }
+  T('nivel2 (Medio): rama aleatoria (30%) → primer movimiento legal',function(){
+    var st=branchFixture();
+    var calls=0;
+    var mv=chooseMove(st,2,{rng:function(){calls++;return 0.0;},timeBox:300});
+    A(calls>=1,'no se consultó el azar');
+    assertLegal(st,mv,'rama aleatoria');
+    Ae(mv,{i:0,piece:0},'con rng=0 debería tomar el primer movimiento');
+  });
+
+  T('nivel2 (Medio): rama heurística (70%) distinta del azar',function(){
+    var st=branchFixture();
+    var calls=0;
+    var mv=chooseMove(st,2,{rng:function(){calls++;return 0.9;},timeBox:300});
+    A(calls===1,'el azar debía consultarse una sola vez');
+    assertLegal(st,mv,'heurística');
+    A(!(mv.i===0&&mv.piece===0),'la heurística coincidió con el azar: '+JSON.stringify(mv));
+    /* no debe regalar la victoria: colocar y comprobar que la IA rival
+       no tiene victoria inmediata */
+    var nx=place(st,mv.i,mv.piece);
+    A(nx&&!winAvailable(nx.board,maskOf(nx),RULE_CLASSIC),'regaló victoria inmediata');
+  });
+
+  T('nivel3 (Difícil): toma la victoria inmediata',function(){
+    var b=mkBoard();
+    b[0]=4; b[1]=5; b[2]=12;
+    var st=mkState(b,RULE_CLASSIC,'p');
+    var mv=chooseMove(st,3,{timeBox:200});
+    assertLegal(st,mv,'nivel3 victoria');
+    var nx=place(st,mv.i,mv.piece);
+    A(nx&&nx.over&&nx.result==='p','no ganó: '+JSON.stringify(mv));
+    Ae(nx.line,[0,1,2,3],'línea');
+  });
+
+  T('nivel3 (Difícil): bloquea (no regala victoria inmediata)',function(){
+    var st=branchFixture();           /* peligro: jugar con pieza que viva en col1 */
+    var mv=chooseMove(st,3,{timeBox:300});
+    assertLegal(st,mv,'nivel3 bloqueo');
+    var nx=place(st,mv.i,mv.piece);
+    A(nx,'place falló');
+    A(!winAvailable(nx.board,maskOf(nx),RULE_CLASSIC),
+      'regaló victoria al rival con '+JSON.stringify(mv));
+  });
+
+  T('time-box: constantes documentadas (Medio300, Difícil900)',function(){
+    Ae(LEVEL_TIMEBOX,[0,0,300,900],'LEVEL_TIMEBOX');
+    Ae(LEVEL_NAMES,['','Fácil','Medio','Difícil'],'LEVEL_NAMES');
+    A(RULE_NAMES.classic&&RULE_NAMES.free,'nombres de reglas');
+  });
+
+  T('time-box: Difícil respeta el presupuesto por defecto (≤1100ms)',function(){
+    var rng=makeRng(3);
+    var st=randomOngoing(rng,RULE_CLASSIC);
+    if(st.over) return;              /* determinista: solo por si acaso */
+    var t0=Date.now();
+    var mv=chooseMove(st,3);
+    var dt=Date.now()-t0;
+    assertLegal(st,mv,'time-box');
+    A(dt<=1100,'demoró '+dt+'ms (>900+holgura)');
+  });
+
+  T('time-box: se puede inyectar presupuesto (30ms)',function(){
+    var rng=makeRng(4);
+    var st=randomOngoing(rng,RULE_CLASSIC);
+    if(st.over) return;
+    var t0=Date.now();
+    var mv=chooseMove(st,3,{timeBox:30});
+    var dt=Date.now()-t0;
+    assertLegal(st,mv,'time-box corto');
+    A(dt<=400,'demoró '+dt+'ms con timeBox30');
+  });
+
+  T('RNG inyectable: opts.rng reemplaza a Math.random',function(){
+    var st=branchFixture();
+    var mv1=chooseMove(st,1,{rng:function(){return 0;}});
+    var mv2=chooseMove(st,1,{rng:function(){return 0;}});
+    Ae(mv1,mv2,'rng fijo debe ser determinista');
+    Ae(mv1,{i:0,piece:0},'primer movimiento legal con rng=0');
+  });
+
+  T('IA vs IA completa: Clásica nivel1 vs nivel1 (≤16 jugadas)',function(){
+    var r=aiGame(RULE_CLASSIC,1,1,30);
+    A(r.moves>=4&&r.moves<=16,'jugadas: '+r.moves);
+    A(r.result==='p'||r.result==='a'||r.result==='draw','resultado: '+r.result);
+  });
+
+  T('IA vs IA completa: Clásica nivel2 vs nivel3',function(){
+    var r=aiGame(RULE_CLASSIC,2,3,50);
+    A(r.moves<=16,'jugadas: '+r.moves);
+    A(r.result==='p'||r.result==='a'||r.result==='draw','resultado: '+r.result);
+  });
+
+  T('IA vs IA completa: Libre nivel3 vs nivel3 (sin empates)',function(){
+    var r=aiGame(RULE_FREE,3,3,50);
+    A(r.moves<=16,'jugadas: '+r.moves);
+    A(r.result!=='draw','la regla Libre no admite empates: '+r.result);
+  });
+
+  /* ---------- informe ---------- */
+  for(var li=0;li<__lines.length;li++) console.log(__lines[li]);
+  console.log('---');
+  console.log('QUARTO TESTS: '+__pass+' PASS, '+__fail+' FAIL');
+  if(__fail>0) throw new Error(__fail+' tests fallidos');
+}
+</script>
+</body>
+</html>
